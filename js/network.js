@@ -20,6 +20,7 @@ export class ClassroomNetwork {
       onStudentSync: () => {},     // Occurs when the student list changes (presence sync)
       onReceiveSettings: () => {}, // Occurs when student receives settings from teacher
       onGameStart: () => {},       // Occurs when student receives start trigger from teacher
+      onForceSubmit: () => {},     // Occurs when unfinished students must submit their current state
       onRoundReset: () => {},      // Occurs when students should return to the waiting room
       onResultReported: () => {},  // Occurs when teacher receives result from student
       onRankingUpdate: () => {},   // Occurs when student receives leaderboard from teacher
@@ -109,6 +110,11 @@ export class ClassroomNetwork {
           this.callbacks.onGameStart();
         }
       })
+      .on('broadcast', { event: 'force-submit' }, () => {
+        if (this.role === 'student') {
+          this.callbacks.onForceSubmit();
+        }
+      })
       .on('broadcast', { event: 'round-reset' }, () => {
         if (this.role === 'student') {
           this.callbacks.onRoundReset();
@@ -175,6 +181,18 @@ export class ClassroomNetwork {
     this.channel.send({
       type: 'broadcast',
       event: 'start-game',
+      payload: {}
+    });
+  }
+
+  /**
+   * [Teacher] Request an immediate result from unfinished students
+   */
+  broadcastForceSubmit() {
+    if (this.role !== 'teacher' || !this.channel) return;
+    this.channel.send({
+      type: 'broadcast',
+      event: 'force-submit',
       payload: {}
     });
   }

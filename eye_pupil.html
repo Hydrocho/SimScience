@@ -1708,6 +1708,37 @@
         </div>
     </div>
 
+    <!-- Teacher Ranking Popup -->
+    <div id="teacher-ranking-popup" class="modal-overlay">
+        <div class="eval-panel" style="width: min(920px, 92vw); max-height: 82vh; overflow-y: auto;">
+            <div class="rank-badge-row">
+                <h2 class="result-title">라운드 최종 랭킹</h2>
+                <span class="result-rank perfect">RESULT</span>
+            </div>
+            <p style="font-size: 0.85rem; color: var(--slate-400); margin-bottom: 1rem;">
+                미제출 학생의 현재 상태까지 수집한 결과입니다. 오차가 같으면 촬영 시간이 짧은 학생이 우선입니다.
+            </p>
+            <div class="leaderboard-container" style="overflow-x: auto; background: white; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px;">
+                <table class="ranking-table-detail">
+                    <thead>
+                        <tr>
+                            <th>순위</th>
+                            <th>학생 닉네임</th>
+                            <th>점수</th>
+                            <th>오차</th>
+                            <th>촬영 시간</th>
+                            <th>결과</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacher-ranking-popup-rows"></tbody>
+                </table>
+            </div>
+            <div class="action-buttons" style="margin-top: 1rem;">
+                <button class="action-btn primary" onclick="closeTeacherRankingPopup()">확인</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast-notify" class="toast-notification">
         <i class="fa-solid fa-circle-info" style="color:var(--primary)"></i>
@@ -1867,6 +1898,7 @@
         let soundEnabled = true;
         let gameTimerInterval = null;
         let roundStartedAt = null;
+        let hasSubmittedCurrentRound = false;
 
         // Multiplayer structures
         let classroomNetwork = null;
@@ -2162,6 +2194,7 @@
             // Start away from the target so each round requires deliberate adjustment.
             irisContraction = getRandomStartingContraction(randomTargetContraction);
             roundStartedAt = performance.now();
+            hasSubmittedCurrentRound = false;
             
             updateHud();
 
@@ -2317,6 +2350,7 @@
             if (gameMode !== 'active') return;
             if (gameTimerInterval) clearInterval(gameTimerInterval);
             const captureTimeSeconds = getCaptureTimeSeconds();
+            hasSubmittedCurrentRound = true;
 
             // Play shutter click sound
             gameAudio.playShutter();
@@ -2430,6 +2464,7 @@
             combo = 0;
             updateHud();
             const captureTimeSeconds = getCaptureTimeSeconds();
+            hasSubmittedCurrentRound = true;
 
             resultRankBadge.textContent = 'MISS';
             resultRankBadge.className = 'result-rank miss';
@@ -2505,6 +2540,40 @@
             return Math.max(0, (performance.now() - roundStartedAt) / 1000);
         }
 
+        function submitCurrentStateOnTeacherRequest() {
+            if (gameMode !== 'active' || hasSubmittedCurrentRound) return;
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+
+            const currentPupilDiameter = 2.0 + irisContraction * 6.0;
+            const logExposure = Math.log10(currentLux) + 2.0 * Math.log10(currentPupilDiameter);
+            const errorOffset = Math.abs(logExposure - 3.75);
+            const captureTimeSeconds = getCaptureTimeSeconds();
+            let rank = 'MISS';
+            let earned = 0;
+
+            if (errorOffset < 0.15) {
+                rank = 'PERFECT';
+                earned = 100;
+            } else if (errorOffset < 0.35) {
+                rank = 'GREAT';
+                earned = 75;
+            } else if (errorOffset < 0.65) {
+                rank = 'GOOD';
+                earned = 40;
+            }
+
+            hasSubmittedCurrentRound = true;
+            gameMode = 'result';
+            classroomNetwork.sendResult(earned, {
+                currentLux,
+                pupilDiameter: currentPupilDiameter,
+                errorOffset,
+                captureTimeSeconds,
+                rank,
+                forcedSubmission: true
+            });
+        }
+
         function exitToLobby() {
             resultModal.classList.remove('show');
             if (gameTimerInterval) clearInterval(gameTimerInterval);
@@ -2571,10 +2640,15 @@
                     lobbyScreen.style.display = 'none';
                     arenaScreen.style.display = 'grid';
                     gameMode = 'active';
+                    hasSubmittedCurrentRound = false;
 
 
                     startNewRoundMultiplayer();
                     animate();
+                });
+
+                classroomNetwork.on('onForceSubmit', () => {
+                    submitCurrentStateOnTeacherRequest();
                 });
 
                 classroomNetwork.on('onRoundReset', () => {
@@ -2691,6 +2765,9 @@
 
                         // Render table
                         renderTeacherRankingsTableDetail();
+                        if (document.getElementById('teacher-ranking-popup').classList.contains('show')) {
+                            openTeacherRankingPopup();
+                        }
 
                         // Broadcast to students
                         classroomNetwork.broadcastRankings({ rankings: studentResults });
@@ -2788,13 +2865,70 @@
             teacherTriggerLaunch();
         }
 
-        function finishRoundDetail() {
+        async function finishRoundDetail() {
             if (!isMultiplayer || userRole !== 'teacher' || !classroomNetwork) return;
 
+            const finishButton = document.getElementById('btn-teacher-finish-detail');
+            finishButton.disabled = true;
+            finishButton.textContent = '미제출 학생 결과 수집 중...';
+            classroomNetwork.broadcastForceSubmit();
+            await waitForStudentResults(1500);
+
+            renderTeacherRankingsTableDetail();
+            openTeacherRankingPopup();
             classroomNetwork.broadcastRoundReset();
-            document.getElementById('btn-teacher-finish-detail').style.display = 'none';
+            finishButton.disabled = false;
+            finishButton.textContent = '종료 (랭킹 보기)';
+            finishButton.style.display = 'none';
             document.getElementById('btn-teacher-next-round-detail').style.display = 'block';
-            showToast("학생 화면을 다음 라운드 대기 상태로 전환했습니다. 랭킹을 확인하세요.");
+            showToast("미제출 학생 결과를 수집하고 학생 화면을 다음 라운드 대기 상태로 전환했습니다.");
+        }
+
+        function waitForStudentResults(timeoutMs) {
+            const expectedStudentIds = new Set(activeStudents.map(student => student.id));
+            const startedAt = performance.now();
+
+            return new Promise(resolve => {
+                const checkResults = () => {
+                    const receivedIds = new Set(studentResults.map(result => result.studentId));
+                    const hasAllResults = [...expectedStudentIds].every(id => receivedIds.has(id));
+                    if (hasAllResults || performance.now() - startedAt >= timeoutMs) {
+                        resolve();
+                        return;
+                    }
+                    setTimeout(checkResults, 50);
+                };
+                checkResults();
+            });
+        }
+
+        function openTeacherRankingPopup() {
+            const tbody = document.getElementById('teacher-ranking-popup-rows');
+            if (studentResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--slate-400); padding: 2rem 0;">
+                            수집된 학생 결과가 없습니다.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = studentResults.map((res, index) => `
+                    <tr>
+                        <td class="rank-cell">${index + 1}</td>
+                        <td style="font-weight: 800; color: var(--slate-50);">${res.nickname}</td>
+                        <td style="color: var(--primary); font-weight: 800;">${res.score}점</td>
+                        <td>${res.errorOffset.toFixed(3)}</td>
+                        <td>${(res.captureTimeSeconds ?? 0).toFixed(2)}초</td>
+                        <td>${res.forcedSubmission ? `${res.rank} (강제 제출)` : res.rank}</td>
+                    </tr>
+                `).join('');
+            }
+            document.getElementById('teacher-ranking-popup').classList.add('show');
+        }
+
+        function closeTeacherRankingPopup() {
+            document.getElementById('teacher-ranking-popup').classList.remove('show');
         }
 
         function resetForNextRoundDetail() {
@@ -2870,6 +3004,7 @@
             const targetContraction = getTargetContraction(currentLux);
             irisContraction = getRandomStartingContraction(targetContraction);
             roundStartedAt = performance.now();
+            hasSubmittedCurrentRound = false;
             updateHud();
 
             const countdownEl = document.getElementById('countdown-hud');
@@ -2972,6 +3107,7 @@
         window.unlockSessionSettingsDetail = unlockSessionSettingsDetail;
         window.triggerLaunchAllDetail = triggerLaunchAllDetail;
         window.finishRoundDetail = finishRoundDetail;
+        window.closeTeacherRankingPopup = closeTeacherRankingPopup;
         window.resetForNextRoundDetail = resetForNextRoundDetail;
         window.teacherTriggerLaunch = teacherTriggerLaunch;
         window.capturePhoto = capturePhoto;
