@@ -1838,7 +1838,7 @@ function carSwitchTab(tab) {
     if (pane) pane.style.display = isActive ? 'block' : 'none';
     if (btn) {
       btn.style.background = isActive ? `rgba(${p==='solo'?'99,102,241':p==='student'?'16,185,129':'245,158,11'},0.15)` : 'transparent';
-      btn.style.color = isActive ? (p==='solo'?'#a5b4fc':p==='student'?'#6ee7b7':'#fcd34d') : '#64748b';
+      btn.style.color = isActive ? (p==='solo'?'#4338ca':p==='student'?'#047857':'#b45309') : '#64748b';
       btn.style.borderBottom = isActive ? `3px solid ${colors[p]}` : '3px solid transparent';
     }
   });

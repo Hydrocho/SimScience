@@ -16,6 +16,67 @@
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <!-- Supabase JS Client CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    /* Keep the entry lobby aligned with the light theme used by eye_focus.html. */
+    #lobby-overlay {
+      background: radial-gradient(circle at center, #f8fafc 0%, #eef2ff 100%) !important;
+      color: #0f172a;
+    }
+
+    #lobby-overlay > div:first-child h1,
+    #lobby-overlay h2 {
+      color: #0f172a !important;
+    }
+
+    #lobby-overlay > div:first-child p,
+    #lobby-overlay label,
+    #lobby-overlay #car-teacher-ready-block p {
+      color: #475569 !important;
+    }
+
+    #lobby-overlay > div:first-child > a {
+      background: rgba(79, 70, 229, 0.06) !important;
+      border-color: rgba(79, 70, 229, 0.15) !important;
+      color: #4f46e5 !important;
+    }
+
+    #lobby-overlay > div:first-child > a:hover {
+      background: #4338ca !important;
+      color: #ffffff !important;
+    }
+
+    #lobby-overlay > div:nth-child(2) {
+      background: rgba(255, 255, 255, 0.88) !important;
+      border-color: rgba(0, 0, 0, 0.06) !important;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.08);
+    }
+
+    #lobby-overlay > div:nth-child(2) > div:first-child {
+      border-bottom-color: rgba(0, 0, 0, 0.06) !important;
+    }
+
+    #lobby-overlay input {
+      background: #ffffff !important;
+      border-color: rgba(15, 23, 42, 0.14) !important;
+      color: #0f172a !important;
+    }
+
+    #lobby-overlay input::placeholder {
+      color: #94a3b8;
+    }
+
+    #car-pane-solo h3 {
+      color: #1d4ed8 !important;
+    }
+
+    #car-pane-solo > div:nth-child(2) > div:nth-child(2) h3 {
+      color: #047857 !important;
+    }
+
+    #car-pane-teacher p[style*="color: #fbbf24"] {
+      color: #b45309 !important;
+    }
+  </style>
 </head>
 <body>
   <div id="canvas-container"></div>
@@ -50,7 +111,7 @@
 
       <!-- 탭 버튼 -->
       <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid rgba(255,255,255,0.08);">
-        <button id="car-tab-solo" onclick="carSwitchTab('solo')" style="padding: 16px 10px; background: rgba(99,102,241,0.15); border: none; color: #a5b4fc; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid #6366f1; font-family: inherit;">
+        <button id="car-tab-solo" onclick="carSwitchTab('solo')" style="padding: 16px 10px; background: rgba(99,102,241,0.15); border: none; color: #4338ca; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid #6366f1; font-family: inherit;">
           <span style="font-size: 1.1rem; display: block; margin-bottom: 4px;">👤</span>혼자 하기
         </button>
         <button id="car-tab-student" onclick="carSwitchTab('student')" style="padding: 16px 10px; background: transparent; border: none; color: #64748b; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; font-family: inherit;">
