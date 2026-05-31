@@ -13,7 +13,6 @@ import {
   safeSetStyleDisplay,
   safeSetStyleWidth,
   updateDashboard,
-  showResultModal,
   closeResultModal,
   showTargetModal,
   closeTargetModal,
@@ -323,7 +322,7 @@ function showResults() {
   if (State.isMultiplayer) {
     reportStudentResult(finalDistance, diff);
   } else {
-    showResultModal(finalDistance, State.targetDistance, diff, absDiff);
+    showStudentResultDetail(finalDistance, diff);
   }
 }
 
@@ -1597,6 +1596,7 @@ function showStudentResultDetail(actual, offset) {
   const targetText = document.getElementById('student-target-dist-result');
   const offsetText = document.getElementById('student-offset-dist');
   const feedbackBox = document.getElementById('student-result-feedback');
+  const modeSelectionBtn = document.getElementById('btn-return-mode-selection');
 
   if (actualText) actualText.innerText = `${actual.toFixed(2)}m`;
   if (targetText) targetText.innerText = `${State.targetDistance.toFixed(1)}m`;
@@ -1658,11 +1658,42 @@ function showStudentResultDetail(actual, offset) {
     }
   }
 
+  if (modeSelectionBtn) {
+    modeSelectionBtn.style.display = State.isMultiplayer ? 'none' : 'block';
+  }
+
   if (modal) modal.style.display = 'flex';
 }
 
 function closeStudentResultModal() {
   safeSetStyleDisplay('student-result-modal', 'none');
+}
+
+function returnToModeSelection() {
+  closeStudentResultModal();
+  closeTargetModal();
+  resetSimulation();
+  closeTargetModal();
+
+  State.userRole = null;
+  State.isMultiplayer = false;
+  State.myStudentId = null;
+
+  const readyBtn = document.getElementById('btn-student-ready');
+  if (readyBtn) {
+    readyBtn.disabled = false;
+    readyBtn.className = 'btn btn-primary';
+    readyBtn.textContent = '👍 준비 완료 (Ready)';
+    readyBtn.onclick = () => toggleStudentReady();
+  }
+
+  safeSetStyleDisplay('student-status-text', 'none');
+  safeSetStyleDisplay('btn-solo-return-mode-selection', 'none');
+  safeSetStyleDisplay('student-dashboard', 'none');
+  safeSetStyleDisplay('student-wait-message', 'flex');
+  safeSetStyleDisplay('main-ui', 'none');
+  safeSetStyleDisplay('lobby-overlay', 'flex');
+  carSwitchTab('solo');
 }
 
 function addStudentResult(res) {
@@ -1807,6 +1838,7 @@ window.lockSessionSettings = lockSessionSettings;
 window.unlockSessionSettings = unlockSessionSettings;
 window.resetForNextRound = resetForNextRound;
 window.closeStudentResultModal = closeStudentResultModal;
+window.returnToModeSelection = returnToModeSelection;
 window.closeTargetModal = closeTargetModal;
 window.closeResultModal = closeResultModal;
 window.updateTeacherTargetDist = updateTeacherTargetDist;
@@ -1851,8 +1883,14 @@ function startCarSoloMode() {
     alert('닉네임을 2자 이상 입력하세요.');
     return;
   }
+
+  State.userRole = 'student';
   State.myNickname = nickname;
   State.isMultiplayer = false;
+  State.myStudentId = null;
+  resetSimulation();
+  if (State.truckGroup) State.truckGroup.visible = true;
+
   safeSetStyleDisplay('lobby-overlay', 'none');
   safeSetStyleDisplay('main-ui', 'grid');
   safeSetStyleDisplay('teacher-panel', 'none');
@@ -1873,9 +1911,13 @@ function startCarSoloMode() {
   // Ready 버튼 -> 솔로 모드 출발 버튼으로 변환
   const readyBtn = document.getElementById('btn-student-ready');
   if (readyBtn) {
+    readyBtn.disabled = false;
+    readyBtn.className = 'btn btn-primary';
     readyBtn.textContent = '🚗 출발!';
     readyBtn.onclick = () => startSimulation();
   }
+  safeSetStyleDisplay('student-status-text', 'none');
+  safeSetStyleDisplay('btn-solo-return-mode-selection', 'block');
 }
 
 // --- 교사 대시보드 입장 (로비에서 PIN 확인 후) ---

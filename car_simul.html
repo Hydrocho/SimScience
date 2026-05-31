@@ -253,10 +253,10 @@
               <span id="teacher-target-max-label">95m</span>
             </div>
           </div>
-          <div id="teacher-range-guide" class="mode-guide-desc" style="color: #00e5ff; font-weight: 600; margin-top: 4px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 6px;">
+          <div id="teacher-range-guide" class="mode-guide-desc" style="color: #4338ca; font-weight: 600; margin-top: 4px; border-top: 1px solid rgba(0,0,0,0.05); padding-top: 6px;">
             도달 가능 범위: 25.0m ~ 95.0m
           </div>
-          <div id="teacher-hint-guide" class="mode-guide-desc" style="color: #ffe082; font-weight: 500; margin-top: 4px;">
+          <div id="teacher-hint-guide" class="mode-guide-desc" style="color: #b45309; font-weight: 500; margin-top: 4px;">
             기준 힌트값: 2500kg, 40km/h일 때 제동거리 20.00m
           </div>
         </div>
@@ -416,6 +416,9 @@
         <button id="btn-student-ready" class="btn btn-primary" onclick="toggleStudentReady()">
           👍 준비 완료 (Ready)
         </button>
+        <button id="btn-solo-return-mode-selection" class="btn btn-secondary" style="display: none;" onclick="returnToModeSelection()">
+          ↩ 모드 선택으로 돌아가기
+        </button>
 
         <div id="student-status-text" class="student-status-toast" style="display: none;">
           교사의 출발 신호를 대기하고 있습니다...
@@ -461,8 +464,9 @@
       <div id="student-result-feedback" class="result-feedback-box">
         <!-- 결과 피드백 메세지 삽입 -->
       </div>
-      <div class="modal-buttons" style="grid-template-columns: 1.2fr 1fr;">
+      <div class="modal-buttons" style="grid-template-columns: 1fr 1fr 1fr;">
         <button class="btn btn-secondary" onclick="closeStudentResultModal()">🔍 3D 화면 둘러보기</button>
+        <button id="btn-return-mode-selection" class="btn btn-secondary" style="display: none;" onclick="returnToModeSelection()">↩ 모드 선택으로</button>
         <a href="index.html" class="btn btn-primary" style="display: flex; align-items: center; justify-content: center; text-decoration: none;">🏠 메인 홈으로</a>
       </div>
     </div>
@@ -476,39 +480,39 @@
     </div>
     
     <div class="control-group" style="padding: 10px; gap: 8px;">
-      <span class="section-title" style="display: block; font-size: 0.75rem; font-weight: 700; color: #8fa0ba; margin-bottom: 6px; border-bottom: 1px dashed rgba(255, 255, 255, 0.05); padding-bottom: 4px;">카메라 위치 (Camera Position)</span>
+      <span class="section-title" style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px; border-bottom: 1px dashed rgba(0, 0, 0, 0.08); padding-bottom: 4px;">카메라 위치 (Camera Position)</span>
       
       <div class="slider-item" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;">
-        <label for="cam-pos-x" style="font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">Pos X: <span id="cam-pos-x-val" style="font-weight: 700; color: #00e5ff;">0.0</span>m</label>
+        <label for="cam-pos-x" style="font-size: 0.72rem; color: #475569; display: flex; justify-content: space-between;">Pos X: <span id="cam-pos-x-val" style="font-weight: 700; color: #4338ca;">0.0</span>m</label>
         <input type="range" id="cam-pos-x" min="-50" max="50" step="0.5" value="0" oninput="updateLiveCameraSetting('posX', this.value)">
       </div>
       
       <div class="slider-item" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;">
-        <label for="cam-pos-y" style="font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">Pos Y: <span id="cam-pos-y-val" style="font-weight: 700; color: #00e5ff;">20.0</span>m</label>
+        <label for="cam-pos-y" style="font-size: 0.72rem; color: #475569; display: flex; justify-content: space-between;">Pos Y: <span id="cam-pos-y-val" style="font-weight: 700; color: #4338ca;">20.0</span>m</label>
         <input type="range" id="cam-pos-y" min="1" max="100" step="0.5" value="20" oninput="updateLiveCameraSetting('posY', this.value)">
       </div>
       
       <div class="slider-item" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;">
-        <label for="cam-pos-z" style="font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">Pos Z: <span id="cam-pos-z-val" style="font-weight: 700; color: #00e5ff;">-60.0</span>m</label>
+        <label for="cam-pos-z" style="font-size: 0.72rem; color: #475569; display: flex; justify-content: space-between;">Pos Z: <span id="cam-pos-z-val" style="font-weight: 700; color: #4338ca;">-60.0</span>m</label>
         <input type="range" id="cam-pos-z" min="-150" max="150" step="0.5" value="-60" oninput="updateLiveCameraSetting('posZ', this.value)">
       </div>
     </div>
 
     <div class="control-group" style="padding: 10px; gap: 8px;">
-      <span class="section-title" style="display: block; font-size: 0.75rem; font-weight: 700; color: #8fa0ba; margin-bottom: 6px; border-bottom: 1px dashed rgba(255, 255, 255, 0.05); padding-bottom: 4px;">카메라 타깃 (Camera Target)</span>
+      <span class="section-title" style="display: block; font-size: 0.75rem; font-weight: 700; color: #475569; margin-bottom: 6px; border-bottom: 1px dashed rgba(0, 0, 0, 0.08); padding-bottom: 4px;">카메라 타깃 (Camera Target)</span>
       
       <div class="slider-item" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;">
-        <label for="cam-tar-x" style="font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">Tar X: <span id="cam-tar-x-val" style="font-weight: 700; color: #00e5ff;">0.0</span>m</label>
+        <label for="cam-tar-x" style="font-size: 0.72rem; color: #475569; display: flex; justify-content: space-between;">Tar X: <span id="cam-tar-x-val" style="font-weight: 700; color: #4338ca;">0.0</span>m</label>
         <input type="range" id="cam-tar-x" min="-50" max="50" step="0.5" value="0" oninput="updateLiveCameraSetting('tarX', this.value)">
       </div>
       
       <div class="slider-item" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;">
-        <label for="cam-tar-y" style="font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">Tar Y: <span id="cam-tar-y-val" style="font-weight: 700; color: #00e5ff;">2.0</span>m</label>
+        <label for="cam-tar-y" style="font-size: 0.72rem; color: #475569; display: flex; justify-content: space-between;">Tar Y: <span id="cam-tar-y-val" style="font-weight: 700; color: #4338ca;">2.0</span>m</label>
         <input type="range" id="cam-tar-y" min="0" max="20" step="0.5" value="2" oninput="updateLiveCameraSetting('tarY', this.value)">
       </div>
       
       <div class="slider-item" style="display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px;">
-        <label for="cam-tar-z" style="font-size: 0.72rem; color: #cbd5e1; display: flex; justify-content: space-between;">Tar Z: <span id="cam-tar-z-val" style="font-weight: 700; color: #00e5ff;">35.0</span>m</label>
+        <label for="cam-tar-z" style="font-size: 0.72rem; color: #475569; display: flex; justify-content: space-between;">Tar Z: <span id="cam-tar-z-val" style="font-weight: 700; color: #4338ca;">35.0</span>m</label>
         <input type="range" id="cam-tar-z" min="-50" max="350" step="0.5" value="35" oninput="updateLiveCameraSetting('tarZ', this.value)">
       </div>
     </div>
