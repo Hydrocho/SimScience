@@ -1265,26 +1265,32 @@
                     <button class="start-btn" onclick="handleTeacherLogin()">교사 로그인</button>
                 </div>
                 <div id="teacher-dashboard-block" style="display:none;">
-                    <p id="teacher-email-txt"></p>
-                    <p>세션 PIN: <strong id="teacher-pin-txt">------</strong></p>
-                    <p>접속 학생: <strong id="connected-students-count">0</strong>명</p>
-                    <div id="teacher-student-list"></div>
-                    <div class="input-group">
-                        <label>목표 거리 <span id="teacher-target-val">35.0m</span></label>
-                        <input type="range" id="teacher-target-slider" min="19" max="49" step="0.5" value="35" oninput="teacherSyncSettings()">
+                    <div class="teacher-dashboard-simplified" style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px 0;">
+                        <p style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0; text-align: center;">
+                            세션 PIN: <strong id="teacher-pin-txt" style="color: #4f46e5; font-size: 1.75rem; font-weight: 800; margin-left: 8px; letter-spacing: 1px;">------</strong>
+                        </p>
+                        <button class="start-btn" onclick="teacherTriggerLaunch()" style="width: 100%; max-width: 280px; margin: 0;">입장하기</button>
                     </div>
-                    <div class="input-group">
-                        <label>제한 시간 <span id="teacher-wait-val">15초</span></label>
-                        <input type="range" id="teacher-wait-slider" min="5" max="60" step="1" value="15" oninput="teacherSyncSettings()">
+                    <div style="display: none;">
+                        <p id="teacher-email-txt"></p>
+                        <strong id="connected-students-count">0</strong>
+                        <div id="teacher-student-list"></div>
+                        <div class="input-group">
+                            <label>목표 거리 <span id="teacher-target-val">35.0m</span></label>
+                            <input type="range" id="teacher-target-slider" min="19" max="49" step="0.5" value="35" oninput="teacherSyncSettings()">
+                        </div>
+                        <div class="input-group">
+                            <label>제한 시간 <span id="teacher-wait-val">15초</span></label>
+                            <input type="range" id="teacher-wait-slider" min="5" max="60" step="1" value="15" oninput="teacherSyncSettings()">
+                        </div>
+                        <select id="teacher-diff-select" onchange="teacherSyncSettings()">
+                            <option value="easy">쉬움</option>
+                            <option value="medium">보통</option>
+                            <option value="hard">어려움</option>
+                        </select>
+                        <button class="action-btn" onclick="teacherResetRound()">라운드 초기화</button>
+                        <table><tbody id="teacher-rankings-rows"></tbody></table>
                     </div>
-                    <select id="teacher-diff-select" onchange="teacherSyncSettings()">
-                        <option value="easy">쉬움</option>
-                        <option value="medium">보통</option>
-                        <option value="hard">어려움</option>
-                    </select>
-                    <button class="start-btn" onclick="teacherTriggerLaunch()">실험 시작</button>
-                    <button class="action-btn" onclick="teacherResetRound()">라운드 초기화</button>
-                    <table><tbody id="teacher-rankings-rows"></tbody></table>
                 </div>
             </div>
         </section>
