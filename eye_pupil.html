@@ -2041,8 +2041,8 @@
 
         // --- Set New Round Conditions ---
         function startNewRound() {
-            // Random target contraction between 30% and 100% (0.3 to 1.0)
-            const randomTargetContraction = 0.3 + Math.random() * 0.7;
+            // Random target contraction between 10% and 90% (0.1 to 0.9)
+            const randomTargetContraction = 0.1 + Math.random() * 0.8;
             const targetDiameter = 2.0 + randomTargetContraction * 6.0;
             currentLux = 5623.413 / (targetDiameter * targetDiameter);
 
