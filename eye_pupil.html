@@ -10,8 +10,6 @@
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Three.js for 3D graphics -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Supabase JS Client CDN -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -1515,27 +1513,49 @@
                 
                 <!-- Left: Viewport Panel -->
                 <div class="viewport-panel">
-                    <div class="viewport-frame" id="viewport-frame">
-                        <div id="canvas-container"></div>
-                        <!-- Exposure glare & dark filters -->
-                        <div id="exposure-filter" class="exposure-filter"></div>
-                        <div id="grain-overlay" class="grain-overlay"></div>
-                        <div id="shutter-flash" class="shutter-flash"></div>
-                        
-                        <!-- Overlay HUD info on top of 3D -->
-                        <div class="exposure-indicator-overlay">
-                            <i class="fa-solid fa-sun" style="color: var(--neon-yellow)"></i>
-                            <span id="focal-indicator-txt">조도: 100 Lux | 동공: 5.0mm</span>
+                    <div class="viewport-frame-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; width: 100%;">
+                        <!-- Left: Original Image Card -->
+                        <div class="image-card" style="position: relative; border-radius: var(--radius-lg); border: 2px solid rgba(0, 0, 0, 0.08); box-shadow: var(--shadow-lg); overflow: hidden; background: #ffffff; aspect-ratio: 10 / 16; max-height: 580px; margin: 0 auto; width: 100%;">
+                            <img src="teacher.png" style="width: 100%; height: 100%; object-fit: cover; display: block;" alt="원본">
+                            <div style="position: absolute; top: 15px; left: 15px; background: rgba(79, 70, 229, 0.85); backdrop-filter: blur(4px); border-radius: 8px; padding: 6px 12px; font-size: 0.85rem; font-weight: 800; color: white; z-index: 10; border: 1px solid rgba(255, 255, 255, 0.2);">
+                                원본
+                            </div>
                         </div>
 
-                        <!-- Target display info banner -->
-                        <div style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); border-radius: 20px; padding: 8px 18px; border: 1.5px solid var(--neon-yellow); z-index: 10; color: white; font-weight: 800; font-size: 0.95rem; text-align: center; display: flex; align-items: center; gap: 8px; box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3);">
-                            <span style="width: 10px; height: 10px; border-radius: 50%; background-color: var(--neon-yellow); box-shadow: 0 0 8px var(--neon-yellow);"></span>
-                            <span id="target-desc">암실 안의 석고상 명암을 맞추고 코드를 촬영하세요!</span>
-                        </div>
+                        <!-- Right: Controlled Game Image Card -->
+                        <div class="image-card" id="game-image-card" style="position: relative; border-radius: var(--radius-lg); border: 2px solid rgba(0, 0, 0, 0.08); box-shadow: var(--shadow-lg); overflow: hidden; background: #000000; aspect-ratio: 10 / 16; max-height: 580px; margin: 0 auto; width: 100%; transition: border-color 0.1s, box-shadow 0.1s;">
+                            <!-- The image itself that gets filters applied -->
+                            <img id="game-image" src="teacher.png" style="width: 100%; height: 100%; object-fit: cover; display: block; transition: filter 0.08s ease;" alt="게임 화면">
+                            
+                            <!-- Exposure overlays (glare / dark) inside this card -->
+                            <div id="exposure-filter" class="exposure-filter" style="border-radius: var(--radius-lg);"></div>
+                            <div id="grain-overlay" class="grain-overlay" style="border-radius: var(--radius-lg);"></div>
+                            <div id="shutter-flash" class="shutter-flash" style="border-radius: var(--radius-lg);"></div>
 
-                        <!-- Time limit count -->
-                        <div id="countdown-hud" class="countdown-overlay">15</div>
+                            <!-- Overlay mini iris dashboard at the top center -->
+                            <div style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95); border: 1.5px solid rgba(0,0,0,0.1); border-radius: 16px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.12);">
+                                <canvas id="eye-canvas-mini" width="48" height="48" style="width: 48px; height: 48px; display: block;"></canvas>
+                                <div style="display: flex; flex-direction: column; justify-content: center; text-align: left; min-width: 60px;">
+                                    <div id="mini-target-size-lbl" style="font-size: 0.65rem; font-weight: 800; color: #10b981; line-height: 1.2;">목표: --mm</div>
+                                    <div id="mini-current-size-lbl" style="font-size: 0.7rem; font-weight: 900; color: #1e293b; line-height: 1.2; margin-top: 2px;">현재: --mm</div>
+                                </div>
+                            </div>
+
+                            <!-- Time limit count overlay -->
+                            <div id="countdown-hud" class="countdown-overlay">15</div>
+
+                            <!-- Indicator text at top left -->
+                            <div class="exposure-indicator-overlay">
+                                <i class="fa-solid fa-sun" style="color: var(--neon-yellow)"></i>
+                                <span id="focal-indicator-txt">조도: 100 Lux | 동공: 5.0mm</span>
+                            </div>
+
+                            <!-- Target display info banner at bottom -->
+                            <div style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); border-radius: 20px; padding: 6px 14px; border: 1.5px solid var(--neon-yellow); z-index: 10; color: white; font-weight: 800; font-size: 0.8rem; text-align: center; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3); white-space: nowrap;">
+                                <span style="width: 8px; height: 8px; border-radius: 50%; background-color: var(--neon-yellow); box-shadow: 0 0 6px var(--neon-yellow);"></span>
+                                <span id="target-desc">원본 사진과 똑같은 밝기로 동공을 조절하세요!</span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Bot HUD details -->
@@ -1558,17 +1578,18 @@
                 <!-- Right: Sidebars -->
                 <div class="viewport-panel">
                     
-                    <!-- 2D Iris Canvas Panel -->
+                    <!-- Educational Guide Panel -->
                     <div class="eye-canvas-panel">
                         <div class="panel-heading">
-                            <i class="fa-solid fa-eye"></i> 홍채 단면 해부도 (Front View)
+                            <i class="fa-solid fa-graduation-cap"></i> 홍채의 동공 반사 원리
                         </div>
-                        <div class="eye-diagram-container">
-                            <canvas id="eye-canvas" width="300" height="180"></canvas>
-                        </div>
-                        <div class="eye-labels-indicator">
-                            <span id="label-iris-state">홍채 상태: 이완</span>
-                            <span id="label-pupil-size" class="active">동공: 5.0mm</span>
+                        <div style="font-size: 0.85rem; color: #334155; line-height: 1.5; padding: 0.5rem 0; font-weight: 500;">
+                            <p style="margin-bottom: 8px;"><strong>동공 반사(Pupillary Reflex)</strong>는 외부 빛의 밝기에 따라 동공의 크기를 조절하는 자율 반응입니다.</p>
+                            <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">
+                                <li><strong>어두운 곳 (저조도)</strong>: 빛을 많이 모으기 위해 홍채가 수축하며 동공이 커집니다. (버튼 탭하기)</li>
+                                <li><strong>밝은 곳 (고조도)</strong>: 과도한 빛을 차단하려 홍채가 이완하며 동공이 작아집니다. (누르기 중단)</li>
+                            </ul>
+                            <p style="color: var(--neon-yellow); font-weight: 700; font-size: 0.8rem; border-top: 1px dashed rgba(0,0,0,0.08); padding-top: 6px;">💡 화면 중앙 오버레이의 초록 점선(목표) 크기와 현재 내 동공이 일치하도록 조작해 보세요!</p>
                         </div>
                     </div>
 
@@ -1872,12 +1893,6 @@
         let activeStudents = [];
         let studentResults = []; // Aggregated scores in teacher dashboard
 
-        // 3D Three.js variables
-        let renderer, scene, camera;
-        let plasterBustGroup;
-        let ambientLight, mainSpotlight;
-        let isThreeInitialized = false;
-
         // DOM elements
         const lobbyScreen = document.getElementById('lobby-screen');
         const arenaScreen = document.getElementById('arena-screen');
@@ -1887,8 +1902,7 @@
         const exposureFilter = document.getElementById('exposure-filter');
         const grainOverlay = document.getElementById('grain-overlay');
         const focalPlaneMarker = document.getElementById('focal-plane-marker');
-        const eyeCanvas = document.getElementById('eye-canvas');
-        const eyeCtx = eyeCanvas ? eyeCanvas.getContext('2d') : null;
+        const eyeCanvasMini = document.getElementById('eye-canvas-mini');
         
         // Results elements
         const resultModal = document.getElementById('result-modal-overlay');
@@ -1908,8 +1922,6 @@
             medium: [60, 2000, 500],
             hard: [50, 2500, 800]
         };
-
-        const roundCodes = ["A5", "F9", "K3"]; // Secret codes on pedestal for each round
 
         // --- Lobby Tab Switching ---
         function switchLobbyTab(tabName) {
@@ -1948,243 +1960,35 @@
             }, 2000);
         }
 
-        // --- Three.js Setup ---
-        function initThreeJS() {
-            if (isThreeInitialized) return;
-
-            const container = document.getElementById('canvas-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-
-            scene = new THREE.Scene();
-            scene.fog = new THREE.FogExp2(0x000000, 0.015);
-
-            camera = new THREE.PerspectiveCamera(40, width / height, 0.1, 100);
-            camera.position.set(0, 0.5, 9.5); // Move camera back
-
-            renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(width, height);
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-            renderer.shadowMap.enabled = true;
-            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-            renderer.setClearColor(0x000000);
-
-            container.innerHTML = '';
-            container.appendChild(renderer.domElement);
-
-            // Create Plaster Statue
-            plasterBustGroup = createPlasterStatue();
-            scene.add(plasterBustGroup);
-
-            // Ambient light
-            ambientLight = new THREE.AmbientLight(0xffffff, 0.04);
-            scene.add(ambientLight);
-
-            // Main spotlight directed at statue
-            mainSpotlight = new THREE.SpotLight(0xffffff, 1.2, 35, Math.PI / 5, 0.5, 1);
-            mainSpotlight.position.set(3, 7, 10);
-            mainSpotlight.castShadow = true;
-            mainSpotlight.shadow.mapSize.width = 1024;
-            mainSpotlight.shadow.mapSize.height = 1024;
-            mainSpotlight.shadow.bias = -0.001;
-            scene.add(mainSpotlight);
-
-            // Light helper target
-            const lightTarget = new THREE.Object3D();
-            lightTarget.position.set(0, 0, 0);
-            scene.add(lightTarget);
-            mainSpotlight.target = lightTarget;
-
-            isThreeInitialized = true;
-            window.addEventListener('resize', handleWindowResize);
-        }
-
-        function handleWindowResize() {
-            if (!isThreeInitialized) return;
-            const container = document.getElementById('canvas-container');
-            const width = container.clientWidth;
-            const height = container.clientHeight;
-
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-            renderer.setSize(width, height);
-        }
-
-        // --- Create Plaster Statue Procedurally ---
-        function createPlasterStatue() {
-            const plasterGroup = new THREE.Group();
-            
-            // Plaster material: white matte
-            const plasterMat = new THREE.MeshStandardMaterial({
-                color: 0xf1f5f9,
-                roughness: 0.95,
-                metalness: 0.05,
-                flatShading: true // Artistic low-poly look
-            });
-            
-            // Pedestal base
-            const baseGeo = new THREE.CylinderGeometry(1.4, 1.6, 1.0, 8);
-            const base = new THREE.Mesh(baseGeo, plasterMat);
-            base.position.y = -2.2;
-            base.castShadow = true;
-            base.receiveShadow = true;
-            plasterGroup.add(base);
-            
-            // Greek-style bust torso
-            const torsoGeo = new THREE.ConeGeometry(1.6, 1.8, 6);
-            const torso = new THREE.Mesh(torsoGeo, plasterMat);
-            torso.position.y = -0.9;
-            torso.rotation.x = Math.PI; // Upside down cone
-            torso.castShadow = true;
-            torso.receiveShadow = true;
-            plasterGroup.add(torso);
-            
-            // Neck
-            const neckGeo = new THREE.CylinderGeometry(0.5, 0.58, 0.7, 8);
-            const neck = new THREE.Mesh(neckGeo, plasterMat);
-            neck.position.y = 0.2;
-            neck.castShadow = true;
-            neck.receiveShadow = true;
-            plasterGroup.add(neck);
-            
-            // Head
-            const headGeo = new THREE.SphereGeometry(1.0, 10, 10);
-            const head = new THREE.Mesh(headGeo, plasterMat);
-            head.position.y = 1.1;
-            head.castShadow = true;
-            head.receiveShadow = true;
-            plasterGroup.add(head);
-
-            // Hair / Ringlets (several spheres clustered)
-            const hairPositions = [
-                [0, 2.0, 0, 0.55],
-                [0.6, 1.8, 0.3, 0.38],
-                [-0.6, 1.8, 0.3, 0.38],
-                [0.8, 1.4, -0.2, 0.38],
-                [-0.8, 1.4, -0.2, 0.38],
-                [0, 1.9, -0.5, 0.45],
-                [0.5, 1.9, -0.3, 0.4],
-                [-0.5, 1.9, -0.3, 0.4],
-            ];
-            hairPositions.forEach(pos => {
-                const hairGeo = new THREE.SphereGeometry(pos[3], 6, 6);
-                const hairMesh = new THREE.Mesh(hairGeo, plasterMat);
-                hairMesh.position.set(pos[0], pos[1], pos[2]);
-                hairMesh.castShadow = true;
-                hairMesh.receiveShadow = true;
-                plasterGroup.add(hairMesh);
-            });
-
-            // Greek Nose
-            const noseGeo = new THREE.ConeGeometry(0.16, 0.4, 4);
-            const nose = new THREE.Mesh(noseGeo, plasterMat);
-            nose.position.set(0, 1.1, 1.0);
-            nose.rotation.x = Math.PI / 3.5;
-            nose.castShadow = true;
-            nose.receiveShadow = true;
-            plasterGroup.add(nose);
-
-            // Eyes
-            const eyeLGeo = new THREE.BoxGeometry(0.2, 0.12, 0.08);
-            const eyeL = new THREE.Mesh(eyeLGeo, plasterMat);
-            eyeL.position.set(-0.32, 1.25, 0.88);
-            plasterGroup.add(eyeL);
-
-            const eyeRGeo = new THREE.BoxGeometry(0.2, 0.12, 0.08);
-            const eyeR = new THREE.Mesh(eyeRGeo, plasterMat);
-            eyeR.position.set(0.32, 1.25, 0.88);
-            plasterGroup.add(eyeR);
-
-            // Pedestal stand block
-            const pedestalGeo = new THREE.BoxGeometry(2.6, 0.3, 2.6);
-            const pedestal = new THREE.Mesh(pedestalGeo, plasterMat);
-            pedestal.position.y = -2.8;
-            pedestal.castShadow = true;
-            pedestal.receiveShadow = true;
-            plasterGroup.add(pedestal);
-
-            // Identification Code plate canvas
-            const plateGeo = new THREE.PlaneGeometry(1.3, 0.55);
-            const plateCanvas = document.createElement('canvas');
-            plateCanvas.width = 256;
-            plateCanvas.height = 128;
-            const plateCtx = plateCanvas.getContext('2d');
-            plateCtx.fillStyle = '#1e293b';
-            plateCtx.fillRect(0,0,256,128);
-            plateCtx.fillStyle = '#ffffff';
-            plateCtx.font = 'bold 58px Outfit, sans-serif';
-            plateCtx.textAlign = 'center';
-            plateCtx.textBaseline = 'middle';
-            plateCtx.fillText('CODE', 128, 64);
-
-            const plateTex = new THREE.CanvasTexture(plateCanvas);
-            const plateMat = new THREE.MeshBasicMaterial({ map: plateTex, side: THREE.DoubleSide });
-            const plateMesh = new THREE.Mesh(plateGeo, plateMat);
-            plateMesh.position.set(0, -2.2, 1.35); // placed in front of pedestal base
-            plasterGroup.add(plateMesh);
-            
-            // Save plate ctx inside user data to modify dynamically
-            plasterGroup.userData = {
-                plateCtx,
-                plateTex,
-                plateCanvas
-            };
-
-            return plasterGroup;
-        }
-
-        // --- Update pedestal text dynamically ---
-        function updatePedestalCode(roundIdx) {
-            if (!plasterBustGroup || !plasterBustGroup.userData.plateCtx) return;
-            const ud = plasterBustGroup.userData;
-            const code = roundCodes[(roundIdx - 1) % roundCodes.length];
-            
-            ud.plateCtx.fillStyle = '#1e293b';
-            ud.plateCtx.fillRect(0, 0, 256, 128);
-            
-            // Outer white dashed border
-            ud.plateCtx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
-            ud.plateCtx.lineWidth = 4;
-            ud.plateCtx.setLineDash([10, 5]);
-            ud.plateCtx.strokeRect(10, 10, 236, 108);
-            
-            ud.plateCtx.fillStyle = '#f8fafc';
-            ud.plateCtx.font = 'bold 54px "Outfit", sans-serif';
-            ud.plateCtx.textAlign = 'center';
-            ud.plateCtx.textBaseline = 'middle';
-            ud.plateCtx.fillText(code, 128, 64);
-            
-            ud.plateTex.needsUpdate = true;
-        }
-
-        // --- Render 2D Iris/Pupil Frontal Diagram ---
-        function drawIrisDiagram(contraction) {
-            if (!eyeCanvas || !eyeCtx) return;
-            const ctx = eyeCtx;
-            const w = eyeCanvas.width;
-            const h = eyeCanvas.height;
+        // --- Render 2D Iris/Pupil Frontal Diagram (Mini Overlay Version) ---
+        function drawMiniEye(canvas, contraction, targetContraction) {
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
             const cx = w / 2;
             const cy = h / 2;
 
             ctx.clearRect(0, 0, w, h);
 
             // Sclera (White eye background)
+            const baseR = w * 0.45;
             ctx.beginPath();
-            ctx.arc(cx, cy, 76, 0, Math.PI * 2);
+            ctx.arc(cx, cy, baseR, 0, Math.PI * 2);
             ctx.fillStyle = '#ffffff';
             ctx.fill();
-            ctx.strokeStyle = '#e2e8f0';
-            ctx.lineWidth = 4;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.lineWidth = 1.5;
             ctx.stroke();
 
             // Iris Outer Boundary (fixed outer circle)
-            const irisOuterR = 64;
-            // Pupil Radius (changes based on contraction: 0 -> 15px, 1 -> 48px)
-            const pupilR = 14 + contraction * 32;
+            const irisOuterR = w * 0.38;
+            // Pupil Radius (changes based on contraction: 0 -> w*0.08, 1 -> w*0.28)
+            const pupilR = (w * 0.08) + contraction * (w * 0.2);
+            const targetPupilR = (w * 0.08) + targetContraction * (w * 0.2);
 
-            // Draw Iris Body (Amber/Amber-Blue gradient)
+            // Draw Iris Body (Amber/Orange)
             const irisGrad = ctx.createRadialGradient(cx, cy, pupilR, cx, cy, irisOuterR);
-            // Dynamic color shift based on contraction level
             if (contraction > 0.6) {
                 irisGrad.addColorStop(0, '#f43f5e'); // Neon pink when heavily contracted
                 irisGrad.addColorStop(0.5, '#db2777');
@@ -2200,11 +2004,10 @@
             ctx.fill();
 
             // Draw muscle fibers
-            // 1. Radial muscle fibers (arrows pulling outwards when contracting)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-            ctx.lineWidth = 1.5;
-            for (let i = 0; i < 32; i++) {
-                const angle = (i / 32) * Math.PI * 2;
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
+            ctx.lineWidth = 0.75;
+            for (let i = 0; i < 16; i++) {
+                const angle = (i / 16) * Math.PI * 2;
                 const startX = cx + Math.cos(angle) * pupilR;
                 const startY = cy + Math.sin(angle) * pupilR;
                 const endX = cx + Math.cos(angle) * irisOuterR;
@@ -2213,69 +2016,6 @@
                 ctx.moveTo(startX, startY);
                 ctx.lineTo(endX, endY);
                 ctx.stroke();
-            }
-
-            // 2. Concentric circular muscle fibers (glowing when relaxed, helping constrict)
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.15)';
-            ctx.lineWidth = 2.0;
-            ctx.beginPath();
-            ctx.arc(cx, cy, pupilR + (irisOuterR - pupilR) * 0.4, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cx, cy, pupilR + (irisOuterR - pupilR) * 0.7, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Draw action arrows representing muscle pull
-            if (contraction > 0.05) {
-                // Radial muscles contract -> pulling OUTWARDS to dilate
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.lineWidth = 2.5;
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i / 8) * Math.PI * 2;
-                    const arrowTipX = cx + Math.cos(angle) * (irisOuterR - 4);
-                    const arrowTipY = cy + Math.sin(angle) * (irisOuterR - 4);
-                    const arrowTailX = cx + Math.cos(angle) * (pupilR + 10);
-                    const arrowTailY = cy + Math.sin(angle) * (pupilR + 10);
-                    
-                    // Line
-                    ctx.beginPath();
-                    ctx.moveTo(arrowTailX, arrowTailY);
-                    ctx.lineTo(arrowTipX, arrowTipY);
-                    ctx.stroke();
-                    
-                    // Tip head
-                    const headLen = 6;
-                    ctx.beginPath();
-                    ctx.moveTo(arrowTipX, arrowTipY);
-                    ctx.lineTo(arrowTipX - headLen * Math.cos(angle - Math.PI/6), arrowTipY - headLen * Math.sin(angle - Math.PI/6));
-                    ctx.moveTo(arrowTipX, arrowTipY);
-                    ctx.lineTo(arrowTipX - headLen * Math.cos(angle + Math.PI/6), arrowTipY - headLen * Math.sin(angle + Math.PI/6));
-                    ctx.stroke();
-                }
-            } else {
-                // Relaxed state -> circular sphincter holds small, arrows pointing INWARDS
-                ctx.strokeStyle = 'rgba(56, 189, 248, 0.7)';
-                ctx.lineWidth = 2.0;
-                for (let i = 0; i < 8; i++) {
-                    const angle = (i / 8) * Math.PI * 2;
-                    const arrowTipX = cx + Math.cos(angle) * (pupilR + 2);
-                    const arrowTipY = cy + Math.sin(angle) * (pupilR + 2);
-                    const arrowTailX = cx + Math.cos(angle) * (pupilR + 20);
-                    const arrowTailY = cy + Math.sin(angle) * (pupilR + 20);
-                    
-                    ctx.beginPath();
-                    ctx.moveTo(arrowTailX, arrowTailY);
-                    ctx.lineTo(arrowTipX, arrowTipY);
-                    ctx.stroke();
-                    
-                    const headLen = 6;
-                    ctx.beginPath();
-                    ctx.moveTo(arrowTipX, arrowTipY);
-                    ctx.lineTo(arrowTipX + headLen * Math.cos(angle - Math.PI/6), arrowTipY + headLen * Math.sin(angle - Math.PI/6));
-                    ctx.moveTo(arrowTipX, arrowTipY);
-                    ctx.lineTo(arrowTipX + headLen * Math.cos(angle + Math.PI/6), arrowTipY + headLen * Math.sin(angle + Math.PI/6));
-                    ctx.stroke();
-                }
             }
 
             // Draw Central black Pupil Hole
@@ -2290,38 +2030,36 @@
             ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
             ctx.fill();
 
+            // Draw Target Pupil Size Dashed Guide (Green)
+            ctx.strokeStyle = '#10b981'; // Green dashed circle
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 2]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, targetPupilR, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.setLineDash([]); // Reset dashed line style
+
             // Sclera glare highlight
             ctx.beginPath();
-            ctx.ellipse(cx + 42, cy - 38, 12, 6, -Math.PI / 4, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+            ctx.ellipse(cx + baseR * 0.5, cy - baseR * 0.5, baseR * 0.15, baseR * 0.08, -Math.PI / 4, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
             ctx.fill();
         }
-
+            
         // --- Main Game Animation Frame Loop ---
-        let clock = new THREE.Clock();
+        let lastTime = performance.now();
 
         function animate() {
             if (gameMode !== 'active') return;
-            if (!isThreeInitialized || !renderer) {
-                requestAnimationFrame(animate);
-                return;
-            }
 
             requestAnimationFrame(animate);
 
-            const deltaTime = clock.getDelta();
-            const time = clock.getElapsedTime();
+            const now = performance.now();
+            const deltaTime = Math.min(0.1, (now - lastTime) / 1000); // clamp to avoid spikes
+            lastTime = now;
 
-            // 1. Slow rotate plaster statue group for 3D depth
-            if (plasterBustGroup) {
-                plasterBustGroup.rotation.y = Math.sin(time * 0.35) * 0.18;
-            }
-
-            // 2. Control & Physics calculations
+            // Control & Physics calculations
             updateExposureLogic(deltaTime);
-
-            // 3. Render Three.js Scene
-            renderer.render(scene, camera);
         }
 
         // --- Realtime Exposure Physics & Visual Updates ---
@@ -2329,17 +2067,17 @@
             // Decelerate/relax muscle contraction when not tapping
             const relaxationSpeed = difficulty === 'hard' ? 0.36 : (difficulty === 'medium' ? 0.26 : 0.18);
             
+            const logLux = Math.log10(currentLux);
+            const optimalLog = 3.75;
+            const optimalDia = Math.pow(10, (optimalLog - logLux) / 2.0);
+            const targetDiameter = Math.min(8.0, Math.max(2.0, optimalDia));
+            const targetContraction = (targetDiameter - 2.0) / 6.0;
+
             if (controlMode === 'AUTO') {
                 // Pupillary reflex equation (automatic sigmoid adaptation)
-                // log scale adaptation to match optimal exposure Log(Lux) + 2Log(Diameter) ≈ 3.75
-                const logLux = Math.log10(currentLux);
-                const optimalDia = Math.pow(10, (3.72 - logLux) / 2.0);
-                const targetDiameter = THREE.MathUtils.clamp(optimalDia, 2.0, 8.0);
-                
-                const targetContraction = (targetDiameter - 2.0) / 6.0;
-                irisContraction = THREE.MathUtils.lerp(irisContraction, targetContraction, 0.08);
+                irisContraction = irisContraction + (targetContraction - irisContraction) * 0.08;
             } else {
-                // MANUAL mode: drift down to fully relaxed (constricted) state
+                // MANUAL mode: drift down to fully relaxed state
                 irisContraction = Math.max(0.0, irisContraction - relaxationSpeed * deltaTime);
             }
 
@@ -2347,77 +2085,71 @@
             pupilDiameter = 2.0 + irisContraction * 6.0;
 
             // Logarithmic Exposure Formula
-            // LogExposure = Log10(Lux) + 2.0 * Log10(Diameter)
-            const logLux = Math.log10(currentLux);
             const logDia = Math.log10(pupilDiameter);
             const logExposure = logLux + 2.0 * logDia;
 
-            // Target optimal exposure range: 3.55 ~ 3.95 (Peak perfect score at 3.75)
-            const optimalLog = 3.75;
             const deviation = logExposure - optimalLog;
+            const absDeviation = Math.abs(deviation);
 
             // Sync marker position in focus control gauge
-            // Map logExposure from 1.6 (min) ~ 5.7 (max) to gauge width percentage 0% ~ 100%
             const minGaugeLog = 1.6;
             const maxGaugeLog = 5.7;
             const gaugePercent = ((logExposure - minGaugeLog) / (maxGaugeLog - minGaugeLog)) * 100;
-            const clampedPercent = THREE.MathUtils.clamp(gaugePercent, 0, 100);
+            const clampedPercent = Math.min(100, Math.max(0, gaugePercent));
             focalPlaneMarker.style.left = `${clampedPercent}%`;
 
-            // Adjust spotlights according to current environment Lux
-            if (mainSpotlight) {
-                // Adjust light intensity
-                mainSpotlight.intensity = (currentLux / 800) * 1.5;
+            // Calculate perceived brightness ratio and map to CSS filter (brightness: 100% is normal)
+            const perceivedBrightness = Math.pow(10, deviation);
+            const brightnessPercent = Math.min(250, Math.max(5, perceivedBrightness * 100));
+
+            // Clarity determines blur amount
+            const blurAmount = Math.min(10, Math.max(0, (absDeviation - 0.15) * 8));
+
+            // Apply filter to 2D image
+            const gameImage = document.getElementById('game-image');
+            if (gameImage) {
+                gameImage.style.filter = `brightness(${brightnessPercent}%) blur(${blurAmount}px)`;
             }
 
-            // Apply screen brightness filter based on deviation
-            const canvasEl = renderer.domElement;
-            const absDeviation = Math.abs(deviation);
-            const clarity = THREE.MathUtils.clamp(1 - absDeviation / 0.22, 0, 1);
-            const contrastAmount = 100 + clarity * 22;
-            const saturationAmount = 100 + clarity * 8;
-            const viewportFrame = document.getElementById('viewport-frame');
-
+            // Apply screen overlays based on exposure deviation
             if (deviation > 0) {
                 // Overexposed (Bright glare)
-                const alpha = Math.min(0.95, deviation / 1.4);
+                const alpha = Math.min(0.85, deviation / 1.0);
                 exposureFilter.style.backgroundColor = `rgba(255, 255, 255, ${alpha})`;
                 grainOverlay.style.opacity = 0;
-
-                // Add blur/glow filter to Three.js canvas
-                const brightnessAmount = 100 + (deviation * 160) + clarity * 5;
-                const blurAmount = Math.max(0, (deviation - 0.12) * 7);
-                canvasEl.style.filter = `brightness(${brightnessAmount}%) contrast(${contrastAmount}%) saturate(${saturationAmount}%) blur(${blurAmount}px)`;
             } else {
                 // Underexposed (Dark noise)
-                const alpha = Math.min(0.95, Math.abs(deviation) / 1.5);
+                const alpha = Math.min(0.9, Math.abs(deviation) / 1.2);
                 exposureFilter.style.backgroundColor = `rgba(0, 0, 0, ${alpha})`;
                 
                 // Show noise grain overlay when dark
-                const grainOpacity = Math.min(0.85, Math.abs(deviation) / 1.5);
+                const grainOpacity = Math.min(0.8, Math.abs(deviation) / 1.0);
                 grainOverlay.style.opacity = grainOpacity;
-
-                const brightnessAmount = Math.max(0, 100 - (absDeviation * 110) + clarity * 5);
-                const blurAmount = Math.max(0, (absDeviation - 0.12) * 3);
-                canvasEl.style.filter = `brightness(${brightnessAmount}%) contrast(${contrastAmount}%) saturate(${saturationAmount}%) blur(${blurAmount}px)`;
             }
 
-            if (viewportFrame) {
-                viewportFrame.style.borderColor = clarity > 0
-                    ? `rgba(5, 150, 105, ${0.2 + clarity * 0.65})`
+            // Dynamic border and shadow styling on game-image-card
+            const gameImageCard = document.getElementById('game-image-card');
+            const clarity = Math.min(1.0, Math.max(0.0, 1.0 - absDeviation / 0.22));
+            if (gameImageCard) {
+                gameImageCard.style.borderColor = clarity > 0
+                    ? `rgba(16, 185, 129, ${0.2 + clarity * 0.65})`
                     : 'rgba(255, 255, 255, 0.08)';
-                viewportFrame.style.boxShadow = clarity > 0
-                    ? `0 0 ${12 + clarity * 22}px rgba(5, 150, 105, ${clarity * 0.38})`
+                gameImageCard.style.boxShadow = clarity > 0
+                    ? `0 0 ${12 + clarity * 22}px rgba(16, 185, 129, ${clarity * 0.38})`
                     : '';
             }
 
-            // Draw Realtime 2D Canvas Diagram
-            drawIrisDiagram(irisContraction);
+            // Draw Realtime 2D Canvas Diagram (Mini Overlay)
+            drawMiniEye(eyeCanvasMini, irisContraction, targetContraction);
 
             // Update text readouts
-            document.getElementById('focal-indicator-txt').textContent = `조도: ${Math.round(currentLux)} Lux | 동공 지름: ${pupilDiameter.toFixed(1)}mm`;
-            document.getElementById('label-iris-state').textContent = `홍채 상태: ${irisContraction > 0.05 ? `수축 (${Math.round(irisContraction * 100)}%)` : '이완 (0%)'}`;
-            document.getElementById('label-pupil-size').textContent = `동공 지름: ${pupilDiameter.toFixed(1)}mm`;
+            document.getElementById('focal-indicator-txt').textContent = `조도: ${Math.round(currentLux)} Lux | 동공: ${pupilDiameter.toFixed(1)}mm`;
+            if (document.getElementById('mini-target-size-lbl')) {
+                document.getElementById('mini-target-size-lbl').textContent = `목표: ${targetDiameter.toFixed(1)}mm`;
+            }
+            if (document.getElementById('mini-current-size-lbl')) {
+                document.getElementById('mini-current-size-lbl').textContent = `현재: ${pupilDiameter.toFixed(1)}mm`;
+            }
         }
 
         // --- Muscle Contraction Command (Space / click) ---
@@ -2435,7 +2167,6 @@
         function startGame() {
             lobbyScreen.style.display = 'none';
             arenaScreen.style.display = 'grid';
-            initThreeJS();
             gameMode = 'active';
             currentRound = 1;
             score = 0;
@@ -2455,7 +2186,6 @@
             // Reset pupil variables
             irisContraction = 0.5;
             
-            updatePedestalCode(currentRound);
             updateHud();
 
             // Set round timer limit
@@ -2489,7 +2219,7 @@
         }
 
         // --- Procedural 2D Capture Draw inside Polaroid ---
-        function drawCapturedPolaroid(rank, codeText) {
+        function drawCapturedPolaroid(rank) {
             if (!polaroidCanvas || !polaroidCtx) return;
             const ctx = polaroidCtx;
             const w = polaroidCanvas.width;
@@ -2497,135 +2227,114 @@
             
             ctx.clearRect(0,0,w,h);
 
-            if (rank === 'MISS') {
-                // Pitch black noise
-                ctx.fillStyle = '#06080c';
-                ctx.fillRect(0,0,w,h);
-                
-                // Draw white noise grains
-                ctx.fillStyle = 'rgba(255,255,255,0.06)';
-                for (let i = 0; i < 5000; i++) {
-                    const x = Math.random() * w;
-                    const y = Math.random() * h;
-                    ctx.fillRect(x, y, 1.5, 1.5);
-                }
-                
-                // Stamp
-                ctx.font = 'bold 36px Outfit, sans-serif';
-                ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-                ctx.textAlign = 'center';
-                ctx.fillText('EXPOSURE FAIL', w/2, h/2);
-                return;
+            // Get game-image element
+            const img = document.getElementById('game-image');
+            if (!img) return;
+
+            // Compute brightness and blur based on current Lux and Pupil size
+            const logLux = Math.log10(currentLux);
+            const logDia = Math.log10(pupilDiameter);
+            const logExposure = logLux + 2.0 * logDia;
+            const optimalLog = 3.75;
+            const deviation = logExposure - optimalLog;
+            const absDeviation = Math.abs(deviation);
+            const perceivedBrightness = Math.pow(10, deviation);
+            const brightnessPercent = Math.min(250, Math.max(5, perceivedBrightness * 100));
+            const blurAmount = Math.min(10, Math.max(0, (absDeviation - 0.15) * 8));
+
+            // Set filter on canvas context (matches CSS image filter)
+            ctx.filter = `brightness(${brightnessPercent}%) blur(${blurAmount}px)`;
+
+            // Draw image crop cover
+            const imgWidth = img.naturalWidth || img.width || 300;
+            const imgHeight = img.naturalHeight || img.height || 480;
+            let sx = 0, sy = 0, sWidth = imgWidth, sHeight = imgHeight;
+
+            if (imgWidth > imgHeight) {
+                sWidth = imgHeight;
+                sx = (imgWidth - imgHeight) / 2;
+            } else {
+                sHeight = imgWidth;
+                sy = (imgHeight - imgWidth) / 2;
             }
 
-            // Normal or perfect exposures: draw stylized vector plaster statue
-            let bgFill = '#0d1117';
-            let lineFill = '#e2e8f0';
-            let highlightFill = 'rgba(255, 255, 255, 0.35)';
+            ctx.drawImage(img, sx, sy, sWidth, sHeight, 0, 0, w, h);
 
-            if (rank === 'GOOD') {
-                // slightly washed out or dark
-                const isTooBright = (currentLux > 1000 && pupilDiameter > 4.5);
-                if (isTooBright) {
-                    bgFill = '#475569';
-                    lineFill = '#cbd5e1';
-                    highlightFill = 'rgba(255, 255, 255, 0.7)';
-                } else {
-                    bgFill = '#02040a';
-                    lineFill = '#475569';
-                    highlightFill = 'rgba(255, 255, 255, 0.08)';
+            // Reset filter for overlays
+            ctx.filter = 'none';
+
+            // Apply exposure overlays (glare / dark)
+            if (deviation > 0) {
+                // Overexposed (Bright glare overlay)
+                const alpha = Math.min(0.85, deviation / 1.0);
+                ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+                ctx.fillRect(0, 0, w, h);
+            } else {
+                // Underexposed (Dark noise overlay)
+                const alpha = Math.min(0.9, Math.abs(deviation) / 1.2);
+                ctx.fillStyle = `rgba(0, 0, 0, ${alpha})`;
+                ctx.fillRect(0, 0, w, h);
+                
+                // Show noise grain overlay when dark
+                const grainOpacity = Math.min(0.8, Math.abs(deviation) / 1.0);
+                if (grainOpacity > 0) {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${grainOpacity * 0.08})`;
+                    for (let i = 0; i < 4000; i++) {
+                        const x = Math.random() * w;
+                        const y = Math.random() * h;
+                        ctx.fillRect(x, y, 1.2, 1.2);
+                    }
                 }
             }
 
-            ctx.fillStyle = bgFill;
-            ctx.fillRect(0, 0, w, h);
-
-            // Draw plaster statue vector sketch
-            ctx.strokeStyle = lineFill;
-            ctx.lineWidth = 3;
-            ctx.lineJoin = 'round';
-            ctx.lineCap = 'round';
-
-            const cx = w / 2;
-            const cy = h / 2 + 10;
-
-            // Pedestal base
-            ctx.beginPath();
-            ctx.moveTo(cx - 45, cy + 40);
-            ctx.lineTo(cx + 45, cy + 40);
-            ctx.lineTo(cx + 35, cy + 15);
-            ctx.lineTo(cx - 35, cy + 15);
-            ctx.closePath();
-            ctx.stroke();
-
-            // Pedestal code tag block
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(cx - 28, cy + 18, 56, 18);
-            ctx.strokeStyle = lineFill;
-            ctx.lineWidth = 1.5;
-            ctx.strokeRect(cx - 28, cy + 18, 56, 18);
-
-            // Write Code text on plate
-            ctx.fillStyle = lineFill;
-            ctx.font = '900 11px Outfit, sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(codeText || '??', cx, cy + 27);
-
-            // Torso bust shape
-            ctx.strokeStyle = lineFill;
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.moveTo(cx - 40, cy + 15);
-            ctx.lineTo(cx - 15, cy - 10);
-            ctx.lineTo(cx + 15, cy - 10);
-            ctx.lineTo(cx + 40, cy + 15);
-            ctx.stroke();
-
-            // Neck
-            ctx.beginPath();
-            ctx.moveTo(cx - 12, cy - 10);
-            ctx.lineTo(cx - 12, cy - 25);
-            ctx.moveTo(cx + 12, cy - 10);
-            ctx.lineTo(cx + 12, cy - 25);
-            ctx.stroke();
-
-            // Sphere Head
-            ctx.beginPath();
-            ctx.arc(cx, cy - 48, 22, 0, Math.PI * 2);
-            ctx.stroke();
-
-            // Nose outline
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - 54);
-            ctx.lineTo(cx + 6, cy - 48);
-            ctx.lineTo(cx, cy - 46);
-            ctx.stroke();
-
-            // Hair circles
-            ctx.fillStyle = lineFill;
-            ctx.beginPath();
-            ctx.arc(cx, cy - 72, 8, 0, Math.PI * 2);
-            ctx.arc(cx - 16, cy - 65, 7, 0, Math.PI * 2);
-            ctx.arc(cx + 16, cy - 65, 7, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Highlights
-            ctx.fillStyle = highlightFill;
-            ctx.beginPath();
-            ctx.arc(cx + 10, cy - 54, 8, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Stamp for PERFECT rank
+            // Draw a stamp for rank
+            ctx.save();
             if (rank === 'PERFECT') {
                 ctx.strokeStyle = '#059669';
-                ctx.lineWidth = 4;
-                ctx.strokeRect(20, 20, 110, 36);
-                ctx.font = '900 16px Outfit, sans-serif';
                 ctx.fillStyle = '#059669';
+                ctx.lineWidth = 3;
+                ctx.translate(35, 45);
+                ctx.rotate(-0.15);
+                ctx.strokeRect(-15, -18, 100, 28);
+                ctx.font = '900 13px Outfit, sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText('PERFECT!', 75, 38);
+                ctx.textBaseline = 'middle';
+                ctx.fillText('PERFECT!', 35, -4);
+            } else if (rank === 'GREAT') {
+                ctx.strokeStyle = '#0891b2';
+                ctx.fillStyle = '#0891b2';
+                ctx.lineWidth = 3;
+                ctx.translate(35, 45);
+                ctx.rotate(-0.15);
+                ctx.strokeRect(-15, -18, 100, 28);
+                ctx.font = '900 13px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('GREAT!', 35, -4);
+            } else if (rank === 'GOOD') {
+                ctx.strokeStyle = '#d97706';
+                ctx.fillStyle = '#d97706';
+                ctx.lineWidth = 3;
+                ctx.translate(35, 45);
+                ctx.rotate(-0.15);
+                ctx.strokeRect(-15, -18, 100, 28);
+                ctx.font = '900 13px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('GOOD', 35, -4);
+            } else { // MISS / TIMEOUT
+                ctx.strokeStyle = '#db2777';
+                ctx.fillStyle = '#db2777';
+                ctx.lineWidth = 3;
+                ctx.translate(35, 45);
+                ctx.rotate(-0.15);
+                ctx.strokeRect(-15, -18, 100, 28);
+                ctx.font = '900 13px Outfit, sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('FAIL', 35, -4);
             }
+            ctx.restore();
         }
 
         // --- Photo Capture Trigger ---
@@ -2658,13 +2367,13 @@
                 rank = 'PERFECT';
                 earned = 100 + combo * 10;
                 combo++;
-                feedback = `🎉 대단합니다! 조도 ${Math.round(currentLux)} Lux에 알맞은 동공 크기(${pupilDiameter.toFixed(1)}mm)를 정확히 맞추었습니다! 석고상의 회색 입체 음영이 고르게 보입니다.`;
+                feedback = `🎉 대단합니다! 조도 ${Math.round(currentLux)} Lux에 알맞은 동공 크기(${pupilDiameter.toFixed(1)}mm)를 정확히 맞추었습니다! 원본 사진과 밝기가 완전히 일치합니다.`;
                 gameAudio.playSuccess();
             } else if (errOffset < 0.35) {
                 rank = 'GREAT';
                 earned = 75 + combo * 5;
                 combo++;
-                feedback = `👍 아주 좋습니다! 명암비가 조금 아쉽지만 석고상 텍스트가 식별 가능합니다. 셔터 순간 동공 폭을 조금 더 가다듬어 보세요.`;
+                feedback = `👍 아주 좋습니다! 명암비가 조금 아쉽지만 원본 이미지와 밝기가 거의 비슷합니다. 셔터 순간 동공 폭을 조금 더 가다듬어 보세요.`;
                 gameAudio.playSuccess();
             } else if (errOffset < 0.65) {
                 rank = 'GOOD';
@@ -2672,8 +2381,8 @@
                 combo = 0;
                 const isTooBright = logExposure > optimalLog;
                 feedback = isTooBright 
-                    ? `⚠️ 밝기에 비해 동공이 너무 큽니다. 화면 노출이 과도해 하이라이트가 번졌습니다. 홍채를 이완(조작을 잠시 중단)해 동공을 줄이십시오.`
-                    : `⚠️ 어둠에 비해 동공이 너무 작습니다. 광량이 부족해 텍스트 실루엣을 식별하기 어렵습니다. 홍채를 더 수축(연속 클릭)해 보십시오.`;
+                    ? `⚠️ 밝기에 비해 동공이 너무 큽니다. 화면 노출이 과도해 밝기가 하얗게 바랬습니다. 홍채를 이완(조작을 잠시 중단)해 동공을 줄이십시오.`
+                    : `⚠️ 어둠에 비해 동공이 너무 작습니다. 광량이 부족해 화면이 너무 어둡습니다. 홍채를 더 수축(연속 클릭)해 보십시오.`;
                 gameAudio.playFail();
             } else {
                 rank = 'MISS';
@@ -2699,9 +2408,19 @@
             resExposureError.textContent = `${errOffset.toFixed(2)} (편차)`;
             resEarnedScore.textContent = `${earned}점 ${combo > 1 ? `(${combo - 1} Combo 보너스 포함)` : ''}`;
 
-            // Draw vector image on polaroid canvas
-            const codeText = roundCodes[(currentRound - 1) % roundCodes.length];
-            drawCapturedPolaroid(rank, codeText);
+            // Set polaroid caption text and date
+            const captionText = document.getElementById('snap-caption-text');
+            if (captionText) {
+                captionText.textContent = `동공 반사 조절 (라운드 ${currentRound})`;
+            }
+            const snapDate = document.getElementById('snap-date');
+            if (snapDate) {
+                const d = new Date();
+                snapDate.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+
+            // Draw image on polaroid canvas
+            drawCapturedPolaroid(rank);
 
             // Handle multiplayer sync
             if (isMultiplayer && userRole === 'student') {
@@ -2744,7 +2463,18 @@
             resExposureError.textContent = 'Time Out';
             resEarnedScore.textContent = '0점';
 
-            drawCapturedPolaroid('MISS', '??');
+            // Set polaroid caption text and date
+            const captionText = document.getElementById('snap-caption-text');
+            if (captionText) {
+                captionText.textContent = `동공 반사 조절 (라운드 ${currentRound})`;
+            }
+            const snapDate = document.getElementById('snap-date');
+            if (snapDate) {
+                const d = new Date();
+                snapDate.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+            }
+
+            drawCapturedPolaroid('MISS');
             gameAudio.playFail();
 
             if (isMultiplayer && userRole === 'student') {
@@ -2800,13 +2530,14 @@
             // Revert screen filters
             exposureFilter.style.backgroundColor = 'rgba(0,0,0,0)';
             grainOverlay.style.opacity = 0;
-            if (renderer && renderer.domElement) {
-                renderer.domElement.style.filter = 'none';
+            const gameImage = document.getElementById('game-image');
+            if (gameImage) {
+                gameImage.style.filter = 'none';
             }
-            const viewportFrame = document.getElementById('viewport-frame');
-            if (viewportFrame) {
-                viewportFrame.style.borderColor = '';
-                viewportFrame.style.boxShadow = '';
+            const gameImageCard = document.getElementById('game-image-card');
+            if (gameImageCard) {
+                gameImageCard.style.borderColor = '';
+                gameImageCard.style.boxShadow = '';
             }
 
             lobbyScreen.style.display = 'block';
@@ -2864,9 +2595,6 @@
                     arenaScreen.style.display = 'grid';
                     gameMode = 'active';
 
-                    if (!isThreeInitialized) {
-                        initThreeJS();
-                    }
 
                     startNewRoundMultiplayer();
                     animate();
@@ -3066,7 +2794,6 @@
         function startNewRoundMultiplayer() {
             // Lux and controlMode are already synced via onReceiveSettings
             irisContraction = 0.5;
-            updatePedestalCode(currentRound);
             updateHud();
 
             const countdownEl = document.getElementById('countdown-hud');
@@ -3087,8 +2814,8 @@
 
         // --- DOM Loaded Initializer ---
         window.addEventListener('DOMContentLoaded', () => {
-            // Draw default relaxed eye diagram
-            drawIrisDiagram(0.0);
+            // Draw default eye diagram in mini overlay (relaxed state)
+            drawMiniEye(eyeCanvasMini, 0.5, 0.5);
 
             // Handle keyboard control bindings
             window.addEventListener('keydown', (e) => {
