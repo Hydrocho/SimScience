@@ -1120,8 +1120,6 @@
                         <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-bullhorn"></i> 현재 출제된 문제</h4>
                         <div id="teacher-question-type-badge" style="display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: var(--primary-light); color: var(--primary); margin-bottom: 0.5rem;">유형</div>
                         <p id="teacher-question-text" style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">질문 내용</p>
-                        <p id="teacher-question-answer" style="font-size: 0.85rem; font-weight: 700; color: var(--success);"><i class="fa-solid fa-key"></i> 정답: <span id="teacher-question-answer-val">공막</span></p>
-
                     </div>
 
                     <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
@@ -2499,13 +2497,10 @@
                 activeQuestionPanel.style.display = 'block';
                 document.getElementById('teacher-question-type-badge').textContent = type === 'description-to-number' ? '설명 → 번호 매칭' : '번호 → 이름 객관식';
                 
-                const corrName = coordinates[randomId].name;
                 if (type === 'description-to-number') {
                     document.getElementById('teacher-question-text').textContent = `[설명] ${coordinates[randomId].description}`;
-                    document.getElementById('teacher-question-answer-val').textContent = `${randomId}번 (${corrName})`;
                 } else {
                     document.getElementById('teacher-question-text').textContent = `[위치] ${randomId}번 구조의 이름은?`;
-                    document.getElementById('teacher-question-answer-val').textContent = corrName;
                 }
             }
 
