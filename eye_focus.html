@@ -2988,9 +2988,9 @@
                 hudCtx.stroke();
 
                 // 수축력 화살표
-                const arrowLength = 12 + ratio * 42;  // 12px(이완) ~ 54px(최대)
-                const headSize    =  6 + ratio * 14;  // 화살표 머리 크기: 6~20px
-                const lineW       = 1.5 + ratio * 2.5; // 선 두께: 1.5~4px
+                const arrowLength = 33; // 50% 수축 강도일 때의 크기(33px)로 고정
+                const headSize    = 13; // 50% 수축 강도일 때의 머리 크기(13px)로 고정
+                const lineW       = 1.5 + ratio * 2.5; // 선 두께: 1.5~4px (%에 따라 다름)
                 const alpha       = 0.35 + ratio * 0.65;
                 const arrowColor  = `rgba(251, 146, 60, ${alpha})`;
 
