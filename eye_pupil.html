@@ -1862,7 +1862,7 @@
         
         // Iris & Pupil variables
         let irisContraction = 0.0; // 0.0 (fully relaxed, pupil 2mm) to 1.0 (fully contracted, pupil 8mm)
-        const irisContractionPerPress = 0.135;
+        const irisContractionPerPress = 0.0675;
         let controlMode = 'MANUAL'; // MANUAL | AUTO (synced from teacher)
         let currentLux = 100.0;    // Environmental Lux level
         let pupilDiameter = 5.0;  // mm, calculated from contraction: 2.0 + irisContraction * 6.0
@@ -2058,12 +2058,18 @@
             const deviation = logExposure - optimalLog;
             const absDeviation = Math.abs(deviation);
 
-            // Sync marker position in focus control gauge
-            const minGaugeLog = 1.6;
-            const maxGaugeLog = 5.7;
-            const gaugePercent = ((logExposure - minGaugeLog) / (maxGaugeLog - minGaugeLog)) * 100;
-            const clampedPercent = Math.min(100, Math.max(0, gaugePercent));
-            focalPlaneMarker.style.left = `${clampedPercent}%`;
+            // Sync marker position in focus control gauge directly based on irisContraction (0 to 100%)
+            const markerPercent = irisContraction * 100;
+            focalPlaneMarker.style.left = `${markerPercent}%`;
+
+            // Sync perfect range bar position dynamically based on targetContraction
+            const perfectRangeBar = document.getElementById('perfect-range-bar');
+            if (perfectRangeBar) {
+                const barWidth = 15; // Width of optimal range zone (e.g. +/- 7.5%)
+                const barLeft = Math.max(0, Math.min(100 - barWidth, (targetContraction * 100) - barWidth / 2));
+                perfectRangeBar.style.left = `${barLeft}%`;
+                perfectRangeBar.style.width = `${barWidth}%`;
+            }
 
             // Calculate perceived brightness ratio and map to CSS filter (brightness: 100% is normal)
             const perceivedBrightness = Math.pow(10, deviation);
