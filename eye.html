@@ -1121,10 +1121,7 @@
                         <div id="teacher-question-type-badge" style="display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: var(--primary-light); color: var(--primary); margin-bottom: 0.5rem;">유형</div>
                         <p id="teacher-question-text" style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">질문 내용</p>
                         <p id="teacher-question-answer" style="font-size: 0.85rem; font-weight: 700; color: var(--success);"><i class="fa-solid fa-key"></i> 정답: <span id="teacher-question-answer-val">공막</span></p>
-                        <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
-                            <span style="font-size: 0.85rem; font-weight: 800; color: var(--slate-600);">경과 시간:</span>
-                            <span id="teacher-question-timer-val" style="font-family: 'Outfit', monospace; font-size: 1.25rem; font-weight: 900; color: var(--primary);">0.0초</span>
-                        </div>
+
                     </div>
 
                     <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
@@ -1162,16 +1159,7 @@
                             설명이 여기에 출제됩니다. 알맞은 숫자를 아래 그림에서 고르세요!
                         </div>
                     </div>
-                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
-                        <!-- Penalty time addition notifier -->
-                        <div class="penalty-display" id="penalty-display" style="font-family: 'Outfit', monospace; font-size: 0.85rem; font-weight: 700; color: var(--danger); background: var(--danger-light); padding: 0.25rem 0.5rem; border-radius: 6px; display: none; align-items: center; gap: 0.25rem;">
-                            <i class="fa-solid fa-circle-exclamation"></i> 오답 +3.0s
-                        </div>
-                        <!-- Universal timer container (stopwatch or countdown) -->
-                        <div id="quiz-countdown-timer" style="display: none; font-family: 'Outfit', monospace; font-size: 1.8rem; font-weight: 900; color: var(--primary); margin-left: 0.5rem; align-items: center; justify-content: center; min-width: 64px; height: 64px; padding: 0 16px; border-radius: 32px; border: 3px solid var(--primary); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); background: white; line-height: 1; flex-shrink: 0; white-space: nowrap;">
-                            00:00.00
-                        </div>
-                    </div>
+
                 </div>
                 <div id="quiz-name-options" class="glass-panel" style="display:none; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:0.5rem;"></div>
 
@@ -1592,14 +1580,7 @@
             document.getElementById('lobby-screen').style.display = 'none';
             document.getElementById('arena-screen').style.display = 'grid';
 
-            // Ensure proper timers displayed
-            const qTimer = document.getElementById('quiz-countdown-timer');
-            if (qTimer) {
-                qTimer.style.display = 'flex';
-                qTimer.style.color = 'var(--primary)';
-                qTimer.style.borderColor = 'var(--primary)';
-                qTimer.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.15)';
-            }
+
 
             // Configure keypad keys (disable buttons that are not in play)
             for (let i = 1; i <= 11; i++) {
@@ -1693,10 +1674,7 @@
             const displayMinSec = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
             const displayMs = '.' + String(ms).padStart(2, '0');
 
-            const stopwatchEl = document.getElementById('quiz-countdown-timer');
-            if (stopwatchEl) {
-                stopwatchEl.innerHTML = `${displayMinSec}<span style="font-size:1.15rem; color:var(--slate-600); font-weight:700;">${displayMs}</span>`;
-            }
+
 
             gameTimer = requestAnimationFrame(updateStopwatch);
         }
@@ -1916,9 +1894,7 @@
             document.getElementById('arena-screen').style.display = 'none';
             document.getElementById('lobby-screen').style.display = 'block';
             
-            // Reset timers
-            const qTimer = document.getElementById('quiz-countdown-timer');
-            if (qTimer) qTimer.style.display = 'none';
+
             
             // Re-render lobby diagram and chips to ensure proper sync
             renderLobbyDiagramBadges();
@@ -2083,14 +2059,7 @@
             document.getElementById('arena-screen').style.display = 'grid';
             document.getElementById('result-modal-overlay').classList.remove('show');
 
-            // Show countdown timer in billboard
-            const qTimer = document.getElementById('quiz-countdown-timer');
-            if (qTimer) {
-                qTimer.style.display = 'flex';
-                qTimer.style.color = 'var(--primary)';
-                qTimer.style.borderColor = 'var(--primary)';
-                qTimer.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.15)';
-            }
+
 
             renderQuizDiagram();
             renderQuizStatus();
@@ -2162,19 +2131,6 @@
             }
 
             updateQuizProgress();
-            updateQuizCountdown();
-            quizQuestionTimer = setInterval(updateQuizCountdown, 50);
-        }
-
-        function updateQuizCountdown() {
-            const elapsed = (performance.now() - quizQuestionStartedAt) / 1000;
-            const qTimer = document.getElementById('quiz-countdown-timer');
-            if (qTimer) {
-                qTimer.textContent = elapsed.toFixed(1) + '초';
-                qTimer.style.color = 'var(--primary)';
-                qTimer.style.borderColor = 'var(--primary)';
-                qTimer.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.15)';
-            }
         }
 
         function updateQuizProgress() {
@@ -2309,9 +2265,7 @@
             document.getElementById('arena-screen').style.display = 'none';
             document.getElementById('lobby-screen').style.display = 'block';
 
-            // Restore default timer layouts
-            const qTimer = document.getElementById('quiz-countdown-timer');
-            if (qTimer) qTimer.style.display = 'none';
+
             const stopwatch = document.getElementById('timer-stopwatch');
             if (stopwatch) stopwatch.style.display = 'flex';
         }
@@ -2565,30 +2519,10 @@
             quizNetwork.broadcastSettings({ quizQuestions: [question] });
             setTimeout(() => quizNetwork.broadcastStart({ quizQuestions: [question] }), 120);
 
-            // 7. Start teacher countdown timer
-            startTeacherCountdownTimer();
+
         }
 
-        function startTeacherCountdownTimer() {
-            if (teacherTimerInterval) clearInterval(teacherTimerInterval);
-            teacherTimerStartedAt = performance.now();
-            updateTeacherCountdown();
-            teacherTimerInterval = setInterval(updateTeacherCountdown, 50);
-        }
 
-        function updateTeacherCountdown() {
-            if (quizTeacherRoundFinalized) {
-                clearInterval(teacherTimerInterval);
-                return;
-            }
-            const elapsed = (performance.now() - teacherTimerStartedAt) / 1000;
-            
-            const timerEl = document.getElementById('teacher-question-timer-val');
-            if (timerEl) {
-                timerEl.textContent = elapsed.toFixed(1) + '초';
-                timerEl.style.color = 'var(--primary)';
-            }
-        }
 
         async function finishQuizForStudents() {
             if (!quizNetwork || quizNetwork.role !== 'teacher') return;
