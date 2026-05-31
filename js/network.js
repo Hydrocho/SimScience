@@ -105,9 +105,9 @@ export class ClassroomNetwork {
           this.callbacks.onReceiveSettings(payload);
         }
       })
-      .on('broadcast', { event: 'start-game' }, () => {
+      .on('broadcast', { event: 'start-game' }, ({ payload }) => {
         if (this.role === 'student') {
-          this.callbacks.onGameStart();
+          this.callbacks.onGameStart(payload);
         }
       })
       .on('broadcast', { event: 'force-submit' }, () => {
@@ -176,12 +176,12 @@ export class ClassroomNetwork {
   /**
    * [Teacher] Broadcast start game command
    */
-  broadcastStart() {
+  broadcastStart(payload = {}) {
     if (this.role !== 'teacher' || !this.channel) return;
     this.channel.send({
       type: 'broadcast',
       event: 'start-game',
-      payload: {}
+      payload
     });
   }
 

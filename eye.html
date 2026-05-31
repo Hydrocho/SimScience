@@ -9,6 +9,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
     <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
         :root {
@@ -1016,6 +1017,13 @@
                 <p>도전할 부위를 고르고 레이서 닉네임을 입력해 퀴즈를 준비하세요.</p>
             </div>
 
+            <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:0.5rem; margin-bottom:1.25rem;">
+                <button class="preset-btn" id="quiz-tab-single" onclick="switchQuizMode('single')">혼자 하기</button>
+                <button class="preset-btn" id="quiz-tab-student" onclick="switchQuizMode('student')">학생 참가</button>
+                <button class="preset-btn" id="quiz-tab-teacher" onclick="switchQuizMode('teacher')">교사 대시보드</button>
+            </div>
+
+            <div id="quiz-single-pane">
             <div class="lobby-main-layout">
                 <!-- Left: Interactive Setup Diagram -->
                 <div class="lobby-setup-diagram-panel">
@@ -1075,6 +1083,54 @@
                     </button>
                 </div>
             </div>
+            </div>
+
+            <div id="quiz-student-pane" style="display:none; max-width:560px; margin:0 auto;">
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <label>클래스 PIN</label>
+                    <input type="text" value="584731" readonly>
+                </div>
+                <div class="input-group" style="margin-bottom:1rem;">
+                    <label for="quiz-student-name">닉네임</label>
+                    <input type="text" id="quiz-student-name" placeholder="이름 또는 별명 입력">
+                </div>
+                <button class="start-btn" onclick="joinQuizAsStudent()">가상실험실 입장</button>
+            </div>
+
+            <div id="quiz-teacher-pane" style="display:none; max-width:560px; margin:0 auto;">
+                <div id="quiz-teacher-login-block">
+                    <p style="margin-bottom:1rem; color:var(--slate-600);">승인된 Google 계정으로 로그인하여 수업 세션을 개설합니다.</p>
+                    <button class="start-btn" onclick="handleQuizTeacherLogin()">교사 계정 Google 로그인</button>
+                </div>
+                <div id="quiz-teacher-entry-block" style="display:none; text-align:center;">
+                    <p style="font-size:1.1rem; font-weight:800; margin-bottom:1rem;">세션 PIN: <strong style="color:var(--primary); font-size:1.5rem;">584731</strong></p>
+                    <button class="start-btn" onclick="enterQuizTeacherDashboard()">입장하기</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="quiz-teacher-dashboard" class="glass-panel" style="display:none;">
+            <div class="lobby-title">
+                <h2>눈의 구조 퀴즈 교사 대시보드</h2>
+                <p>출제 범위를 정한 뒤 접속 학생에게 동일한 문제를 동시에 전송합니다.</p>
+            </div>
+            <div style="display:grid; grid-template-columns:minmax(280px, 0.42fr) minmax(0, 1fr); gap:1rem;">
+                <div>
+                    <div style="padding:1rem; border:1px solid var(--slate-200); border-radius:12px; margin-bottom:1rem;">
+                        <strong>실험실 PIN: <span style="color:var(--primary);">584731</span></strong>
+                        <p style="font-size:0.78rem; color:var(--slate-600); margin-top:0.35rem;">문제당 제한 시간: 5초</p>
+                    </div>
+                    <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
+                    <button class="start-btn" style="margin-top:1rem;" onclick="launchQuizForStudents()">실시간 퀴즈 시작</button>
+                    <button class="start-btn" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--danger), var(--neon-pink));" onclick="finishQuizForStudents()">종료 (랭킹 보기)</button>
+                </div>
+                <div>
+                    <h3 style="margin-bottom:0.75rem;">접속 학생 <span id="quiz-teacher-student-count">0</span>명</h3>
+                    <div id="quiz-teacher-student-list" style="min-height:100px; padding:1rem; border:1px solid var(--slate-200); border-radius:12px; margin-bottom:1rem;">학생 접속 대기 중...</div>
+                    <h3 style="margin-bottom:0.75rem;">실시간 결과</h3>
+                    <div id="quiz-teacher-ranking-inline"></div>
+                </div>
+            </div>
         </section>
 
         <!-- GAME PLAY ARENA SCREEN -->
@@ -1117,6 +1173,7 @@
                         설명이 여기에 출제됩니다. 알맞은 숫자를 아래 그림에서 고르세요!
                     </div>
                 </div>
+                <div id="quiz-name-options" class="glass-panel" style="display:none; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:0.5rem;"></div>
 
                 <!-- Image Viewport Frame -->
                 <div class="viewport-frame">
@@ -1216,6 +1273,22 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="quiz-student-waiting-overlay">
+        <div class="modal-card">
+            <h2>교사의 시작 신호 대기 중</h2>
+            <p class="subtitle">PIN 584731 수업에 참가했습니다. 모든 학생이 같은 문제를 동시에 풉니다.</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="quiz-teacher-ranking-popup">
+        <div class="modal-card" style="max-width:860px; width:92vw;">
+            <h2>퀴즈 최종 랭킹</h2>
+            <p class="subtitle">정답 개수가 같으면 풀이 시간이 짧은 학생이 우선입니다.</p>
+            <div id="quiz-teacher-ranking-popup-body"></div>
+            <button class="restart-btn" onclick="closeQuizTeacherRankingPopup()">확인</button>
+        </div>
+    </div>
+
     <!-- Canvas Confetti Overlay -->
     <canvas id="confetti-canvas"></canvas>
 
@@ -1278,6 +1351,7 @@
                 description: "수정체의 두께를 조절한다."
             }
         };
+        window.eyeQuizCoordinates = coordinates;
 
         // App States
         let racerName = "초고속레이서";
@@ -1912,6 +1986,469 @@
                 canvas.style.display = 'none';
             }, 5000);
         }
+    </script>
+    <script type="module">
+        import { ClassroomNetwork } from './js/network.js';
+
+        const SUPABASE_URL = "https://vdyvpsteofvhbvvrilxe.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU";
+        const QUIZ_SESSION_PIN = '584731';
+        const QUESTION_SECONDS = 5;
+        const coordinates = window.eyeQuizCoordinates;
+
+        let quizMode = 'single';
+        let quizQuestions = [];
+        let quizIndex = 0;
+        let quizAnswers = [];
+        let quizQuestionTimer = null;
+        let quizQuestionStartedAt = 0;
+        let quizRunStartedAt = 0;
+        let quizAnswerLocked = false;
+        let quizRunning = false;
+        let quizNetwork = null;
+        let quizStudentResults = [];
+        let quizActiveStudents = [];
+        let quizTeacherScope = Object.keys(coordinates).map(Number);
+        let quizTeacherRoundFinalized = false;
+
+        function shuffled(values) {
+            const copy = [...values];
+            for (let i = copy.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [copy[i], copy[j]] = [copy[j], copy[i]];
+            }
+            return copy;
+        }
+
+        function getSingleScope() {
+            return Object.keys(coordinates)
+                .map(Number)
+                .filter(id => document.getElementById(`lobby-chip-${id}`)?.classList.contains('active'));
+        }
+
+        function buildQuestions(scope) {
+            const names = scope.map(id => coordinates[id].name);
+            const questions = [];
+            scope.forEach(id => {
+                questions.push({ type: 'description-to-number', id });
+                questions.push({ type: 'number-to-name', id, options: shuffled(names) });
+            });
+            return shuffled(questions);
+        }
+
+        function switchQuizMode(mode) {
+            quizMode = mode;
+            ['single', 'student', 'teacher'].forEach(name => {
+                document.getElementById(`quiz-${name}-pane`).style.display = name === mode ? 'block' : 'none';
+                document.getElementById(`quiz-tab-${name}`).style.background = name === mode ? 'var(--primary)' : '';
+                document.getElementById(`quiz-tab-${name}`).style.color = name === mode ? 'white' : '';
+            });
+            if (mode === 'teacher') initQuizTeacherMode();
+        }
+
+        function prepareQuizRun(questions, mode) {
+            quizMode = mode;
+            quizQuestions = questions;
+            quizIndex = 0;
+            quizAnswers = [];
+            quizAnswerLocked = false;
+            quizRunning = true;
+            quizRunStartedAt = performance.now();
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('quiz-teacher-dashboard').style.display = 'none';
+            document.getElementById('arena-screen').style.display = 'grid';
+            document.getElementById('result-modal-overlay').classList.remove('show');
+            renderQuizDiagram();
+            renderQuizStatus();
+            showQuizQuestion();
+        }
+
+        function startQuizRace() {
+            const scope = getSingleScope();
+            if (scope.length < 2) {
+                alert('최소 2개 이상의 부위를 선택해 주세요.');
+                return;
+            }
+            prepareQuizRun(buildQuestions(scope), 'single');
+        }
+
+        function renderQuizDiagram() {
+            const container = document.getElementById('image-container');
+            container.querySelectorAll('.mask-badge').forEach(el => {
+                if (el.id !== 'combo-popup-badge') el.remove();
+            });
+            Object.keys(coordinates).forEach(key => {
+                const id = Number(key);
+                const item = coordinates[id];
+                const badge = document.createElement('div');
+                badge.className = 'mask-badge covered';
+                badge.style.left = `${item.nameBox.left}%`;
+                badge.style.top = `${item.nameBox.top}%`;
+                badge.style.width = `${item.nameBox.width}%`;
+                badge.style.height = `${item.nameBox.height}%`;
+                badge.innerHTML = `<span class="badge-num">${id}</span>`;
+                badge.onclick = () => submitQuizAnswer(id);
+                container.appendChild(badge);
+            });
+        }
+
+        function renderQuizStatus() {
+            const status = document.getElementById('status-list-container');
+            status.innerHTML = quizQuestions.map((question, index) => `
+                <div class="status-item" id="quiz-status-${index}">
+                    <span>${index + 1}. ${question.type === 'description-to-number' ? '설명 → 번호' : '번호 → 이름'}</span>
+                    <span class="badge">대기</span>
+                </div>
+            `).join('');
+        }
+
+        function showQuizQuestion() {
+            clearInterval(quizQuestionTimer);
+            if (!quizRunning) return;
+            if (quizIndex >= quizQuestions.length) {
+                finishQuizRun(false);
+                return;
+            }
+
+            quizAnswerLocked = false;
+            quizQuestionStartedAt = performance.now();
+            const question = quizQuestions[quizIndex];
+            const billboard = document.getElementById('question-billboard-text');
+            const options = document.getElementById('quiz-name-options');
+            document.querySelectorAll('.pad-btn').forEach(btn => btn.classList.remove('wrong-flash', 'success-flash'));
+            document.querySelectorAll('.status-item').forEach(item => item.style.borderColor = '');
+            document.getElementById(`quiz-status-${quizIndex}`).style.borderColor = 'var(--neon-pink)';
+
+            if (question.type === 'description-to-number') {
+                billboard.textContent = `${coordinates[question.id].description} 해당 위치 번호를 고르세요.`;
+                options.style.display = 'none';
+            } else {
+                billboard.textContent = `그림의 ${question.id}번 위치에 해당하는 눈 구조의 이름을 고르세요.`;
+                options.style.display = 'grid';
+                options.innerHTML = question.options.map(name => `
+                    <button class="preset-btn" onclick="submitQuizNameAnswer('${name}')">${name}</button>
+                `).join('');
+            }
+
+            updateQuizProgress();
+            updateQuizCountdown();
+            quizQuestionTimer = setInterval(updateQuizCountdown, 50);
+        }
+
+        function updateQuizCountdown() {
+            const elapsed = (performance.now() - quizQuestionStartedAt) / 1000;
+            const left = Math.max(0, QUESTION_SECONDS - elapsed);
+            document.getElementById('timer-stopwatch').innerHTML = `<span>${left.toFixed(1)}초</span>`;
+            if (left <= 0) {
+                clearInterval(quizQuestionTimer);
+                completeQuizQuestion();
+            }
+        }
+
+        function updateQuizProgress() {
+            const total = quizQuestions.length;
+            document.getElementById('progress-lbl').textContent = `${quizIndex} / ${total} 완료`;
+            document.getElementById('progress-bar-fill').style.width = `${Math.round((quizIndex / total) * 100)}%`;
+        }
+
+        function submitQuizAnswer(value) {
+            if (!quizRunning || quizAnswerLocked) return;
+            const question = quizQuestions[quizIndex];
+            if (question.type !== 'description-to-number') return;
+            recordQuizAnswer(Number(value));
+        }
+
+        function submitQuizNameAnswer(value) {
+            if (!quizRunning || quizAnswerLocked) return;
+            const question = quizQuestions[quizIndex];
+            if (question.type !== 'number-to-name') return;
+            recordQuizAnswer(value);
+        }
+
+        function recordQuizAnswer(value) {
+            if (quizAnswerLocked || !quizRunning) return;
+            quizAnswerLocked = true;
+            const question = quizQuestions[quizIndex];
+            const correctValue = question.type === 'description-to-number' ? question.id : coordinates[question.id].name;
+            const correct = value === correctValue;
+            quizAnswers.push({
+                questionIndex: quizIndex,
+                answer: value,
+                correct,
+                unanswered: value === null,
+                elapsedSeconds: Math.min(QUESTION_SECONDS, (performance.now() - quizQuestionStartedAt) / 1000)
+            });
+
+            const status = document.getElementById(`quiz-status-${quizIndex}`);
+            const badge = status.querySelector('.badge');
+            if (quizMode === 'single') {
+                badge.textContent = correct ? '정답' : value === null ? `미응답 (정답: ${correctValue})` : `오답 (정답: ${correctValue})`;
+                badge.style.color = correct ? 'var(--success)' : 'var(--danger)';
+                if (correct) playSuccessSound();
+                else playErrorSound();
+            } else {
+                badge.textContent = value === null ? '미응답' : '응답 완료';
+                return;
+            }
+
+            clearInterval(quizQuestionTimer);
+            quizIndex++;
+            setTimeout(showQuizQuestion, 650);
+        }
+
+        function completeQuizQuestion() {
+            if (!quizAnswerLocked) {
+                recordQuizAnswer(null);
+                if (quizMode === 'single') return;
+            }
+            if (quizMode === 'student') {
+                quizIndex++;
+                showQuizQuestion();
+            }
+        }
+
+        function getQuizResult(forced = false) {
+            const correctCount = quizAnswers.filter(answer => answer.correct).length;
+            const unansweredCount = quizQuestions.length - quizAnswers.length + quizAnswers.filter(answer => answer.unanswered).length;
+            const elapsedSeconds = quizAnswers.reduce((total, answer) => total + answer.elapsedSeconds, 0)
+                + (quizQuestions.length - quizAnswers.length) * QUESTION_SECONDS;
+            return {
+                correctCount,
+                totalQuestions: quizQuestions.length,
+                elapsedSeconds,
+                unansweredCount,
+                forcedSubmission: forced
+            };
+        }
+
+        function finishQuizRun(forced) {
+            if (!quizRunning) return;
+            quizRunning = false;
+            clearInterval(quizQuestionTimer);
+            const result = getQuizResult(forced);
+            if (quizMode === 'student') {
+                quizNetwork.sendResult(result.correctCount, result);
+                document.getElementById('arena-screen').style.display = 'none';
+                document.getElementById('quiz-student-waiting-overlay').classList.add('show');
+                return;
+            }
+            showSingleQuizResult(result);
+        }
+
+        function showSingleQuizResult(result) {
+            document.getElementById('modal-rank-seal').textContent = `${result.correctCount}`;
+            document.getElementById('modal-title-congrat').textContent = '퀴즈 결과';
+            document.getElementById('modal-subtitle-eval').textContent = `총 ${result.totalQuestions}문제 중 ${result.correctCount}문제를 맞혔습니다.`;
+            document.getElementById('modal-racer-name').textContent = document.getElementById('player-name').value.trim() || '도전자';
+            document.getElementById('modal-raw-time').textContent = `${result.elapsedSeconds.toFixed(2)}초`;
+            document.getElementById('modal-penalty-time').textContent = `미응답 ${result.unansweredCount}문제`;
+            document.getElementById('modal-final-time').textContent = `${result.correctCount} / ${result.totalQuestions}`;
+            document.getElementById('modal-max-combo').textContent = '문제당 제한 시간 5초';
+            document.getElementById('result-modal-overlay').classList.add('show');
+        }
+
+        function restartRaceLobby() {
+            clearInterval(quizQuestionTimer);
+            quizRunning = false;
+            document.getElementById('result-modal-overlay').classList.remove('show');
+            document.getElementById('arena-screen').style.display = 'none';
+            document.getElementById('lobby-screen').style.display = 'block';
+        }
+
+        function pressPad(value) {
+            submitQuizAnswer(value);
+        }
+
+        function showGlowHint() {
+            if (!quizRunning || quizMode !== 'single') return;
+            const question = quizQuestions[quizIndex];
+            if (!question) return;
+            const badges = [...document.querySelectorAll('#image-container .mask-badge')];
+            const badge = badges[question.id - 1];
+            if (!badge) return;
+            badge.classList.add('hint-glow');
+            setTimeout(() => badge.classList.remove('hint-glow'), 1000);
+        }
+
+        function renderQuizTeacherScope() {
+            document.getElementById('quiz-teacher-scope').innerHTML = Object.keys(coordinates).map(key => {
+                const id = Number(key);
+                const active = quizTeacherScope.includes(id);
+                return `<button class="preset-btn" style="${active ? 'background:var(--primary); color:white;' : ''}" onclick="toggleQuizTeacherScope(${id})">${id}. ${coordinates[id].name}</button>`;
+            }).join('');
+        }
+
+        function toggleQuizTeacherScope(id) {
+            if (quizTeacherScope.includes(id)) {
+                if (quizTeacherScope.length <= 2) return;
+                quizTeacherScope = quizTeacherScope.filter(value => value !== id);
+            } else {
+                quizTeacherScope.push(id);
+                quizTeacherScope.sort((a, b) => a - b);
+            }
+            renderQuizTeacherScope();
+        }
+
+        async function joinQuizAsStudent() {
+            const nickname = document.getElementById('quiz-student-name').value.trim();
+            if (nickname.length < 2) {
+                alert('닉네임을 2자 이상 입력해 주세요.');
+                return;
+            }
+            quizNetwork = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const joined = await quizNetwork.joinSession(QUIZ_SESSION_PIN, nickname, 'student');
+            if (!joined) {
+                alert('수업 세션 접속에 실패했습니다.');
+                return;
+            }
+            quizMode = 'student';
+            bindQuizStudentEvents();
+            document.getElementById('quiz-student-waiting-overlay').classList.add('show');
+        }
+
+        function bindQuizStudentEvents() {
+            quizNetwork.on('onReceiveSettings', payload => {
+                if (Array.isArray(payload.quizQuestions)) quizQuestions = payload.quizQuestions;
+            });
+            quizNetwork.on('onGameStart', payload => {
+                if (Array.isArray(payload.quizQuestions)) quizQuestions = payload.quizQuestions;
+                document.getElementById('quiz-student-waiting-overlay').classList.remove('show');
+                prepareQuizRun(quizQuestions, 'student');
+            });
+            quizNetwork.on('onForceSubmit', () => finishQuizRun(true));
+            quizNetwork.on('onRoundReset', () => {
+                clearInterval(quizQuestionTimer);
+                quizRunning = false;
+                document.getElementById('arena-screen').style.display = 'none';
+                document.getElementById('quiz-student-waiting-overlay').classList.add('show');
+            });
+            quizNetwork.on('onRankingUpdate', payload => {
+                const me = payload.rankings.findIndex(result => result.studentId === quizNetwork.id);
+                if (me >= 0) showToast(`현재 순위: ${me + 1}위`);
+            });
+        }
+
+        async function initQuizTeacherMode() {
+            if (quizNetwork?.role === 'teacher') return;
+            quizNetwork = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const { data: { session } } = await quizNetwork.client.auth.getSession();
+            if (!session) return;
+            const { data, error } = await quizNetwork.client.from('allowed_teachers').select('email');
+            const allowed = !error && data.some(item => item.email?.trim().toLowerCase() === session.user.email?.trim().toLowerCase());
+            if (!allowed) {
+                alert('승인된 교사 계정이 아닙니다.');
+                return;
+            }
+            document.getElementById('quiz-teacher-login-block').style.display = 'none';
+            document.getElementById('quiz-teacher-entry-block').style.display = 'block';
+            await quizNetwork.joinSession(QUIZ_SESSION_PIN, 'Teacher', 'teacher');
+            bindQuizTeacherEvents();
+        }
+
+        async function handleQuizTeacherLogin() {
+            const client = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            await client.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: `${window.location.origin}${window.location.pathname}?tab=teacher` }
+            });
+        }
+
+        function bindQuizTeacherEvents() {
+            quizNetwork.on('onStudentSync', students => {
+                quizActiveStudents = students;
+                document.getElementById('quiz-teacher-student-count').textContent = students.length;
+                document.getElementById('quiz-teacher-student-list').innerHTML = students.length
+                    ? students.map(student => `<span class="chip-item active" style="display:inline-flex; margin:0.2rem;">${student.nickname}</span>`).join('')
+                    : '학생 접속 대기 중...';
+            });
+            quizNetwork.on('onResultReported', payload => {
+                const index = quizStudentResults.findIndex(result => result.studentId === payload.studentId);
+                if (index >= 0) quizStudentResults[index] = payload;
+                else quizStudentResults.push(payload);
+                sortQuizResults();
+                renderQuizRankings();
+                quizNetwork.broadcastRankings({ rankings: quizStudentResults });
+                if (!quizTeacherRoundFinalized && quizStudentResults.length >= quizActiveStudents.length && quizActiveStudents.length > 0) {
+                    quizTeacherRoundFinalized = true;
+                    openQuizTeacherRankingPopup();
+                    quizNetwork.broadcastRoundReset();
+                }
+            });
+        }
+
+        function enterQuizTeacherDashboard() {
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('quiz-teacher-dashboard').style.display = 'block';
+            renderQuizTeacherScope();
+        }
+
+        function launchQuizForStudents() {
+            if (!quizNetwork || quizNetwork.role !== 'teacher') return;
+            if (!quizActiveStudents.length) {
+                alert('접속한 학생이 없습니다.');
+                return;
+            }
+            quizStudentResults = [];
+            quizTeacherRoundFinalized = false;
+            renderQuizRankings();
+            const questions = buildQuestions(quizTeacherScope);
+            quizNetwork.broadcastSettings({ quizQuestions: questions, questionSeconds: QUESTION_SECONDS });
+            setTimeout(() => quizNetwork.broadcastStart({ quizQuestions: questions }), 120);
+        }
+
+        async function finishQuizForStudents() {
+            if (!quizNetwork || quizNetwork.role !== 'teacher') return;
+            quizNetwork.broadcastForceSubmit();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            sortQuizResults();
+            renderQuizRankings();
+            quizTeacherRoundFinalized = true;
+            openQuizTeacherRankingPopup();
+            quizNetwork.broadcastRoundReset();
+        }
+
+        function sortQuizResults() {
+            quizStudentResults.sort((a, b) => b.correctCount - a.correctCount || a.elapsedSeconds - b.elapsedSeconds);
+        }
+
+        function quizRankingTable() {
+            if (!quizStudentResults.length) return '<p style="padding:1rem; color:var(--slate-600);">제출 결과가 없습니다.</p>';
+            return `<table class="result-table" style="width:100%;">
+                <tr><th>순위</th><th>학생</th><th>정답</th><th>풀이 시간</th><th>미응답</th></tr>
+                ${quizStudentResults.map((result, index) => `
+                    <tr><td>${index + 1}</td><td>${result.nickname}</td><td>${result.correctCount} / ${result.totalQuestions}</td><td>${result.elapsedSeconds.toFixed(2)}초</td><td>${result.unansweredCount}</td></tr>
+                `).join('')}
+            </table>`;
+        }
+
+        function renderQuizRankings() {
+            document.getElementById('quiz-teacher-ranking-inline').innerHTML = quizRankingTable();
+        }
+
+        function openQuizTeacherRankingPopup() {
+            document.getElementById('quiz-teacher-ranking-popup-body').innerHTML = quizRankingTable();
+            document.getElementById('quiz-teacher-ranking-popup').classList.add('show');
+        }
+
+        function closeQuizTeacherRankingPopup() {
+            document.getElementById('quiz-teacher-ranking-popup').classList.remove('show');
+        }
+
+        window.switchQuizMode = switchQuizMode;
+        window.startQuizRace = startQuizRace;
+        window.restartRaceLobby = restartRaceLobby;
+        window.pressPad = pressPad;
+        window.showGlowHint = showGlowHint;
+        window.submitQuizNameAnswer = submitQuizNameAnswer;
+        window.toggleQuizTeacherScope = toggleQuizTeacherScope;
+        window.joinQuizAsStudent = joinQuizAsStudent;
+        window.handleQuizTeacherLogin = handleQuizTeacherLogin;
+        window.enterQuizTeacherDashboard = enterQuizTeacherDashboard;
+        window.launchQuizForStudents = launchQuizForStudents;
+        window.finishQuizForStudents = finishQuizForStudents;
+        window.closeQuizTeacherRankingPopup = closeQuizTeacherRankingPopup;
+
+        switchQuizMode(new URLSearchParams(window.location.search).get('tab') === 'teacher' ? 'teacher' : 'single');
     </script>
 </body>
 </html>
