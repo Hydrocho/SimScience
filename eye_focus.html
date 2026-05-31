@@ -1166,6 +1166,131 @@
             opacity: 1;
         }
 
+        /* 교사용 상세 대시보드 레이아웃 */
+        .teacher-dashboard-layout {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            gap: 1.5rem;
+            width: 100%;
+            height: auto;
+            margin-top: 1rem;
+            animation: fadeInUp 0.4s ease-out;
+        }
+
+        .teacher-control-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+
+        .teacher-main-panel {
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 160px);
+            overflow-y: auto;
+        }
+
+        .pin-display-card {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.08) 0%, rgba(8, 145, 178, 0.08) 100%);
+            border: 1px solid rgba(79, 70, 229, 0.18);
+            border-radius: 16px;
+            padding: 18px;
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        .pin-display-card .pin-label {
+            display: block;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .pin-display-card .pin-value {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: var(--primary);
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(79, 70, 229, 0.15);
+        }
+
+        .large-student-grid-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-auto-rows: min-content;
+            gap: 10px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.01);
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            min-height: 200px;
+        }
+
+        .large-student-tag {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: white;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+            transition: all 0.2s;
+            height: 42px;
+        }
+
+        .large-student-tag:hover {
+            border-color: var(--primary);
+            box-shadow: 0 4px 8px rgba(79, 70, 229, 0.06);
+        }
+
+        .large-student-name {
+            flex: 1;
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: var(--text-main);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .kick-btn {
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            color: var(--slate-400);
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 2px 5px;
+            border-radius: 6px;
+            transition: all 0.15s;
+        }
+
+        .kick-btn:hover {
+            color: #ef4444;
+            background: rgba(239, 68, 68, 0.08);
+        }
+
+        .pulse-green-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #00e676;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #00e676;
+            animation: blink-green 1.5s infinite;
+        }
+
+        @keyframes blink-green {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(0.9); }
+        }
+
     </style>
 </head>
 <body>
@@ -1269,7 +1394,7 @@
                         <p style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0; text-align: center;">
                             세션 PIN: <strong id="teacher-pin-txt" style="color: #4f46e5; font-size: 1.75rem; font-weight: 800; margin-left: 8px; letter-spacing: 1px;">------</strong>
                         </p>
-                        <button class="start-btn" onclick="teacherTriggerLaunch()" style="width: 100%; max-width: 280px; margin: 0;">입장하기</button>
+                        <button class="start-btn" onclick="enterTeacherDashboard()" style="width: 100%; max-width: 280px; margin: 0;">입장하기</button>
                     </div>
                     <div style="display: none;">
                         <p id="teacher-email-txt"></p>
@@ -1293,6 +1418,157 @@
                     </div>
                 </div>
             </div>
+        </section>
+
+        <!-- TEACHER DETAILED DASHBOARD SCREEN -->
+        <section class="teacher-dashboard-layout" id="teacher-detail-dashboard" style="display: none;">
+            <!-- Left Sidebar Control Panel -->
+            <aside class="teacher-control-sidebar glass-panel">
+                <div class="panel-title-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                    <h2 style="border-left: 3px solid var(--primary); padding-left: 10px; font-size: 1.15rem; font-weight: 800;">교사 제어 센터</h2>
+                    <button id="btn-teacher-logout-detail" class="start-btn" style="padding: 6px 12px; font-size: 0.75rem; border-radius: 8px; font-weight: 700; margin: 0; background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);" onclick="handleTeacherLogout()">🚪 로그아웃</button>
+                </div>
+
+                <!-- 1단계: 로비 단계 설정 -->
+                <div id="teacher-sidebar-lobby" class="monitor-section">
+                    <div class="pin-display-card">
+                        <span class="pin-label">실험실 PIN 번호</span>
+                        <span id="teacher-pin-value-detail" class="pin-value">------</span>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="teacher-target-slider-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">목표 거리 설정</label>
+                        </div>
+                        <div class="slider-wrapper">
+                            <input type="range" id="teacher-target-slider-detail" min="19" max="49" step="0.5" value="35" oninput="teacherSyncSettingsDetail('target', this.value)">
+                            <div class="slider-ticks" style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--slate-400); margin-top: 4px;">
+                                <span>19.0m</span>
+                                <span id="teacher-target-val-detail" class="highlight" style="color: var(--primary); font-weight: 700;">35.0m</span>
+                                <span>49.0m</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <div class="control-header">
+                            <label for="teacher-wait-slider-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">제한 시간 설정</label>
+                        </div>
+                        <div class="slider-wrapper">
+                            <input type="range" id="teacher-wait-slider-detail" min="5" max="60" step="1" value="15" oninput="teacherSyncSettingsDetail('wait', this.value)">
+                            <div class="slider-ticks" style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--slate-400); margin-top: 4px;">
+                                <span>5초</span>
+                                <span id="teacher-wait-val-detail" class="highlight" style="color: var(--primary); font-weight: 700;">15초</span>
+                                <span>60초</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="control-group">
+                        <label for="teacher-diff-select-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">난이도 설정</label>
+                        <select id="teacher-diff-select-detail" onchange="teacherSyncSettingsDetail('diff', this.value)" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 8px; font-weight: 600; outline: none;">
+                            <option value="easy">쉬움</option>
+                            <option value="medium">보통</option>
+                            <option value="hard">어려움</option>
+                        </select>
+                    </div>
+
+                    <button class="start-btn" style="width: 100%; margin: 10px 0 0 0;" onclick="lockSessionSettingsDetail()">🔒 실험 조건 고정 및 준비 시작</button>
+                </div>
+
+                <!-- 2단계: 활성화 단계 (대기 및 출발) -->
+                <div id="teacher-sidebar-active" class="monitor-section" style="display: none;">
+                    <div class="session-status-banner" style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: rgba(0, 0, 0, 0.02); padding: 10px; border-radius: 12px; border: 1px solid rgba(0,0,0,0.04);">
+                        <div class="status-metric" style="display: flex; flex-direction: column; align-items: center;">
+                            <span class="label" style="font-size: 0.7rem; color: var(--slate-400);">목표 거리</span>
+                            <span id="active-target-dist-detail" class="val highlight" style="font-size: 1.1rem; font-weight: 800; color: var(--primary);">--m</span>
+                        </div>
+                        <div class="status-metric" style="display: flex; flex-direction: column; align-items: center;">
+                            <span class="label" style="font-size: 0.7rem; color: var(--slate-400);">난이도</span>
+                            <span id="active-diff-detail" class="val" style="font-size: 1.1rem; font-weight: 800; color: var(--neon-pink);">--</span>
+                        </div>
+                    </div>
+
+                    <div class="progress-card" style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); padding: 16px; border-radius: 12px; margin-top: 10px;">
+                        <span class="metric-label" style="font-size: 0.75rem; color: var(--slate-400); display: block; margin-bottom: 6px;">실험 대기실 학생 현황</span>
+                        <div class="metric-value-container" style="display: flex; align-items: baseline; gap: 4px; margin-bottom: 8px;">
+                            <span id="connected-count-detail" class="metric-value" style="font-size: 1.8rem; font-weight: 800; color: var(--text-main);">0</span>
+                            <span class="metric-unit" style="font-size: 0.9rem; color: var(--slate-400);">명 접속 중</span>
+                        </div>
+                    </div>
+
+                    <div class="action-buttons-vertical" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;">
+                        <button id="btn-teacher-start-detail" class="start-btn" style="width: 100%; margin: 0; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); color: white; box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);" onclick="triggerLaunchAllDetail()">
+                            <i class="fa-solid fa-play"></i> 실시간 실험 시작 (일괄 출발)
+                        </button>
+                        <button id="btn-teacher-unlock-detail" class="start-btn" style="width: 100%; margin: 0; background: rgba(0, 0, 0, 0.05); color: var(--text-main); border: 1px solid rgba(0, 0, 0, 0.1);" onclick="unlockSessionSettingsDetail()">
+                            🔓 조건 변경 (대기실로 복귀)
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3단계: 리더보드 단계 -->
+                <div id="teacher-sidebar-leaderboard" class="monitor-section" style="display: none;">
+                    <div style="background: rgba(5, 150, 105, 0.08); border: 1px solid rgba(5, 150, 105, 0.2); padding: 16px; border-radius: 12px; text-align: center; margin-bottom: 10px;">
+                        <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--neon-green); margin-bottom: 4px;">🏆 실시간 실험 진행 완료</h3>
+                        <p style="font-size: 0.78rem; color: var(--slate-400);">모든 학생들의 실험 제출이 취합되었습니다.</p>
+                    </div>
+                    <div class="action-buttons-vertical" style="display: flex; flex-direction: column; gap: 8px;">
+                        <button class="start-btn" style="width: 100%; margin: 0;" onclick="resetForNextRoundDetail()">
+                            🔄 다음 라운드 준비 (대기실 리셋)
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Right Main Lobby / Monitor Panel -->
+            <main class="teacher-main-panel glass-panel" style="flex: 1; display: flex; flex-direction: column; gap: 1rem;">
+                <!-- 단일 컴팩트 헤더 행 -->
+                <div class="lobby-compact-header" style="display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid rgba(0, 0, 0, 0.06); flex-shrink: 0;">
+                    <div class="lobby-compact-title" style="display: flex; align-items: center; gap: 8px;">
+                        <span class="pulse-green-dot" style="width: 8px; height: 8px; background-color: #00e676; border-radius: 50%; box-shadow: 0 0 8px #00e676;"></span>
+                        <span class="lobby-compact-name" style="font-size: 1.1rem; font-weight: 800;">🔬 가상 과학 실험실 대기 현황</span>
+                        <span class="lobby-compact-count" style="font-size: 0.85rem; color: var(--slate-400);">
+                            참여 학생 <span id="large-connected-count-detail" class="counter-highlight" style="font-weight: 800; color: var(--primary); font-size: 1.1rem; margin: 0 2px;">0</span>명
+                        </span>
+                    </div>
+                    <div class="lobby-pin-inline" style="display: flex; align-items: center; gap: 6px; padding: 4px 12px; border: 1.5px solid var(--primary); border-radius: 10px; background: rgba(79, 70, 229, 0.04);">
+                        <span class="pin-inline-lbl" style="font-size: 0.65rem; font-weight: 700; color: var(--primary); letter-spacing: 1px; text-transform: uppercase;">PIN</span>
+                        <span id="large-lobby-pin-value-detail" class="pin-inline-val" style="font-size: 1.35rem; font-weight: 800; letter-spacing: 1px; color: var(--primary);">------</span>
+                    </div>
+                </div>
+
+                <!-- 1단계 / 2단계: 로비 및 대기 화면 목록 -->
+                <div id="teacher-lobby-view" style="flex: 1; display: flex; flex-direction: column; min-height: 0;">
+                    <div id="large-student-list-container-detail" class="large-student-grid-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; overflow-y: auto; padding: 10px; flex: 1; background: rgba(0, 0, 0, 0.02); border-radius: 12px; border: 1px solid rgba(0, 0, 0, 0.05);">
+                        <p class="large-empty-list-msg" style="color: var(--slate-400); text-align: center; grid-column: 1 / -1; align-self: center; padding: 40px 0;">학생들의 접속을 기다리고 있습니다...</p>
+                    </div>
+                </div>
+
+                <!-- 3단계: 실시간 채점 및 순위판 모니터링 화면 -->
+                <div id="teacher-active-view" style="display: none; flex: 1; flex-direction: column; min-height: 0; gap: 1rem;">
+                    <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--text-main);"><i class="fa-solid fa-square-poll-horizontal" style="color: var(--primary);"></i> 실시간 채점 현황</h3>
+                    
+                    <div class="leaderboard-container" style="flex: 1; overflow-y: auto; background: white; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px; max-height: none;">
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>순위</th>
+                                    <th>이름</th>
+                                    <th>맞춘 초점 거리</th>
+                                    <th>초점 오차</th>
+                                    <th>획득 점수</th>
+                                </tr>
+                            </thead>
+                            <tbody id="teacher-rankings-rows-detail">
+                                <tr>
+                                    <td colspan="5" style="text-align:center; color: var(--slate-400); padding:24px;">제출 학생이 없습니다.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
         </section>
 
         <!-- GAME PLAY ARENA SCREEN -->
@@ -2591,7 +2867,7 @@
                     document.getElementById('wait-timer-display').textContent = `${shutterWaitTime}초`;
                 });
 
-                classroomNetwork.on('onStart', () => {
+                classroomNetwork.on('onGameStart', () => {
                     // Hide waiting overlay
                     document.getElementById('student-waiting-overlay').style.display = 'none';
                     lobbyScreen.style.display = 'none';
@@ -2652,6 +2928,8 @@
                     // Generate Session PIN
                     const pin = Math.floor(100000 + Math.random() * 900000).toString();
                     document.getElementById('teacher-pin-txt').textContent = pin;
+                    document.getElementById('teacher-pin-value-detail').textContent = pin;
+                    document.getElementById('large-lobby-pin-value-detail').textContent = pin;
                     
                     userRole = 'teacher';
                     isMultiplayer = true;
@@ -2665,16 +2943,34 @@
                     classroomNetwork.on('onStudentSync', (students) => {
                         activeStudents = students;
                         document.getElementById('connected-students-count').textContent = students.length;
+                        document.getElementById('connected-count-detail').textContent = students.length;
+                        document.getElementById('large-connected-count-detail').textContent = students.length;
+
+                        // Render main dashboard student roster
+                        const largeRosterContainer = document.getElementById('large-student-list-container-detail');
+                        if (students.length === 0) {
+                            largeRosterContainer.innerHTML = '<p class="large-empty-list-msg">학생들의 접속을 기다리고 있습니다...</p>';
+                        } else {
+                            largeRosterContainer.innerHTML = students.map(s => `
+                                <div class="large-student-tag">
+                                    <span class="pulse-green-dot" style="margin-right: 4px;"></span>
+                                    <span class="large-student-name">${s.nickname}</span>
+                                    <button class="kick-btn" onclick="kickStudentDetail('${s.id}', '${s.nickname}')" title="퇴장시키기">×</button>
+                                </div>
+                            `).join('');
+                        }
                         
                         const list = document.getElementById('teacher-student-list');
-                        if (students.length === 0) {
-                            list.innerHTML = '<span style="color:#64748b; font-size:0.85rem;">학생 접속 대기 중..</span>';
-                        } else {
-                            list.innerHTML = students.map(s => `
-                                <span style="display:inline-block; margin:3px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); color:#a5b4fc; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:700;">
-                                    <i class="fa-solid fa-user-graduate"></i> ${s.nickname}
-                                </span>
-                            `).join('');
+                        if (list) {
+                            if (students.length === 0) {
+                                list.innerHTML = '<span style="color:#64748b; font-size:0.85rem;">학생 접속 대기 중..</span>';
+                            } else {
+                                list.innerHTML = students.map(s => `
+                                    <span style="display:inline-block; margin:3px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); color:#a5b4fc; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:700;">
+                                        <i class="fa-solid fa-user-graduate"></i> ${s.nickname}
+                                    </span>
+                                `).join('');
+                            }
                         }
                     });
 
@@ -2692,6 +2988,7 @@
 
                         // Render teacher rankings UI
                         renderTeacherRankingsTable();
+                        renderTeacherRankingsTableDetail();
 
                         // Sync leaderboard rankings to all students
                         classroomNetwork.broadcastRankings({ rankings: studentResults });
@@ -2711,6 +3008,256 @@
             }
         }
 
+        function enterTeacherDashboard() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            
+            // Hide the lobby tab card
+            document.getElementById('lobby-screen').style.display = 'none';
+            // Show the detailed teacher dashboard
+            document.getElementById('teacher-detail-dashboard').style.display = 'grid';
+            
+            // Set view phase: Lobby Setup phase
+            document.getElementById('teacher-sidebar-lobby').style.display = 'flex';
+            document.getElementById('teacher-sidebar-active').style.display = 'none';
+            document.getElementById('teacher-sidebar-leaderboard').style.display = 'none';
+            
+            document.getElementById('teacher-lobby-view').style.display = 'flex';
+            document.getElementById('teacher-active-view').style.display = 'none';
+            
+            // Sync slider inputs to UI
+            const targetVal = parseFloat(document.getElementById('teacher-target-slider-detail').value);
+            const waitVal = parseInt(document.getElementById('teacher-wait-slider-detail').value);
+            document.getElementById('teacher-target-val-detail').textContent = `${targetVal.toFixed(1)}m`;
+            document.getElementById('teacher-wait-val-detail').textContent = `${waitVal}초`;
+            
+            // Clear results
+            studentResults = [];
+            renderTeacherRankingsTableDetail();
+        }
+
+        function teacherSyncSettingsDetail(type, value) {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+
+            const targetVal = parseFloat(document.getElementById('teacher-target-slider-detail').value);
+            const waitVal = parseInt(document.getElementById('teacher-wait-slider-detail').value);
+            const diffVal = document.getElementById('teacher-diff-select-detail').value;
+
+            document.getElementById('teacher-target-val-detail').textContent = `${targetVal.toFixed(1)}m`;
+            document.getElementById('teacher-wait-val-detail').textContent = `${waitVal}초`;
+
+            // Sync to the old hidden inputs just in case
+            document.getElementById('teacher-target-slider').value = targetVal;
+            document.getElementById('teacher-wait-slider').value = waitVal;
+            document.getElementById('teacher-diff-select').value = diffVal;
+            
+            document.getElementById('teacher-target-val').textContent = `${targetVal.toFixed(1)}m`;
+            document.getElementById('teacher-wait-val').textContent = `${waitVal}초`;
+
+            let objectIdx = 0;
+            if (targetVal <= 30.0) objectIdx = 0; // robot
+            else if (targetVal <= 40.0) objectIdx = 1; // torus
+            else objectIdx = 2; // drone
+
+            // Broadcast setting change
+            classroomNetwork.broadcastSettings({
+                targetDistance: targetVal,
+                shutterWaitTime: waitVal,
+                difficulty: diffVal,
+                targetObjectIndex: objectIdx
+            });
+        }
+
+        function lockSessionSettingsDetail() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            if (activeStudents.length === 0) {
+                alert("대기실에 참여 중인 학생이 없습니다! 학생이 들어와야 세션을 시작할 수 있습니다.");
+                return;
+            }
+
+            const targetVal = parseFloat(document.getElementById('teacher-target-slider-detail').value);
+            const diffVal = document.getElementById('teacher-diff-select-detail').value;
+
+            // Update UI elements
+            document.getElementById('active-target-dist-detail').textContent = `${targetVal.toFixed(1)}m`;
+            
+            let diffLabel = '쉬움';
+            if (diffVal === 'medium') diffLabel = '보통';
+            else if (diffVal === 'hard') diffLabel = '어려움';
+            document.getElementById('active-diff-detail').textContent = diffLabel;
+
+            // Transition sidebar and main panels
+            document.getElementById('teacher-sidebar-lobby').style.display = 'none';
+            document.getElementById('teacher-sidebar-active').style.display = 'flex';
+            
+            // Clear rankings
+            studentResults = [];
+            renderTeacherRankingsTableDetail();
+
+            // Set student active list display
+            const largeRosterContainer = document.getElementById('large-student-list-container-detail');
+            largeRosterContainer.innerHTML = activeStudents.map(s => `
+                <div class="large-student-tag" style="border-color: rgba(79, 70, 229, 0.2);">
+                    <span class="pulse-green-dot" style="margin-right: 4px; background-color: #ff9100; box-shadow: 0 0 8px #ff9100;"></span>
+                    <span class="large-student-name">${s.nickname}</span>
+                    <span style="font-size: 0.72rem; font-weight: 700; color: var(--slate-400); background: rgba(0,0,0,0.03); padding: 2px 6px; border-radius: 4px;">대기실 대기</span>
+                </div>
+            `).join('');
+
+            // Sync settings to lock student screen
+            teacherSyncSettingsDetail();
+
+            showToast("실험 조건이 고정되었습니다. 학생들의 화면이 대기 모드로 전환됩니다.");
+        }
+
+        function unlockSessionSettingsDetail() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+
+            // Transition back to lobby phase
+            document.getElementById('teacher-sidebar-lobby').style.display = 'flex';
+            document.getElementById('teacher-sidebar-active').style.display = 'none';
+
+            // Reset roster grid tags back to standard connected state
+            const largeRosterContainer = document.getElementById('large-student-list-container-detail');
+            if (activeStudents.length === 0) {
+                largeRosterContainer.innerHTML = '<p class="large-empty-list-msg">학생들의 접속을 기다리고 있습니다...</p>';
+            } else {
+                largeRosterContainer.innerHTML = activeStudents.map(s => `
+                    <div class="large-student-tag">
+                        <span class="pulse-green-dot" style="margin-right: 4px;"></span>
+                        <span class="large-student-name">${s.nickname}</span>
+                        <button class="kick-btn" onclick="kickStudentDetail('${s.id}', '${s.nickname}')" title="퇴장시키기">×</button>
+                    </div>
+                `).join('');
+            }
+
+            // Sync settings to return students to normal lobby
+            teacherResetRound();
+        }
+
+        function triggerLaunchAllDetail() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            if (activeStudents.length === 0) {
+                alert("대기실에 참여 중인 학생이 없습니다!");
+                return;
+            }
+
+            // Transition view
+            document.getElementById('teacher-sidebar-active').style.display = 'none';
+            document.getElementById('teacher-sidebar-leaderboard').style.display = 'flex';
+            
+            document.getElementById('teacher-lobby-view').style.display = 'none';
+            document.getElementById('teacher-active-view').style.display = 'flex';
+
+            // Clear previous leaderboard results
+            studentResults = [];
+            renderTeacherRankingsTableDetail();
+
+            // Triggers start on all student screens
+            classroomNetwork.broadcastStart();
+            showToast("모든 학생 화면에 실험이 개시되었습니다!");
+        }
+
+        function resetForNextRoundDetail() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+
+            // Transition sidebar and main panel back to lobby setup
+            document.getElementById('teacher-sidebar-lobby').style.display = 'flex';
+            document.getElementById('teacher-sidebar-leaderboard').style.display = 'none';
+            
+            document.getElementById('teacher-lobby-view').style.display = 'flex';
+            document.getElementById('teacher-active-view').style.display = 'none';
+
+            // Reset roster grid
+            const largeRosterContainer = document.getElementById('large-student-list-container-detail');
+            if (activeStudents.length === 0) {
+                largeRosterContainer.innerHTML = '<p class="large-empty-list-msg">학생들의 접속을 기다리고 있습니다...</p>';
+            } else {
+                largeRosterContainer.innerHTML = activeStudents.map(s => `
+                    <div class="large-student-tag">
+                        <span class="pulse-green-dot" style="margin-right: 4px;"></span>
+                        <span class="large-student-name">${s.nickname}</span>
+                        <button class="kick-btn" onclick="kickStudentDetail('${s.id}', '${s.nickname}')" title="퇴장시키기">×</button>
+                    </div>
+                `).join('');
+            }
+
+            // Reset students back to waiting overlay
+            teacherResetRound();
+        }
+
+        async function kickStudentDetail(studentId, nickname) {
+            if (!confirm(`'${nickname}' 학생을 퇴장시키겠습니까?`)) return;
+
+            // Remove locally
+            activeStudents = activeStudents.filter(s => s.id !== studentId);
+            document.getElementById('connected-students-count').textContent = activeStudents.length;
+            document.getElementById('connected-count-detail').textContent = activeStudents.length;
+            document.getElementById('large-connected-count-detail').textContent = activeStudents.length;
+
+            const largeRosterContainer = document.getElementById('large-student-list-container-detail');
+            if (activeStudents.length === 0) {
+                largeRosterContainer.innerHTML = '<p class="large-empty-list-msg">학생들의 접속을 기다리고 있습니다...</p>';
+            } else {
+                largeRosterContainer.innerHTML = activeStudents.map(s => `
+                    <div class="large-student-tag">
+                        <span class="pulse-green-dot" style="margin-right: 4px;"></span>
+                        <span class="large-student-name">${s.nickname}</span>
+                        <button class="kick-btn" onclick="kickStudentDetail('${s.id}', '${s.nickname}')" title="퇴장시키기">×</button>
+                    </div>
+                `).join('');
+            }
+
+            // Send kick command via broadcast
+            if (classroomNetwork && classroomNetwork.channel) {
+                await classroomNetwork.channel.send({
+                    type: 'broadcast',
+                    event: 'kick-student',
+                    payload: { targetId: studentId, reason: 'kicked_by_teacher' }
+                });
+            }
+        }
+
+        function renderTeacherRankingsTableDetail() {
+            const tbody = document.getElementById('teacher-rankings-rows-detail');
+            if (!tbody) return;
+
+            if (studentResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center; color: var(--slate-400); padding:24px;">제출 학생이 없습니다.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = studentResults.map((r, index) => {
+                const rank = index + 1;
+                const isTop = rank === 1;
+                const isSecond = rank === 2;
+                const isThird = rank === 3;
+                
+                let medal = rank;
+                if (isTop) medal = '🥇 1';
+                else if (isSecond) medal = '🥈 2';
+                else if (isThird) medal = '🥉 3';
+
+                let rowStyle = '';
+                if (isTop) rowStyle = 'style="background: rgba(217, 119, 6, 0.05); color: #d97706;"';
+                else if (isSecond) rowStyle = 'style="background: rgba(100, 116, 139, 0.03); color: #475569;"';
+                else if (isThird) rowStyle = 'style="background: rgba(180, 83, 9, 0.03); color: #b45309;"';
+
+                return `
+                    <tr ${rowStyle}>
+                        <td style="font-weight: 800;">${medal}</td>
+                        <td>${r.nickname}</td>
+                        <td>${r.focusDistance.toFixed(1)}m</td>
+                        <td>${r.errorOffset.toFixed(1)}m</td>
+                        <td style="font-weight: 700; color: var(--primary);">${r.score}점</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
         async function handleTeacherLogin() {
             if (!classroomNetwork) return;
             const redirectUrl = window.location.origin + window.location.pathname + "?tab=teacher";
@@ -2721,6 +3268,15 @@
                 }
             });
         }
+
+        async function handleTeacherLogout() {
+            if (classroomNetwork && classroomNetwork.client) {
+                await classroomNetwork.client.auth.signOut();
+            }
+            window.location.reload();
+        }
+
+        window.handleTeacherLogout = handleTeacherLogout;
 
         // --- Teacher Settings Synchronize & Start Signal ---
         function teacherSyncSettings() {
@@ -3184,6 +3740,15 @@
         window.updateSharpRange = updateSharpRange;
         window.updateGridSharpRange = updateGridSharpRange;
         window.toggleFocalGuide = toggleFocalGuide;
+
+        // Teacher detailed dashboard exposed functions
+        window.enterTeacherDashboard = enterTeacherDashboard;
+        window.teacherSyncSettingsDetail = teacherSyncSettingsDetail;
+        window.lockSessionSettingsDetail = lockSessionSettingsDetail;
+        window.unlockSessionSettingsDetail = unlockSessionSettingsDetail;
+        window.triggerLaunchAllDetail = triggerLaunchAllDetail;
+        window.resetForNextRoundDetail = resetForNextRoundDetail;
+        window.kickStudentDetail = kickStudentDetail;
 
     </script>
 </body>
