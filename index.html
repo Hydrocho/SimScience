@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>명인중학교 가상 VR 과학실험실</title>
+  <link rel="icon" href="data:,">
+  <!-- Google Fonts Outfit & Noto Sans KR -->
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Supabase JS Client CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --neon-blue: #0891b2;
+      --neon-pink: #db2777;
+      --neon-green: #059669;
+      --neon-purple: #7c3aed;
+      --dark-bg: #f8fafc;
+      --glass-bg: rgba(255, 255, 255, 0.7);
+      --glass-border: rgba(0, 0, 0, 0.06);
+      --radius-lg: 24px;
+      --radius-md: 16px;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: radial-gradient(circle at center, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      line-height: 1.6;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Background futuristic grid */
+    body::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient glowing orbs */
+    .glowing-orb {
+      position: absolute;
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.12;
+      pointer-events: none;
+      z-index: 0;
+    }
+    .orb-1 {
+      top: -100px;
+      left: -100px;
+      background: var(--primary);
+    }
+    .orb-2 {
+      bottom: -150px;
+      right: -100px;
+      background: var(--neon-pink);
+    }
+
+    .container {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 3rem 1.5rem;
+      z-index: 10;
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 2.5rem;
+    }
+
+    /* Top navigation bar */
+    .top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+      padding-bottom: 1.25rem;
+      z-index: 20;
+    }
+
+    .school-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: rgba(79, 70, 229, 0.06);
+      border: 1px solid rgba(79, 70, 229, 0.15);
+      border-radius: 9999px;
+      padding: 0.4rem 1.1rem;
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--primary);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      box-shadow: 0 2px 10px rgba(79, 70, 229, 0.03);
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      animation: fadeInDown 0.8s ease-out;
+    }
+
+    h1 {
+      font-family: 'Outfit', sans-serif;
+      font-size: 3rem;
+      font-weight: 900;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #0f172a 0%, #312e81 60%, #4f46e5 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+
+    header p.subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Portal Grid */
+    .portal-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      width: 100%;
+      animation: fadeInUp 0.8s ease-out 0.2s both;
+    }
+
+    /* Card design */
+    .portal-card {
+      background: var(--glass-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 2.25rem;
+      text-decoration: none;
+      color: inherit;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.03);
+    }
+
+    .portal-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 4px;
+      background: linear-gradient(90deg, transparent, transparent);
+      transition: all 0.35s;
+    }
+
+    /* Specific Card hover highlights */
+    .portal-card.car-sim::before {
+      background: linear-gradient(90deg, var(--primary), var(--neon-blue));
+    }
+    .portal-card.eye-focus::before {
+      background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));
+    }
+    .portal-card.eye-quiz::before {
+      background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
+    }
+
+    .portal-card:hover {
+      transform: translateY(-8px);
+      border-color: rgba(0, 0, 0, 0.12);
+    }
+
+    .portal-card.car-sim:hover {
+      box-shadow: 0 15px 40px rgba(99, 102, 241, 0.12);
+    }
+    .portal-card.eye-focus:hover {
+      box-shadow: 0 15px 40px rgba(236, 72, 153, 0.12);
+    }
+    .portal-card.eye-quiz:hover {
+      box-shadow: 0 15px 40px rgba(16, 185, 129, 0.12);
+    }
+
+    /* Icon badge design */
+    .icon-badge {
+      width: 4rem;
+      height: 4rem;
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      color: white;
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+    .car-sim .icon-badge {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--neon-blue) 100%);
+      box-shadow: 0 6px 15px rgba(99, 102, 241, 0.2);
+    }
+    .eye-focus .icon-badge {
+      background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-purple) 100%);
+      box-shadow: 0 6px 15px rgba(236, 72, 153, 0.2);
+    }
+    .eye-quiz .icon-badge {
+      background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-blue) 100%);
+      box-shadow: 0 6px 15px rgba(16, 185, 129, 0.2);
+    }
+
+    /* Card text details */
+    .card-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .card-title i.arrow-icon {
+      font-size: 1rem;
+      color: var(--text-muted);
+      transition: transform 0.3s;
+    }
+    .portal-card:hover .card-title i.arrow-icon {
+      transform: translateX(4px);
+      color: var(--primary);
+    }
+
+    .card-desc {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.75rem;
+      flex-grow: 1;
+    }
+
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      border-top: 1px solid rgba(0, 0, 0, 0.05);
+      padding-top: 1.25rem;
+    }
+
+    .tag-item {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.25rem 0.65rem;
+      background: rgba(0, 0, 0, 0.03);
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      border-radius: 6px;
+      color: var(--text-muted);
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: auto;
+      padding: 2rem 0;
+      border-top: 1px solid rgba(0, 0, 0, 0.03);
+      animation: fadeIn 1.2s ease-out 0.4s both;
+    }
+
+    footer a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 600;
+    }
+    footer a:hover {
+      color: var(--primary);
+    }
+
+    /* Modal dialog overlay for Allowed Teachers Admin */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(15, 23, 42, 0.35);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .modal-overlay.show {
+      display: flex;
+      opacity: 1;
+    }
+    .modal-content {
+      background: rgba(255, 255, 255, 0.98);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      border-radius: var(--radius-lg);
+      width: 100%;
+      max-width: 440px;
+      padding: 2rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
+      position: relative;
+      transform: scale(0.9);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .modal-overlay.show .modal-content {
+      transform: scale(1);
+    }
+    .modal-close-x {
+      position: absolute;
+      top: 1rem; right: 1rem;
+      background: none; border: none;
+      color: var(--text-muted); font-size: 1.5rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .modal-close-x:hover {
+      color: var(--text-main);
+    }
+    .modal-content h2 {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: var(--text-main);
+      margin-bottom: 0.4rem;
+      text-align: center;
+    }
+    .modal-description {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      text-align: center;
+    }
+    .admin-input-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1.25rem;
+    }
+    .admin-input-row input {
+      flex: 1;
+      padding: 0.65rem 1rem;
+      background: #ffffff;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 8px;
+      color: var(--text-main);
+      outline: none;
+      font-size: 0.85rem;
+    }
+    .admin-input-row input:focus {
+      border-color: var(--primary);
+    }
+    .admin-input-row button {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+      border: none; color: white;
+      font-weight: 800; font-size: 0.85rem;
+      padding: 0 1.25rem; border-radius: 8px;
+      cursor: pointer;
+    }
+    .admin-list-box {
+      max-height: 200px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.02);
+      border-radius: 12px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+      padding: 0.5rem;
+    }
+    .admin-email-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+      font-size: 0.85rem;
+      color: var(--text-main);
+    }
+    .admin-email-item:last-child {
+      border-bottom: none;
+    }
+    .admin-delete-btn {
+      background: none; border: none;
+      color: #ef4444; font-size: 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+      padding: 0.25rem;
+    }
+    .admin-delete-btn:hover {
+      color: #b91c1c;
+    }
+
+    /* Allowed Teachers list scrollbar */
+    .admin-list-box::-webkit-scrollbar {
+      width: 6px;
+    }
+    .admin-list-box::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .admin-list-box::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 3px;
+    }
+    .admin-list-box::-webkit-scrollbar-thumb:hover {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    /* Animations */
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @media (max-width: 640px) {
+      h1 {
+        font-size: 2.25rem;
+      }
+      .container {
+        padding: 2rem 1rem;
+        gap: 2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Ambient background glow elements -->
+  <div class="glowing-orb orb-1"></div>
+  <div class="glowing-orb orb-2"></div>
+
+  <div class="container">
+    
+    <!-- Top Navigation Bar (School tag + Login area) -->
+    <div class="top-nav">
+      <div class="school-tag">
+        <i class="fa-solid fa-graduation-cap"></i> 명인중학교 VR 가상 실험실
+      </div>
+      <div id="auth-area">
+        <span style="font-size: 0.8rem; color: #64748b;"><i class="fa-solid fa-spinner fa-spin"></i> 연결 확인 중...</span>
+      </div>
+    </div>
+
+    <!-- Main header banner -->
+    <header>
+      <h1>Interactive Science Lab</h1>
+      <p class="subtitle">실감나는 3D 그래픽과 인터랙티브 물리/생물 시뮬레이션 게임을 통해 과학적 원리를 직접 탐구하고 체득해 보세요.</p>
+    </header>
+
+    <!-- Content cards grid -->
+    <main class="portal-grid">
+
+      <!-- Card 1: Car Braking Simulation -->
+      <a href="car_simul.html" class="portal-card car-sim">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-car"></i>
+          </div>
+          <h2 class="card-title">
+            3D 자동차 제동 시뮬레이터
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            질량($m$)과 속력($v$)의 조절을 통해 정지 상태에 도달하기까지의 제동 거리 변화와 운동 에너지($E_k = \frac{1}{2}mv^2$)에 관한 물리 법칙을 관찰하고 탐구합니다. 실시간 멀티플레이어 레이싱 학습 모드를 함께 제공합니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">물리학 (역학)</span>
+          <span class="tag-item">운동 에너지</span>
+          <span class="tag-item">실시간 멀티플레이어</span>
+        </div>
+      </a>
+
+      <!-- Card 2: Eye Accommodation Game -->
+      <a href="eye_focus.html" class="portal-card eye-focus">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-eye"></i>
+          </div>
+          <h2 class="card-title">
+            눈의 초점 조절 작용 게임
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            마우스 조작이나 터치 압력을 조작해 눈의 섬모체를 수축 및 이완시킴으로써 수정체의 두께와 초점 거리 변화를 실시간으로 맞추는 게임입니다. 앞뒤좌우로 불규칙하게 도는 타겟을 정확한 굴절률로 찰칵 포착하세요!
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">생명과학 (감각기관)</span>
+          <span class="tag-item">수정체-섬모체 조절</span>
+          <span class="tag-item">WebGL DoF 심도</span>
+        </div>
+      </a>
+
+      <!-- Card 3: Eye Quiz Racing -->
+      <a href="eye.html" class="portal-card eye-quiz">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-list-check"></i>
+          </div>
+          <h2 class="card-title">
+            눈의 구조 스피드 퀴즈
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            각막, 홍채, 수정체, 섬모체, 망막 등 사람 눈을 구성하는 주요 시각 기관의 명칭과 과학적 세부 기능을 제한 시간 내에 매치하는 스피드 런 퀴즈 레이싱입니다. 실시간 콤보 누적으로 신속한 복습과 암기를 돕습니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">생명과학 (해부도)</span>
+          <span class="tag-item">안구 구조 암기</span>
+          <span class="tag-item">스피드 타임어택</span>
+        </div>
+      </a>
+
+    </main>
+
+    <!-- Footer copyright info -->
+    <footer>
+      <p>&copy; 2026 명인중학교 VR 가상 과학 실험실. All Rights Reserved. | <a href="index.html">포털 메인</a></p>
+    </footer>
+
+  </div>
+
+  <!-- Allowed Teachers Management Modal Overlay -->
+  <div id="teacher-admin-modal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close-x" onclick="toggleAdminModal(false)">×</button>
+      <h2>⚙️ 승인된 교사 계정 관리</h2>
+      <p class="modal-description">구글 로그인이 허용된 교사 계정 목록을 실시간으로 관리합니다.</p>
+      
+      <div class="admin-input-row">
+        <input type="email" id="new-teacher-email" placeholder="추가할 구글 이메일 주소 입력">
+        <button onclick="handleAddTeacher()">추가</button>
+      </div>
+
+      <div class="admin-list-box">
+        <div id="allowed-teachers-list">
+          <!-- Allowed emails load dynamically here -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client-side Authentication Script -->
+  <script>
+    const SUPABASE_URL = "https://vdyvpsteofvhbvvrilxe.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU";
+    let supabaseClient = null;
+
+    // Initialize Supabase Client
+    if (typeof supabase !== 'undefined') {
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    }
+
+    async function checkIsTeacherAllowed(email) {
+      if (!supabaseClient || !email) return false;
+      const { data, error } = await supabaseClient
+        .from('allowed_teachers')
+        .select('email');
+      
+      if (error) {
+        console.error("교사 화이트리스트 조회 에러:", error);
+        return false;
+      }
+      return data.some(item => 
+        item.email && item.email.trim().toLowerCase() === email.trim().toLowerCase()
+      );
+    }
+
+    async function handleTeacherLogin() {
+      if (!supabaseClient) return;
+      // Google OAuth login redirection
+      const redirectUrl = window.location.origin + window.location.pathname;
+      await supabaseClient.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: redirectUrl
+        }
+      });
+    }
+
+    async function handleTeacherLogout() {
+      if (!supabaseClient) return;
+      await supabaseClient.auth.signOut();
+      window.location.reload();
+    }
+
+    // Modal Control functions
+    function toggleAdminModal(show) {
+      const modal = document.getElementById('teacher-admin-modal');
+      if (show) {
+        modal.classList.add('show');
+        loadAllowedTeachers();
+      } else {
+        modal.classList.remove('show');
+      }
+    }
+
+    // Fetch allowed teachers from db and render
+    async function loadAllowedTeachers() {
+      const container = document.getElementById('allowed-teachers-list');
+      container.innerHTML = '<div style="text-align:center; padding:10px; color:#64748b; font-size:0.8rem;"><i class="fa-solid fa-spinner fa-spin"></i> 로딩 중...</div>';
+      
+      const { data, error } = await supabaseClient
+        .from('allowed_teachers')
+        .select('*')
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        container.innerHTML = '<div style="color:#ef4444; text-align:center; padding:10px; font-size:0.8rem;">목록을 불러올 수 없습니다.</div>';
+        return;
+      }
+
+      if (data.length === 0) {
+        container.innerHTML = '<div style="color:#64748b; text-align:center; padding:10px; font-size:0.8rem;">등록된 교사가 없습니다.</div>';
+        return;
+      }
+
+      container.innerHTML = '';
+      data.forEach(item => {
+        const itemDiv = document.createElement('div');
+        itemDiv.className = 'admin-email-item';
+        itemDiv.innerHTML = `
+          <span>${item.email}</span>
+          <button class="delete-btn" onclick="handleDeleteTeacher('${item.email}')" title="승인 해제">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        `;
+        container.appendChild(itemDiv);
+      });
+    }
+
+    // Add new email
+    async function handleAddTeacher() {
+      const input = document.getElementById('new-teacher-email');
+      const email = input.value.trim();
+      if (!email) return;
+
+      const { error } = await supabaseClient
+        .from('allowed_teachers')
+        .insert([{ email }]);
+
+      if (error) {
+        alert("계정을 승인 리스트에 추가하지 못했습니다: " + error.message);
+      } else {
+        input.value = '';
+        loadAllowedTeachers();
+      }
+    }
+
+    // Delete email
+    async function handleDeleteTeacher(email) {
+      if (!confirm(`[${email}] 계정의 교사 승인을 취소하시겠습니까?`)) return;
+
+      const { error } = await supabaseClient
+        .from('allowed_teachers')
+        .delete()
+        .eq('email', email);
+
+      if (error) {
+        alert("승인 해제 처리에 실패했습니다: " + error.message);
+      } else {
+        loadAllowedTeachers();
+      }
+    }
+
+    // Initialize Auth state
+    async function initAuth() {
+      const authArea = document.getElementById('auth-area');
+      if (!supabaseClient) {
+        authArea.innerHTML = '<span style="font-size:0.8rem; color:#ef4444;"><i class="fa-solid fa-circle-exclamation"></i> 서비스 불가 (Supabase 없음)</span>';
+        return;
+      }
+
+      const { data: { session } } = await supabaseClient.auth.getSession();
+
+      if (session) {
+        const email = session.user.email;
+        const isAllowed = await checkIsTeacherAllowed(email);
+
+        if (isAllowed) {
+          // Logged in as verified teacher
+          authArea.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span style="font-size: 0.8rem; font-weight: 700; color: #a5b4fc; background: rgba(99, 102, 241, 0.15); padding: 4px 12px; border-radius: 9999px; border: 1px solid rgba(99, 102, 241, 0.3);">
+                <i class="fa-solid fa-chalkboard-user"></i> 교사: ${email}
+              </span>
+              <button onclick="toggleAdminModal(true)" style="background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #cbd5e1; font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)'" onmouseout="this.style.background='rgba(255, 255, 255, 0.08)'">
+                ⚙️ 교사 관리
+              </button>
+              <button onclick="handleTeacherLogout()" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; font-size: 0.75rem; font-weight: 700; padding: 5px 12px; border-radius: 8px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='rgba(239, 68, 68, 0.25)'" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'">
+                로그아웃
+              </button>
+            </div>
+          `;
+
+          // Append "Teacher mode active" badges on all cards
+          document.querySelectorAll('.tag-list').forEach(tagList => {
+            const badge = document.createElement('span');
+            badge.className = 'tag-item';
+            badge.style.color = '#38bdf8';
+            badge.style.borderColor = 'rgba(56, 189, 248, 0.3)';
+            badge.style.backgroundColor = 'rgba(56, 189, 248, 0.1)';
+            badge.innerHTML = '<i class="fa-solid fa-crown" style="font-size:0.65rem;"></i> 교사 모드 진입 가능';
+            tagList.appendChild(badge);
+          });
+
+        } else {
+          // Logged in but NOT whitelisted as teacher
+          alert(`교사 권한이 없는 구글 계정입니다!\n\n이메일: ${email}\n교사로 승인된 이메일만 로그인이 허용됩니다.`);
+          await supabaseClient.auth.signOut();
+          window.location.reload();
+        }
+      } else {
+        // Not logged in
+        authArea.innerHTML = `
+          <button onclick="handleTeacherLogin()" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%); border: none; color: white; font-size: 0.8rem; font-weight: 800; padding: 6px 14px; border-radius: 8px; cursor: pointer; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.2); transition: all 0.2s;" onmouseover="this.style.transform='scale(1.03)';" onmouseout="this.style.transform='scale(1)';">
+            <i class="fa-brands fa-google"></i> 교사 로그인
+          </button>
+        `;
+      }
+    }
+
+    // Trigger auth check on load
+    window.addEventListener('DOMContentLoaded', initAuth);
+  </script>
+</body>
+</html>

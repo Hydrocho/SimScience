@@ -1,0 +1,3202 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>눈의 조절 작용 - 3D 실시간 초점 맞추기 게임</title>
+    <link rel="icon" href="data:,">
+    <!-- Google Fonts Outfit & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Three.js and Postprocessing for Depth of Field (DoF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/BokehShader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/BokehPass.js"></script>
+    <!-- Supabase JS Client CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: rgba(79, 70, 229, 0.08);
+            --neon-blue: #0891b2;
+            --neon-pink: #db2777;
+            --neon-green: #059669;
+            --neon-yellow: #d97706;
+            --dark-bg: #f8fafc;
+            --dark-card: rgba(255, 255, 255, 0.85);
+            
+            --slate-50: #0f172a;
+            --slate-300: #475569;
+            --slate-400: #64748b;
+            --slate-700: #cbd5e1;
+            --slate-800: #e2e8f0;
+            --slate-900: #f8fafc;
+            
+            --glass-bg: rgba(255, 255, 255, 0.75);
+            --glass-border: rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 12px 30px rgba(0, 0, 0, 0.04);
+            
+            --radius-md: 12px;
+            --radius-lg: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: radial-gradient(circle at center, #f8fafc 0%, #f1f5f9 100%);
+            color: #0f172a;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            max-width: 1300px;
+            width: 100%;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Header design */
+        header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 2.75rem;
+            height: 2.75rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--neon-blue) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .logo-text h1 {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--text-main);
+            letter-spacing: -0.03em;
+            background: linear-gradient(to right, var(--primary), var(--neon-blue));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--slate-400);
+            font-weight: 500;
+        }
+
+        .link-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            background: rgba(79, 70, 229, 0.06);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid rgba(79, 70, 229, 0.15);
+        }
+
+        .link-back:hover {
+            color: white;
+            background: var(--primary-hover);
+            transform: translateX(-3px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        /* Glassmorphic Panel Base */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-lg);
+            padding: 1.75rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Lobby Screen & Tabs */
+        .lobby-screen {
+            max-width: 900px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+
+        .lobby-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding-bottom: 0.75rem;
+        }
+
+        .tab-btn {
+            flex: 1;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-weight: 700;
+            padding: 0.65rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            border-radius: 8px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .tab-btn:hover {
+            color: var(--primary);
+            background: rgba(79, 70, 229, 0.05);
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            background: var(--primary-light);
+            border: 1px solid rgba(79, 70, 229, 0.25);
+            box-shadow: 0 2px 10px rgba(79, 70, 229, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .lobby-title h2 {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-main);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.5rem;
+            text-shadow: none;
+        }
+
+        .lobby-title p {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            margin-bottom: 1.5rem;
+        }
+
+        .science-box {
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1.5rem;
+            text-align: left;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .science-box h3 {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--neon-blue);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        .science-box p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .science-item {
+            padding: 0.5rem;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .science-item.near {
+            border-left-color: var(--neon-pink);
+        }
+
+        .setup-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .input-group input, .input-group select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            border: 1.5px solid rgba(0, 0, 0, 0.12);
+            background: #ffffff;
+            color: var(--text-main);
+            font-size: 1rem;
+            font-weight: 700;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .input-group input:focus, .input-group select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .diff-btn {
+            flex: 1;
+            background: #ffffff;
+            border: 1.5px solid rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .diff-btn:hover {
+            background: rgba(0, 0, 0, 0.02);
+            border-color: var(--slate-400);
+        }
+
+        .diff-btn.active[data-diff="easy"] {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            background: rgba(5, 150, 105, 0.08);
+            box-shadow: 0 0 10px rgba(5, 150, 105, 0.15);
+        }
+
+        .diff-btn.active[data-diff="medium"] {
+            border-color: var(--neon-yellow);
+            color: var(--neon-yellow);
+            background: rgba(217, 119, 6, 0.08);
+            box-shadow: 0 0 10px rgba(217, 119, 6, 0.15);
+        }
+
+        .diff-btn.active[data-diff="hard"] {
+            border-color: var(--neon-pink);
+            color: var(--neon-pink);
+            background: rgba(219, 39, 119, 0.08);
+            box-shadow: 0 0 10px rgba(219, 39, 119, 0.15);
+        }
+
+        .start-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--neon-blue) 100%);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.2rem;
+            padding: 0.9rem;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.6);
+        }
+
+        /* Lobby Info cards */
+        .pin-display-card {
+            background: rgba(79, 70, 229, 0.06);
+            border: 2px dashed rgba(79, 70, 229, 0.3);
+            border-radius: 16px;
+            padding: 1rem;
+            font-size: 1.8rem;
+            font-weight: 900;
+            font-family: 'Outfit', monospace;
+            color: var(--primary);
+            letter-spacing: 0.05em;
+            margin-bottom: 1rem;
+            text-shadow: none;
+        }
+
+        /* Leaderboard table styles */
+        .leaderboard-container {
+            width: 100%;
+            background: rgba(0, 0, 0, 0.02);
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            margin-top: 1.25rem;
+            text-align: left;
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+
+        .leaderboard-table th {
+            background: rgba(0, 0, 0, 0.03);
+            color: var(--text-muted);
+            font-weight: 800;
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        .leaderboard-table td {
+            padding: 0.65rem 1rem;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        .leaderboard-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .leaderboard-table tr.top-rank td {
+            color: var(--neon-yellow);
+        }
+
+        /* Range sliders container */
+        .slider-wrapper {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-top: 0.2rem;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--slate-400);
+        }
+
+        .slider-wrapper input[type="range"] {
+            width: 100%;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        /* Student Waiting Fullscreen Overlay */
+        .student-waiting-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(3, 7, 18, 0.95);
+            backdrop-filter: blur(12px);
+            z-index: 900;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 1.5rem;
+            padding: 2rem;
+            text-align: center;
+        }
+
+        .waiting-spinner {
+            width: 60px;
+            height: 60px;
+            border: 5px solid rgba(99, 102, 241, 0.1);
+            border-top: 5px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .waiting-card {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .wait-settings-box {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-top: 1.5rem;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 0.85rem;
+        }
+
+        .wait-settings-row {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 700;
+        }
+
+        .wait-settings-row span.lbl {
+            color: var(--slate-400);
+        }
+
+        .wait-settings-row span.val {
+            color: white;
+        }
+
+        /* Game Arena */
+        .arena-screen {
+            display: none;
+            grid-template-columns: 1fr 360px;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .arena-screen {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .viewport-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* 3D view window */
+        .viewport-frame {
+            background: #02040a;
+            border-radius: var(--radius-lg);
+            border: 2px solid rgba(255, 255, 255, 0.08);
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            aspect-ratio: 16 / 10;
+            overflow: hidden;
+            width: 100%;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Screen flash and overlays */
+        .shutter-flash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        .time-warning-overlay {
+            --warning-alpha: 0;
+            --warning-duration: 0.9s;
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 38%, rgba(220, 38, 38, var(--warning-alpha)) 100%);
+            opacity: 0;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        .time-warning-overlay.active {
+            animation: warningVignettePulse var(--warning-duration) ease-out;
+        }
+
+        .time-warning-overlay.level-5 { --warning-alpha: 0.08; --warning-duration: 0.9s; }
+        .time-warning-overlay.level-4 { --warning-alpha: 0.11; --warning-duration: 0.85s; }
+        .time-warning-overlay.level-3 { --warning-alpha: 0.15; --warning-duration: 0.7s; }
+        .time-warning-overlay.level-2 { --warning-alpha: 0.19; --warning-duration: 0.55s; }
+        .time-warning-overlay.level-1 { --warning-alpha: 0.23; --warning-duration: 0.45s; }
+        .time-warning-overlay.level-0 { --warning-alpha: 0.35; --warning-duration: 0.25s; }
+
+        @keyframes warningVignettePulse {
+            0% { opacity: 0; }
+            35% { opacity: 1; }
+            100% { opacity: 0.35; }
+        }
+
+        .focus-indicator-overlay {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .countdown-overlay {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            font-family: 'Outfit', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(6px);
+            border-radius: 14px;
+            padding: 4px 18px;
+            border: 2px solid rgba(236, 72, 153, 0.4);
+            text-shadow: 0 0 15px rgba(236, 72, 153, 0.6);
+            z-index: 10;
+            pointer-events: none;
+            animation: pulseCount 1s infinite;
+            display: none;
+        }
+
+        @keyframes pulseCount {
+            0% { transform: scale(0.95); opacity: 0.7; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(0.95); opacity: 0.7; }
+        }
+
+        .countdown-overlay.urgent {
+            color: #fee2e2;
+            border-color: rgba(239, 68, 68, 0.85);
+            text-shadow: 0 0 18px rgba(239, 68, 68, 0.95);
+            animation: urgentCountPulse 0.45s ease-out;
+        }
+
+        @keyframes urgentCountPulse {
+            0% { transform: scale(0.9); }
+            45% { transform: scale(1.25); }
+            100% { transform: scale(1); }
+        }
+
+        .target-prompt-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.75);
+            backdrop-filter: blur(8px);
+            border: 2px solid var(--neon-yellow);
+            border-radius: 30px;
+            padding: 10px 24px;
+            color: white;
+            font-size: 1.15rem;
+            font-weight: 800;
+            z-index: 10;
+            box-shadow: 0 4px 20px rgba(234, 179, 8, 0.3);
+            text-align: center;
+            display: none !important;
+            align-items: center;
+            gap: 0.6rem;
+            white-space: nowrap;
+        }
+
+        .target-color-dot {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            display: inline-block;
+            box-shadow: 0 0 10px currentColor;
+        }
+
+        /* Sidebar components */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Score & HUD panel */
+        .hud-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+        }
+
+        .hud-item {
+            text-align: center;
+        }
+
+        .hud-label {
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--slate-400);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.2rem;
+        }
+
+        .hud-val {
+            font-family: 'Outfit', sans-serif;
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: white;
+        }
+        
+        .hud-val.combo {
+            color: var(--neon-pink);
+            text-shadow: 0 0 10px rgba(236, 72, 153, 0.3);
+        }
+
+        /* Realtime Eye Canvas Panel */
+        .eye-canvas-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .panel-heading {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--neon-blue);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 0.5rem;
+        }
+
+        .eye-diagram-container {
+            width: 100%;
+            height: 300px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            position: relative;
+            overflow: hidden;
+        }
+
+        #eye-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .eye-labels-indicator {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--slate-400);
+            padding: 0 0.25rem;
+        }
+
+        .eye-labels-indicator span.active {
+            color: white;
+            text-shadow: 0 0 5px rgba(255,255,255,0.5);
+        }
+
+        /* Focus manual control */
+        .focus-control-panel {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        /* Focus graphical gauge */
+        .focus-gauge-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .gauge-bar-container {
+            position: relative;
+            width: 100%;
+            height: 24px;
+            background: rgba(0, 0, 0, 0.4);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            overflow: hidden;
+        }
+
+        .gauge-ticks {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--slate-400);
+            padding: 0 0.5rem;
+        }
+
+        #focal-plane-marker {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 8px;
+            height: 100%;
+            background: var(--neon-blue);
+            transform: translateX(-50%);
+            box-shadow: 0 0 8px var(--neon-blue);
+            border-radius: 4px;
+            transition: left 0.1s ease;
+            z-index: 3;
+        }
+
+        #target-dist-marker {
+            position: absolute;
+            top: 0;
+            left: 70%;
+            width: 12px;
+            height: 100%;
+            background: var(--neon-yellow);
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px var(--neon-yellow);
+            border-radius: 4px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #target-dist-marker::after {
+            content: '?렞';
+            font-size: 0.6rem;
+        }
+
+        .control-button-area {
+            position: relative;
+            width: 100%;
+        }
+
+        .hold-btn {
+            width: 100%;
+            height: 80px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.10) 0%, rgba(236, 72, 153, 0.08) 100%);
+            border: 2px solid rgba(99, 102, 241, 0.28);
+            border-radius: 16px;
+            color: var(--primary);
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.15s;
+            user-select: none;
+            -webkit-user-select: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.35rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.10);
+        }
+
+        .hold-btn:active, .hold-btn.pressed {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--neon-pink) 100%);
+            border-color: white;
+            color: white;
+            box-shadow: 0 0 20px rgba(236, 72, 153, 0.4);
+            transform: scale(0.97);
+        }
+
+        .btn-subtext {
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--slate-400);
+        }
+        
+        .hold-btn:active .btn-subtext, .hold-btn.pressed .btn-subtext {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .keyboard-hint {
+            font-size: 0.7rem;
+            color: var(--slate-400);
+            text-align: center;
+            margin-top: 0.4rem;
+        }
+
+        /* Polaroid Result Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(3, 7, 18, 0.85);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            padding: 1rem;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .result-layout {
+            display: grid;
+            grid-template-columns: 320px 380px;
+            gap: 2rem;
+            max-width: 800px;
+            width: 100%;
+            background: rgba(17, 24, 39, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @media (max-width: 768px) {
+            .result-layout {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+                padding: 1.25rem;
+            }
+        }
+
+        .modal-overlay.show .result-layout {
+            transform: scale(1);
+        }
+
+        /* Polaroid Photo style */
+        .polaroid-frame {
+            background: white;
+            padding: 12px 12px 24px 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+            border-radius: 4px;
+            transform: rotate(-2deg);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            width: 100%;
+            max-width: 320px;
+            margin: 0 auto;
+        }
+
+        .polaroid-image-container {
+            width: 100%;
+            aspect-ratio: 1;
+            background: #050505;
+            overflow: hidden;
+            border: 1px solid #ddd;
+            position: relative;
+        }
+
+        .polaroid-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .polaroid-caption {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            color: #374151;
+            text-align: center;
+            border-top: 1px dashed #eee;
+            padding-top: 10px;
+        }
+
+        .polaroid-caption .date {
+            font-size: 0.65rem;
+            color: #9ca3af;
+            display: block;
+            margin-top: 2px;
+        }
+
+        /* Evaluation right panel */
+        .eval-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .rank-badge-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1rem;
+        }
+
+        .result-rank {
+            font-family: 'Outfit', sans-serif;
+            font-size: 2.5rem;
+            font-weight: 900;
+            padding: 0.15rem 1rem;
+            border-radius: 12px;
+            line-height: 1;
+        }
+
+        .result-rank.perfect {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--neon-green);
+            border: 2px solid var(--neon-green);
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .result-rank.great {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--neon-blue);
+            border: 2px solid var(--neon-blue);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+        }
+
+        .result-rank.good {
+            background: rgba(234, 179, 8, 0.1);
+            color: var(--neon-yellow);
+            border: 2px solid var(--neon-yellow);
+            box-shadow: 0 0 15px rgba(234, 179, 8, 0.3);
+        }
+
+        .result-rank.miss {
+            background: rgba(236, 72, 153, 0.1);
+            color: var(--neon-pink);
+            border: 2px solid var(--neon-pink);
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.3);
+        }
+
+        .result-title {
+            font-size: 1.35rem;
+            font-weight: 900;
+            color: white;
+            text-align: left;
+        }
+
+        .result-metrics {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1rem;
+            margin: 1rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 700;
+        }
+
+        .metric-row span.lbl {
+            color: var(--slate-400);
+        }
+
+        .metric-row span.val {
+            color: white;
+        }
+
+        .eval-feedback-box {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            background: rgba(99, 102, 241, 0.08);
+            border-left: 4px solid var(--primary);
+            border-radius: 4px;
+            padding: 0.85rem;
+            color: #d1d5db;
+            margin-bottom: 1.5rem;
+            text-align: left;
+        }
+
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+        }
+
+        .action-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 800;
+            font-size: 0.95rem;
+            padding: 0.75rem;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .action-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--slate-300);
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            border: none;
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .action-btn.primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        /* Floating particles behind grid */
+        .toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-eye-dropper"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>눈의 조절 작용 시뮬레이션 게임</h1>
+                    <p>섬모체와 수정체의 작용을 조작하여 움직이는 물체에 초점을 맞추어보세요!</p>
+                </div>
+            </div>
+            
+            <a href="index.html" class="link-back">
+                <i class="fa-solid fa-arrow-left"></i> 과학실험실 홈으로 돌아가기
+            </a>
+        </header>
+
+        <!-- LOBBY SCREEN (Settings before play) -->
+        <section class="glass-panel lobby-screen" id="lobby-screen">
+            <div class="lobby-tabs">
+                <button class="tab-btn active" id="tab-single-btn" onclick="switchLobbyTab('single')">
+                    <i class="fa-solid fa-user"></i> 혼자 하기
+                </button>
+                <button class="tab-btn" id="tab-student-btn" onclick="switchLobbyTab('student')">
+                    <i class="fa-solid fa-users"></i> 학생 참가
+                </button>
+                <button class="tab-btn" id="tab-teacher-btn" onclick="switchLobbyTab('teacher')">
+                    <i class="fa-solid fa-chalkboard-user"></i> 교사 대시보드
+                </button>
+            </div>
+
+            <!-- TAB 1: Single Player -->
+            <div class="tab-content active" id="pane-single">
+                <div class="lobby-title">
+                    <h2>실시간 초점 스냅샷 레이스</h2>
+                    <p>눈의 섬모체 조절 메커니즘을 3D 그래픽으로 익혀보세요.</p>
+                </div>
+                <div class="science-box">
+                    <div class="science-item near">
+                        <h3><i class="fa-solid fa-compress"></i> 가까운 곳을 볼 때</h3>
+                        <p>섬모체가 수축하면 수정체가 두꺼워져 가까운 곳에 초점을 맞춥니다.</p>
+                    </div>
+                    <div class="science-item">
+                        <h3><i class="fa-solid fa-expand"></i> 먼 곳을 볼 때</h3>
+                        <p>섬모체가 이완하면 수정체가 얇아져 먼 곳에 초점을 맞춥니다.</p>
+                    </div>
+                </div>
+                <div class="setup-controls">
+                    <div class="input-group">
+                        <label for="player-name"><i class="fa-solid fa-user"></i> 닉네임</label>
+                        <input type="text" id="player-name" placeholder="닉네임 입력 (2~8자)" value="눈초점마스터">
+                    </div>
+                    <div class="input-group" style="display:none;">
+                        <input type="range" id="single-aperture-slider" min="0.001" max="0.050" step="0.001" value="0.007" oninput="updateSingleBlurSettings()">
+                        <span id="single-aperture-val">0.007</span>
+                        <input type="range" id="single-maxblur-slider" min="0.0000" max="0.0100" step="0.0001" value="0.0100" oninput="updateSingleBlurSettings()">
+                        <span id="single-maxblur-val">0.0100</span>
+                    </div>
+                    <button class="start-btn" onclick="startGame()">
+                        <i class="fa-solid fa-play"></i> 게임 시작
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 2: Student -->
+            <div class="tab-content" id="pane-student">
+                <div class="lobby-title">
+                    <h2>학생 참가</h2>
+                    <p>교사가 안내한 PIN 번호와 닉네임을 입력하세요.</p>
+                </div>
+                <div class="setup-controls">
+                    <div class="input-group">
+                        <label for="student-pin-input">PIN 번호</label>
+                        <input type="text" id="student-pin-input" placeholder="PIN 번호">
+                    </div>
+                    <div class="input-group">
+                        <label for="student-nickname-input">닉네임</label>
+                        <input type="text" id="student-nickname-input" placeholder="닉네임">
+                    </div>
+                    <button class="start-btn" onclick="joinAsStudent()">참가하기</button>
+                </div>
+            </div>
+
+            <!-- TAB 3: Teacher -->
+            <div class="tab-content" id="pane-teacher">
+                <div id="teacher-login-block">
+                    <div class="lobby-title">
+                        <h2>교사 대시보드</h2>
+                        <p>Google 계정으로 로그인하여 수업 세션을 개설하세요.</p>
+                    </div>
+                    <button class="start-btn" onclick="handleTeacherLogin()">교사 로그인</button>
+                </div>
+                <div id="teacher-dashboard-block" style="display:none;">
+                    <p id="teacher-email-txt"></p>
+                    <p>세션 PIN: <strong id="teacher-pin-txt">------</strong></p>
+                    <p>접속 학생: <strong id="connected-students-count">0</strong>명</p>
+                    <div id="teacher-student-list"></div>
+                    <div class="input-group">
+                        <label>목표 거리 <span id="teacher-target-val">35.0m</span></label>
+                        <input type="range" id="teacher-target-slider" min="19" max="49" step="0.5" value="35" oninput="teacherSyncSettings()">
+                    </div>
+                    <div class="input-group">
+                        <label>제한 시간 <span id="teacher-wait-val">15초</span></label>
+                        <input type="range" id="teacher-wait-slider" min="5" max="60" step="1" value="15" oninput="teacherSyncSettings()">
+                    </div>
+                    <select id="teacher-diff-select" onchange="teacherSyncSettings()">
+                        <option value="easy">쉬움</option>
+                        <option value="medium">보통</option>
+                        <option value="hard">어려움</option>
+                    </select>
+                    <button class="start-btn" onclick="teacherTriggerLaunch()">실험 시작</button>
+                    <button class="action-btn" onclick="teacherResetRound()">라운드 초기화</button>
+                    <table><tbody id="teacher-rankings-rows"></tbody></table>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAME PLAY ARENA SCREEN -->
+        <section class="arena-screen" id="arena-screen">
+            <div class="viewport-panel">
+                <div class="viewport-frame">
+                    <div id="canvas-container"></div>
+                    <div class="shutter-flash" id="shutter-flash"></div>
+                    <div class="focus-indicator-overlay">
+                        <i class="fa-solid fa-crosshairs"></i>
+                        <span>초점 거리: <span id="focal-indicator-txt">37.5m</span></span>
+                    </div>
+                    <div class="countdown-overlay" id="countdown-hud">150</div>
+                    <div class="target-prompt-overlay" id="target-prompt">
+                        <span class="target-color-dot" id="target-dot"></span>
+                        <span id="target-desc">타겟 원반에 초점을 맞추세요.</span>
+                    </div>
+                </div>
+                <div class="time-warning-overlay" id="time-warning-overlay"></div>
+            </div>
+
+            <aside class="sidebar">
+                <div class="hud-panel">
+                    <div class="hud-item"><div class="hud-label">Round</div><div class="hud-val" id="round-val">1 / 5</div></div>
+                    <div class="hud-item"><div class="hud-label">Score</div><div class="hud-val" id="score-val">0</div></div>
+                    <div class="hud-item"><div class="hud-label">Combo</div><div class="hud-val combo" id="combo-val">0</div></div>
+                    <button class="action-btn" onclick="toggleSound()"><i class="fa-solid fa-volume-high" id="sound-icon"></i><span id="sound-txt">ON</span></button>
+                </div>
+
+                <div class="eye-canvas-panel">
+                    <div class="panel-heading"><i class="fa-solid fa-eye"></i><span>실시간 초점 상태</span></div>
+                    <div class="eye-diagram-container"><canvas id="eye-canvas" width="600" height="300"></canvas></div>
+                    <div class="eye-labels-indicator">
+                        <span id="label-ciliary">섬모체 수축: 0%</span>
+                        <span id="label-lens">수정체: 얇음</span>
+                    </div>
+                </div>
+
+                <div class="focus-control-panel">
+                    <div class="panel-heading"><i class="fa-solid fa-ruler"></i><span>원반별 초점 거리 오차</span></div>
+                    <div>01: <span id="dist-val-2">0.0m</span></div>
+                    <div>02: <span id="dist-val-1">0.0m</span></div>
+                    <div>03: <span id="dist-val-0">0.0m</span></div>
+                    <div class="focus-gauge-wrapper" id="gauge-wrapper">
+                        <div class="gauge-bar-container">
+                            <div id="focal-plane-marker"></div>
+                            <div id="target-dist-marker"></div>
+                        </div>
+                        <div class="gauge-ticks"><span>가까움</span><span>멂</span></div>
+                    </div>
+                    <div class="input-group">
+                        <label>오브젝트 선명 구간 <span id="sharp-range-val">0.1m</span></label>
+                        <input type="range" id="sharp-range-slider" min="0.0" max="20.0" step="0.1" value="0.1" oninput="updateSharpRange()">
+                    </div>
+                    <div class="input-group">
+                        <label>그리드 선명 구간 <span id="grid-sharp-range-val">0.1m</span></label>
+                        <input type="range" id="grid-sharp-range-slider" min="0.0" max="20.0" step="0.1" value="0.1" oninput="updateGridSharpRange()">
+                    </div>
+                    <label><input type="checkbox" id="show-focal-guide-checkbox" onchange="toggleFocalGuide()"> 노란색 초점 가이드 표시</label>
+                    <div class="control-button-area">
+                        <button class="hold-btn" id="hold-action-btn">
+                            <span>섬모체 수축</span>
+                            <span class="btn-subtext">누르고 있는 동안 가까운 곳에 초점을 맞춥니다.</span>
+                        </button>
+                        <div class="keyboard-hint">Spacebar 또는 위쪽 방향키를 사용할 수 있습니다.</div>
+                    </div>
+                </div>
+
+                <div class="focus-control-panel" id="realtime-blur-panel" style="display:none !important;">
+                    <input type="range" id="game-aperture-slider" min="0.001" max="0.050" step="0.001" value="0.007" oninput="updateGameBlurSettings()">
+                    <span id="game-aperture-val">0.007</span>
+                    <input type="range" id="game-maxblur-slider" min="0.0000" max="0.0100" step="0.0001" value="0.0100" oninput="updateGameBlurSettings()">
+                    <span id="game-maxblur-val">0.0100</span>
+                </div>
+            </aside>
+        </section>
+    </div>
+
+    <!-- Student Waiting Fullscreen Overlay -->
+    <div class="student-waiting-overlay" id="student-waiting-overlay">
+        <div class="waiting-spinner"></div>
+        <div class="waiting-card">
+            <h2 style="font-size:1.5rem; font-weight:900; color:white; margin-bottom:0.5rem;">가상 실험 대기실</h2>
+            <p style="font-size:0.85rem; color:var(--slate-300);">교사가 실험을 개시할 때까지 대기하고 있습니다.</p>
+            
+            <div class="wait-settings-box">
+                <div class="wait-settings-row">
+                    <span class="lbl">촬영 타이머 시간</span>
+                    <span class="val" id="wait-pin-display" style="color:var(--neon-blue);">------</span>
+                </div>
+                <div class="wait-settings-row">
+                    <span class="lbl">내 닉네임</span>
+                    <span class="val" id="wait-nick-display">---</span>
+                </div>
+                <div class="wait-settings-row" style="border-top:1px dashed rgba(255,255,255,0.08); padding-top:0.65rem; margin-top:0.3rem;">
+                    <span class="lbl">교사 설정 목표</span>
+                    <span class="val" id="wait-target-display" style="color:var(--neon-yellow);">대기 중...</span>
+                </div>
+                <div class="wait-settings-row">
+                    <span class="lbl">珥ъ쁺 ??대㉧ ?쒓컙</span>
+                    <span class="val" id="wait-timer-display" style="color:var(--neon-pink);">대기 중...</span>
+                </div>
+                <div class="wait-settings-row">
+                    <span class="lbl">실험 난이도</span>
+                    <span class="val" id="wait-diff-display">대기 중...</span>
+                </div>
+            </div>
+            
+            <button class="action-btn" onclick="location.reload()" style="margin-top:1.5rem; width:100%;">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i> 접속 취소
+            </button>
+        </div>
+    </div>
+
+    <!-- Complete Result modal window -->
+    <div class="modal-overlay" id="result-modal-overlay">
+        <div class="result-layout">
+            <!-- Left: Polaroid snapshot -->
+            <div>
+                <div class="polaroid-frame">
+                    <div class="polaroid-image-container">
+                        <img id="snap-img" class="polaroid-image" src="" alt="찰칵 촬영된 사진">
+                    </div>
+                    <div class="polaroid-caption">
+                        <span id="snap-caption-text">스냅 타겟 물체 찰칵!</span>
+                        <span class="date" id="snap-date">2026.05.30 12:00</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Evaluation & score info -->
+            <div class="eval-panel">
+                <div>
+                    <div class="rank-badge-row">
+                        <h2 class="result-title">촬영 판정 결과</h2>
+                        <div class="result-rank perfect" id="result-rank-badge">PERFECT</div>
+                    </div>
+
+                    <div class="eval-feedback-box" id="eval-feedback-txt">섬모체가 완벽하게 조절되어 수정체의 굴절 상태가 타겟과의 거리에 정확히 일치했습니다! 빛의 수렴점이 망막에 선명하게 맺혔습니다.</div>
+
+                    <div class="result-metrics">
+                        <div class="metric-row">
+                            <span class="lbl">타겟의 실제 거리</span>
+                            <span class="val" id="res-target-dist">35.4m</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="lbl">맞춘 초점 거리</span>
+                            <span class="val" id="res-focus-dist">34.8m</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="lbl">초점 조절 오차</span>
+                            <span class="val" id="res-error-offset" style="color: var(--neon-blue);">0.6m (매우 정확)</span>
+                        </div>
+                        <div class="metric-row" id="res-rank-row" style="display:none; color:var(--neon-green);">
+                            <span class="lbl">클래스 내 순위</span>
+                            <span class="val" id="res-rank-txt" style="font-weight:900;">1위 / 1명</span>
+                        </div>
+                        <div class="metric-row" style="border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.5rem; margin-top: 0.3rem;">
+                            <span class="lbl">획득 점수</span>
+                            <span class="val" id="res-earned-score" style="color: var(--neon-yellow); font-size: 1.15rem;">120점</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer buttons -->
+                <div class="action-buttons">
+                    <button class="action-btn" onclick="exitToLobby()"><i class="fa-solid fa-home"></i> 홈으로</button>
+                    <!-- Next round button will be labeled waiting in multiplayer -->
+                    <button class="action-btn primary" id="next-round-btn" onclick="proceedToNextRound()"><i class="fa-solid fa-arrow-right"></i> 다음 라운드</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast message overlay -->
+    <div class="toast-notification" id="toast-notify">
+        <i class="fa-solid fa-circle-info" style="color: var(--neon-blue);"></i>
+        <span id="toast-text">알림 메시지</span>
+    </div>
+
+    <!-- Web Synthesizer Sound Class -->
+    <script>
+        class EyeGameAudio {
+            constructor() {
+                this.ctx = null;
+                this.muted = false;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (this.ctx.state === 'suspended') {
+                    this.ctx.resume();
+                }
+            }
+
+            playBeep(freq = 600, duration = 0.1, type = 'sine') {
+                if (this.muted) return;
+                this.init();
+                
+                const osc = this.ctx.createOscillator();
+                const gainNode = this.ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gainNode.gain.setValueAtTime(0.15, this.ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            }
+
+            playShutter() {
+                if (this.muted) return;
+                this.init();
+
+                // High-pass filtered noise to simulate mechanical shutter sound
+                const bufferSize = this.ctx.sampleRate * 0.15; // 150ms
+                const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+
+                const noise = this.ctx.createBufferSource();
+                noise.buffer = buffer;
+
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1500, this.ctx.currentTime);
+                filter.Q.setValueAtTime(3, this.ctx.currentTime);
+
+                const gainNode = this.ctx.createGain();
+                gainNode.gain.setValueAtTime(0.3, this.ctx.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.12);
+
+                noise.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(this.ctx.destination);
+
+                noise.start();
+
+                // Double click effect
+                setTimeout(() => {
+                    this.playBeep(800, 0.05, 'triangle');
+                }, 50);
+            }
+
+            playSuccess() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 chord
+                notes.forEach((freq, index) => {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, now + index * 0.07);
+                    
+                    gain.gain.setValueAtTime(0.1, now + index * 0.07);
+                    gain.gain.exponentialRampToValueAtTime(0.001, now + index * 0.07 + 0.3);
+                    
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start(now + index * 0.07);
+                    osc.stop(now + index * 0.07 + 0.35);
+                });
+            }
+
+            playFail() {
+                if (this.muted) return;
+                this.init();
+                const now = this.ctx.currentTime;
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(120, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.35);
+                
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(now + 0.4);
+            }
+
+            playFocusTick(freq = 400) {
+                if (this.muted) return;
+                this.init();
+                
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                
+                gain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.03);
+                
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                
+                osc.start();
+                osc.stop(this.ctx.currentTime + 0.03);
+            }
+        }
+
+        const gameAudio = new EyeGameAudio();
+    </script>
+
+    <!-- Main Module Script -->
+    <script type="module">
+        import { ClassroomNetwork } from './js/network.js';
+
+        // Supabase Project Creds
+        const SUPABASE_URL = "https://vdyvpsteofvhbvvrilxe.supabase.co";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU";
+
+        // Game States & Configurations
+        let gameMode = 'lobby'; // lobby, active, result, finished
+        let userRole = 'single'; // single | student | teacher
+        let isMultiplayer = false;
+        let sessionPin = '';
+
+        let difficulty = 'easy'; // easy, medium, hard
+        let playerName = '';
+        let currentRound = 1;
+        const maxRounds = 5;
+        let score = 0;
+        let combo = 0;
+        
+        let ciliaryContraction = 0.0; // 0.0 (fully relaxed) to 1.0 (fully contracted)
+        let isButtonPressed = false;
+        let focalDistance = 37.5; // Default starts at 37.5m (ranges between 7.5m and 52.5m, 1.5諛?議곗젙 諛섏쁺)
+        let targetDistance = 35.0;
+        let shutterWaitTime = 150.0; // Extended test duration (seconds)
+
+        let soundEnabled = true;
+
+        // Multiplayer structures
+        let classroomNetwork = null;
+        let activeStudents = [];
+        let studentResults = []; // Aggregated scores in teacher dashboard
+
+        // Target Objects List
+        const objectsConfig = [
+            { id: 'robot', name: '?곗깋 ?먮컲', color: '#ffffff', hex: 0xffffff, zBase: 26.0 }, // 3媛?洹몃━???쒗븳(Z=21m)??留욎떠 zBase ?곹뼢
+            { id: 'torus', name: '?곗깋 ?먮컲', color: '#ffffff', hex: 0xffffff, zBase: 36.0 },
+            { id: 'drone', name: '?곗깋 ?먮컲', color: '#ffffff', hex: 0xffffff, zBase: 46.0 }
+        ];
+
+        let targetObjectIndex = 0; // Current round target index
+        let roundTimeLeft = 3.0; // 媛蹂 移댁슫?몃떎????대㉧
+        let gameTimerInterval = null;
+        let photoCaptureTimeout = null;
+
+        // DOM elements
+        const lobbyScreen = document.getElementById('lobby-screen');
+        const arenaScreen = document.getElementById('arena-screen');
+        const holdBtn = document.getElementById('hold-action-btn');
+        const countdownHud = document.getElementById('countdown-hud');
+        const shutterFlash = document.getElementById('shutter-flash');
+        const timeWarningOverlay = document.getElementById('time-warning-overlay');
+        const targetPrompt = document.getElementById('target-prompt');
+        const targetDot = document.getElementById('target-dot');
+        const targetDesc = document.getElementById('target-desc');
+        const focalIndicatorTxt = document.getElementById('focal-indicator-txt');
+        const roundVal = document.getElementById('round-val');
+        const scoreVal = document.getElementById('score-val');
+        const comboVal = document.getElementById('combo-val');
+        const focalPlaneMarker = document.getElementById('focal-plane-marker');
+        const targetDistMarker = document.getElementById('target-dist-marker');
+        const gaugeWrapper = document.getElementById('gauge-wrapper');
+        const soundIcon = document.getElementById('sound-icon');
+        const soundTxt = document.getElementById('sound-txt');
+
+        // Results elements
+        const resultModal = document.getElementById('result-modal-overlay');
+        const snapImg = document.getElementById('snap-img');
+        const snapCaptionText = document.getElementById('snap-caption-text');
+        const snapDate = document.getElementById('snap-date');
+        const resultRankBadge = document.getElementById('result-rank-badge');
+        const evalFeedbackTxt = document.getElementById('eval-feedback-txt');
+        const resTargetDist = document.getElementById('res-target-dist');
+        const resFocusDist = document.getElementById('res-focus-dist');
+        const resErrorOffset = document.getElementById('res-error-offset');
+        const resEarnedScore = document.getElementById('res-earned-score');
+        const nextRoundBtn = document.getElementById('next-round-btn');
+
+        // 2D Anatomy Eye Diagram Canvas
+        const eyeCanvas = document.getElementById('eye-canvas');
+        const eyeCtx = eyeCanvas.getContext('2d');
+        const labelCiliary = document.getElementById('label-ciliary');
+        const labelLens = document.getElementById('label-lens');
+
+        // Three.js instances
+        let renderer, scene, camera;
+        let composer, renderPass, bokehPass;
+        let meshes = [];
+        let tunnelGridGroup;
+        let focalFrameMesh;
+        let focalShadowMesh;
+        let isThreeInitialized = false;
+
+        // --- Lobby Tab Switching ---
+        function switchLobbyTab(tabName) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(pane => pane.classList.remove('active'));
+
+            if (tabName === 'single') {
+                document.getElementById('tab-single-btn').classList.add('active');
+                document.getElementById('pane-single').classList.add('active');
+            } else if (tabName === 'student') {
+                document.getElementById('tab-student-btn').classList.add('active');
+                document.getElementById('pane-student').classList.add('active');
+            } else if (tabName === 'teacher') {
+                document.getElementById('tab-teacher-btn').classList.add('active');
+                document.getElementById('pane-teacher').classList.add('active');
+                initTeacherMode();
+            }
+        }
+
+        // --- Difficulty Setup ---
+        function setDifficulty(diff) {
+            difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`.diff-btn[data-diff="${diff}"]`).classList.add('active');
+            
+            // Update custom blur sliders to match selected difficulty presets
+            const presetAperture = diff === 'hard' ? 0.020 : (diff === 'medium' ? 0.012 : 0.007);
+            const presetMaxblur = 0.0100;
+            
+            document.getElementById('single-aperture-slider').value = presetAperture;
+            document.getElementById('single-aperture-val').textContent = presetAperture.toFixed(3);
+            
+            document.getElementById('single-maxblur-slider').value = presetMaxblur;
+            document.getElementById('single-maxblur-val').textContent = presetMaxblur.toFixed(4);
+
+            // Also sync game sliders if they exist
+            const gameApSlider = document.getElementById('game-aperture-slider');
+            const gameMbSlider = document.getElementById('game-maxblur-slider');
+            if (gameApSlider && gameMbSlider) {
+                gameApSlider.value = presetAperture;
+                document.getElementById('game-aperture-val').textContent = presetAperture.toFixed(3);
+                gameMbSlider.value = presetMaxblur;
+                document.getElementById('game-maxblur-val').textContent = presetMaxblur.toFixed(4);
+            }
+        }
+
+        function updateSingleBlurSettings() {
+            const apVal = parseFloat(document.getElementById('single-aperture-slider').value);
+            const mbVal = parseFloat(document.getElementById('single-maxblur-slider').value);
+            document.getElementById('single-aperture-val').textContent = apVal.toFixed(3);
+            document.getElementById('single-maxblur-val').textContent = mbVal.toFixed(4);
+
+            // Sync to game sliders
+            const gameApSlider = document.getElementById('game-aperture-slider');
+            const gameMbSlider = document.getElementById('game-maxblur-slider');
+            if (gameApSlider && gameMbSlider) {
+                gameApSlider.value = apVal;
+                document.getElementById('game-aperture-val').textContent = apVal.toFixed(3);
+                gameMbSlider.value = mbVal;
+                document.getElementById('game-maxblur-val').textContent = mbVal.toFixed(4);
+            }
+        }
+
+        function updateGameBlurSettings() {
+            const apVal = parseFloat(document.getElementById('game-aperture-slider').value);
+            const mbVal = parseFloat(document.getElementById('game-maxblur-slider').value);
+            
+            document.getElementById('game-aperture-val').textContent = apVal.toFixed(3);
+            document.getElementById('game-maxblur-val').textContent = mbVal.toFixed(4);
+            
+            // Sync back to lobby sliders
+            document.getElementById('single-aperture-slider').value = apVal;
+            document.getElementById('single-aperture-val').textContent = apVal.toFixed(3);
+            document.getElementById('single-maxblur-slider').value = mbVal;
+            document.getElementById('single-maxblur-val').textContent = mbVal.toFixed(4);
+            
+            // Apply immediately to Three.js bokehPass uniforms
+            if (isThreeInitialized && bokehPass) {
+                bokehPass.uniforms[ 'aperture' ].value = apVal;
+                bokehPass.uniforms[ 'maxblur' ].value = mbVal;
+            }
+        }
+
+        function updateSharpRange() {
+            const sharpRange = parseFloat(document.getElementById('sharp-range-slider').value);
+            document.getElementById('sharp-range-val').textContent = `${sharpRange.toFixed(1)}m`;
+
+            if (isThreeInitialized && bokehPass && bokehPass.uniforms[ 'sharpRange' ]) {
+                bokehPass.uniforms[ 'sharpRange' ].value = sharpRange;
+            }
+        }
+
+        function updateGridSharpRange() {
+            const gridSharpRange = parseFloat(document.getElementById('grid-sharp-range-slider').value);
+            document.getElementById('grid-sharp-range-val').textContent = `${gridSharpRange.toFixed(1)}m`;
+            updateGridFocusColors();
+        }
+
+        function toggleFocalGuide() {
+            const isVisible = document.getElementById('show-focal-guide-checkbox').checked;
+            if (focalFrameMesh) focalFrameMesh.visible = isVisible;
+            if (focalShadowMesh) focalShadowMesh.visible = isVisible;
+        }
+
+        function updateGridFocusColors() {
+            if (!tunnelGridGroup) return;
+
+            const gridSharpRange = parseFloat(document.getElementById('grid-sharp-range-slider').value);
+            const fadeDistance = 12.0;
+            const focusedColor = new THREE.Color(0x334155);
+            const blurredColor = new THREE.Color(0xffffff);
+            const mixedColor = new THREE.Color();
+
+            tunnelGridGroup.children.forEach(lines => {
+                const points = lines.userData.gridPoints;
+                const colorAttr = lines.geometry.getAttribute('color');
+                if (!points || !colorAttr) return;
+
+                points.forEach((point, index) => {
+                    const focusOffset = Math.abs(point.z - focalDistance);
+                    const blurRatio = THREE.MathUtils.clamp((focusOffset - gridSharpRange) / fadeDistance, 0, 1);
+                    mixedColor.copy(focusedColor).lerp(blurredColor, blurRatio);
+                    colorAttr.setXYZ(index, mixedColor.r, mixedColor.g, mixedColor.b);
+                });
+                colorAttr.needsUpdate = true;
+            });
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            gameAudio.muted = !soundEnabled;
+            if (soundEnabled) {
+                if (soundIcon) {
+                    soundIcon.className = "fa-solid fa-volume-high";
+                    soundIcon.style.color = "var(--primary)";
+                }
+                if (soundTxt) soundTxt.textContent = "ON";
+                showToast("?뵄 ?④낵?뚯씠 耳쒖죱?듬땲??");
+            } else {
+                if (soundIcon) {
+                    soundIcon.className = "fa-solid fa-volume-xmark";
+                    soundIcon.style.color = "var(--slate-700)";
+                }
+                if (soundTxt) soundTxt.textContent = "OFF";
+                showToast("?뵁 ?④낵?뚯씠 爰쇱죱?듬땲??");
+            }
+        }
+
+        // --- Toast notification ---
+        function showToast(msg) {
+            const toast = document.getElementById('toast-notify');
+            document.getElementById('toast-text').textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+        // --- Create stationary target disks ---
+        function createTargetObjects() {
+            meshes.forEach(mesh => scene.remove(mesh));
+            meshes = [];
+
+            const bounds = {
+                minX: -12, maxX: 12,
+                minY: 0.0, maxY: 8.5,
+                minZ: 19.0, maxZ: 49.0
+            };
+
+            objectsConfig.forEach((cfg, index) => {
+                const diskGroup = new THREE.Group();
+
+                const targetOutlineGeom = new THREE.CylinderGeometry(2.95, 2.95, 0.08, 64);
+                const targetOutlineMat = new THREE.MeshBasicMaterial({
+                    color: 0xef4444,
+                    transparent: true,
+                    opacity: 0
+                });
+                const targetOutlineMesh = new THREE.Mesh(targetOutlineGeom, targetOutlineMat);
+                targetOutlineMesh.rotation.x = Math.PI / 2;
+                targetOutlineMesh.position.z = 0.03;
+                targetOutlineMesh.visible = false;
+                diskGroup.add(targetOutlineMesh);
+
+                const outlineGeom = new THREE.CylinderGeometry(2.8333, 2.8333, 0.08, 64);
+                const outlineMat = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const outlineMesh = new THREE.Mesh(outlineGeom, outlineMat);
+                outlineMesh.rotation.x = Math.PI / 2;
+                diskGroup.add(outlineMesh);
+
+                const geom = new THREE.CylinderGeometry(2.7667, 2.7667, 0.08, 64);
+                const mat = new THREE.MeshBasicMaterial({ color: cfg.hex });
+                const colorMesh = new THREE.Mesh(geom, mat);
+                colorMesh.rotation.x = Math.PI / 2;
+                colorMesh.position.z = -0.05;
+                colorMesh.castShadow = true;
+                colorMesh.receiveShadow = true;
+                diskGroup.add(colorMesh);
+
+                const labelCanvas = document.createElement('canvas');
+                labelCanvas.width = 512;
+                labelCanvas.height = 512;
+                const labelCtx = labelCanvas.getContext('2d');
+                labelCtx.fillStyle = '#000000';
+                labelCtx.font = '900 270px Outfit, sans-serif';
+                labelCtx.textAlign = 'center';
+                labelCtx.textBaseline = 'middle';
+                labelCtx.fillText(String(3 - index).padStart(2, '0'), 256, 280);
+
+                const labelTexture = new THREE.CanvasTexture(labelCanvas);
+                const labelMaterial = new THREE.MeshBasicMaterial({
+                    map: labelTexture,
+                    transparent: true,
+                    depthWrite: false,
+                    side: THREE.DoubleSide
+                });
+                const labelMesh = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 4.8), labelMaterial);
+                labelMesh.position.z = -0.11;
+                labelMesh.scale.x = -1;
+                diskGroup.add(labelMesh);
+
+                const clampedZ = bounds.minZ + index * ((bounds.maxZ - bounds.minZ) / 2);
+                let spawnX = 0.0;
+                if (index === 0) spawnX = -6.5;
+                else if (index === 2) spawnX = 6.5;
+
+                const boundsBox = new THREE.Box3().setFromObject(diskGroup);
+                const spawnY = -boundsBox.min.y;
+                diskGroup.position.set(spawnX, spawnY, clampedZ);
+
+                diskGroup.userData = {
+                    config: cfg,
+                    outlineMesh,
+                    outlineMaterial: outlineMat,
+                    targetOutlineMesh,
+                    targetOutlineMaterial: targetOutlineMat,
+                    speedX: 0.0,
+                    speedY: 0.0,
+                    speedZ: 0.0,
+                    floorY: spawnY,
+                    bounds
+                };
+
+                scene.add(diskGroup);
+                meshes.push(diskGroup);
+            });
+        }
+
+        function onWindowResize() {
+            if (!renderer || !camera || !composer) return;
+
+            const container = document.getElementById('canvas-container');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+            if (!w || !h) return;
+
+            camera.aspect = w / h;
+            camera.updateProjectionMatrix();
+            renderer.setSize(w, h);
+            composer.setSize(w, h);
+        }
+
+        // --- Init Three.js 3D Scene ---
+        function initThreeJS() {
+            const container = document.getElementById('canvas-container');
+            const w = container.clientWidth;
+            const h = container.clientHeight;
+
+            // Scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xf1f5f9); // Bright grey-blue sky background
+            scene.fog = new THREE.FogExp2(0xf1f5f9, 0.008); // Light fog
+
+            // Camera
+            camera = new THREE.PerspectiveCamera(45, w / h, 6.0, 90.0); // 1.5諛?怨듦컙 源딆씠??留욎떠 near, far 議곗젙
+            camera.position.set(0, 5, 0);
+            camera.lookAt(0, 5, 100);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.setSize(w, h);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap; // Enable soft shadows
+            container.appendChild(renderer.domElement);
+
+            // Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.55); // Brighter ambient for light mode
+            scene.add(ambientLight);
+
+            const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+            dirLight.position.set(0, 50, 30); // ?섏쭅 議곕챸 諛곗튂瑜??꾪빐 X=0, Z=30?쇰줈 諛곗튂 蹂寃?(1.5諛?怨듦컙 源딆씠 諛섏쁺)
+            dirLight.castShadow = true;
+            
+            // Set light target to straight down to the floor of the chamber
+            dirLight.target.position.set(0, 0, 30);
+            scene.add(dirLight.target);
+            
+            // Configure shadow camera properties for full chamber coverage
+            dirLight.shadow.mapSize.width = 2048;
+            dirLight.shadow.mapSize.height = 2048;
+            dirLight.shadow.camera.near = 0.5;
+            dirLight.shadow.camera.far = 150;
+            dirLight.shadow.camera.left = -25;
+            dirLight.shadow.camera.right = 25;
+            dirLight.shadow.camera.top = 25;
+            dirLight.shadow.camera.bottom = -25;
+            dirLight.shadow.bias = -0.0005; // Prevent shadow acne
+            dirLight.shadow.radius = 6.0; // 硫대컻愿?Area Light) 洹몃┝???곗텧???꾪빐 ?뚰봽????꾩슦 釉붾윭 諛섍꼍??6.0?쇰줈 利앷?
+            
+            scene.add(dirLight);
+
+            const pointLight = new THREE.PointLight(0x4f46e5, 1.2, 100);
+            pointLight.position.set(0, 10, 22.5); // Z ?꾩튂瑜?1.5諛?議곗젙 諛섏쁺
+            scene.add(pointLight);
+
+            // Create 3D wireframe perspective tunnel grid (based on the user's layout)
+            const tunnelGroup = new THREE.Group();
+            const minX = -12, maxX = 12;
+            const minY = 0.0, maxY = 8.5;
+            const minZ = 9.0, maxZ = 55.0; // Target max is 51m; leave a 4m visual buffer before the back wall.
+
+            const gridMaterial = new THREE.LineBasicMaterial({
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.9
+            });
+            const bottomPoints = [];
+            const topPoints = [];
+            const leftPoints = [];
+            const rightPoints = [];
+            const backPoints = [];
+            // 8x8 divisions for horizontal (X) and vertical (Y) grids
+            const xSteps = [-12, -9, -6, -3, 0, 3, 6, 9, 12];
+            const ySteps = [0.0, 1.0625, 2.125, 3.1875, 4.25, 5.3125, 6.375, 7.4375, 8.5];
+
+            // Longitudinal lines for each tunnel surface.
+            for (let z = minZ; z < maxZ; z += 1.0) {
+                const nextZ = Math.min(z + 1.0, maxZ);
+                xSteps.forEach(x => {
+                    bottomPoints.push(new THREE.Vector3(x, minY, z), new THREE.Vector3(x, minY, nextZ));
+                    topPoints.push(new THREE.Vector3(x, maxY, z), new THREE.Vector3(x, maxY, nextZ));
+                });
+                ySteps.forEach(y => {
+                    leftPoints.push(new THREE.Vector3(minX, y, z), new THREE.Vector3(minX, y, nextZ));
+                    rightPoints.push(new THREE.Vector3(maxX, y, z), new THREE.Vector3(maxX, y, nextZ));
+                });
+            }
+
+            // Transverse square ring segments at regular intervals
+            for (let z = minZ; z <= maxZ; z += 4.0) {
+                bottomPoints.push(new THREE.Vector3(minX, minY, z), new THREE.Vector3(maxX, minY, z));
+                topPoints.push(new THREE.Vector3(minX, maxY, z), new THREE.Vector3(maxX, maxY, z));
+                leftPoints.push(new THREE.Vector3(minX, minY, z), new THREE.Vector3(minX, maxY, z));
+                rightPoints.push(new THREE.Vector3(maxX, minY, z), new THREE.Vector3(maxX, maxY, z));
+            }
+
+            // Close the far end visually with a grid wall. This does not affect target movement.
+            xSteps.forEach(x => {
+                backPoints.push(new THREE.Vector3(x, minY, maxZ), new THREE.Vector3(x, maxY, maxZ));
+            });
+            ySteps.forEach(y => {
+                backPoints.push(new THREE.Vector3(minX, y, maxZ), new THREE.Vector3(maxX, y, maxZ));
+            });
+
+            function addGridSurface(points) {
+                const geom = new THREE.BufferGeometry().setFromPoints(points);
+                const colors = new Float32Array(points.length * 3);
+                geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                const lines = new THREE.LineSegments(geom, gridMaterial);
+                lines.userData.gridPoints = points;
+                tunnelGroup.add(lines);
+            }
+
+            addGridSurface(bottomPoints);
+            addGridSurface(topPoints);
+            addGridSurface(leftPoints);
+            addGridSurface(rightPoints);
+            addGridSurface(backPoints);
+            scene.add(tunnelGroup);
+            tunnelGridGroup = tunnelGroup;
+            updateGridFocusColors();
+
+            // Create moving yellow focal plane frame indicator using thick 3D meshes
+            const focalFrameGroup = new THREE.Group();
+            const frameMaterial = new THREE.MeshStandardMaterial({ 
+                color: 0xfbbf24, // Bright amber-yellow
+                emissive: 0xfbbf24,
+                emissiveIntensity: 0.6,
+                transparent: true,
+                opacity: 0.9,
+                roughness: 0.3,
+                metalness: 0.2
+            });
+            
+            const edgeThickness = 0.15;
+            const frameDepth = 1.2;
+            // ?먮옒 媛? const frameMinX = -12.02, frameMaxX = 12.02;
+            // ?먮옒 媛? const frameMinY = 1.48, frameMaxY = 8.52;
+            // Attach the focal frame to the floor, ceiling, and side walls.
+            const frameMinX = -12.0, frameMaxX = 12.0;
+            const frameMinY = 0.0, frameMaxY = 8.5;
+            
+            const frameWidth = frameMaxX - frameMinX;
+            const frameHeight = frameMaxY - frameMinY;
+            
+            // Helper function to build actual 3D boxes for edges
+            function addEdgeMesh(w, h, d, px, py, pz) {
+                const geom = new THREE.BoxGeometry(w, h, d);
+                const mesh = new THREE.Mesh(geom, frameMaterial);
+                mesh.position.set(px, py, pz);
+                mesh.castShadow = false;
+                focalFrameGroup.add(mesh);
+            }
+            
+            // 4 Horizontal X-aligned edges
+            addEdgeMesh(frameWidth, edgeThickness, edgeThickness, 0, frameMinY, -frameDepth / 2);
+            addEdgeMesh(frameWidth, edgeThickness, edgeThickness, 0, frameMinY, frameDepth / 2);
+            addEdgeMesh(frameWidth, edgeThickness, edgeThickness, 0, frameMaxY, -frameDepth / 2);
+            addEdgeMesh(frameWidth, edgeThickness, edgeThickness, 0, frameMaxY, frameDepth / 2);
+            
+            // 4 Vertical Y-aligned edges
+            addEdgeMesh(edgeThickness, frameHeight, edgeThickness, frameMinX, (frameMinY + frameMaxY) / 2, -frameDepth / 2);
+            addEdgeMesh(edgeThickness, frameHeight, edgeThickness, frameMinX, (frameMinY + frameMaxY) / 2, frameDepth / 2);
+            addEdgeMesh(edgeThickness, frameHeight, edgeThickness, frameMaxX, (frameMinY + frameMaxY) / 2, -frameDepth / 2);
+            addEdgeMesh(edgeThickness, frameHeight, edgeThickness, frameMaxX, (frameMinY + frameMaxY) / 2, frameDepth / 2);
+            
+            // 4 Longitudinal Z-aligned edges
+            addEdgeMesh(edgeThickness, edgeThickness, frameDepth, frameMinX, frameMinY, 0);
+            addEdgeMesh(edgeThickness, edgeThickness, frameDepth, frameMaxX, frameMinY, 0);
+            addEdgeMesh(edgeThickness, edgeThickness, frameDepth, frameMinX, frameMaxY, 0);
+            addEdgeMesh(edgeThickness, edgeThickness, frameDepth, frameMaxX, frameMaxY, 0);
+
+            focalFrameGroup.position.set(0, 0, 37.5); // Default starts at 37.5m (1.5諛?怨듦컙 源딆씠 諛섏쁺)
+            scene.add(focalFrameGroup);
+            focalFrameMesh = focalFrameGroup;
+
+            // Red floor guide aligned with the yellow focal frame.
+            const focalShadowGroup = new THREE.Group();
+            const shadowMaterial = new THREE.MeshBasicMaterial({
+                color: 0xef4444,
+                transparent: true,
+                opacity: 0.55,
+                depthWrite: false
+            });
+            const shadowThickness = 0.18;
+
+            function addShadowEdge(w, d, px, pz) {
+                const geom = new THREE.BoxGeometry(w, 0.02, d);
+                const mesh = new THREE.Mesh(geom, shadowMaterial);
+                mesh.position.set(px, 0.03, pz);
+                focalShadowGroup.add(mesh);
+            }
+
+            addShadowEdge(frameWidth, shadowThickness, 0, -frameDepth / 2);
+            addShadowEdge(frameWidth, shadowThickness, 0, frameDepth / 2);
+            addShadowEdge(shadowThickness, frameDepth, frameMinX, 0);
+            addShadowEdge(shadowThickness, frameDepth, frameMaxX, 0);
+
+            focalShadowGroup.position.z = focalFrameGroup.position.z;
+            scene.add(focalShadowGroup);
+            focalShadowMesh = focalShadowGroup;
+            toggleFocalGuide();
+
+            // Ground floor mesh - Bright concrete look
+            const floorGeo = new THREE.PlaneGeometry(300, 300);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: 0xe2e8f0, 
+                roughness: 0.75,
+                metalness: 0.15
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // Creating the floating target objects
+            createTargetObjects();
+
+            // Depth of Field (DoF) postprocessing
+            renderPass = new THREE.RenderPass(scene, camera);
+            
+            // Setup BokehPass parameters (focus distance initially 50m)
+            const apVal = isMultiplayer 
+                ? (difficulty === 'hard' ? 0.02 : (difficulty === 'medium' ? 0.012 : 0.007)) 
+                : parseFloat(document.getElementById('single-aperture-slider').value);
+            const mbVal = isMultiplayer 
+                ? 0.0100 
+                : parseFloat(document.getElementById('single-maxblur-slider').value);
+
+            // Preserve source pixels near the focal frame so nearby blur samples do not bleed into focused objects.
+            if (THREE.BokehShader && THREE.BokehShader.fragmentShader && !THREE.BokehShader.fragmentShader.includes("distDiff")) {
+                THREE.BokehShader.uniforms.sharpRange = { value: 0.1 };
+                THREE.BokehShader.fragmentShader = THREE.BokehShader.fragmentShader.replace(
+                    "uniform float maxblur;",
+                    "uniform float maxblur; uniform float sharpRange;"
+                ).replace(
+                    "void main() {",
+                    "vec4 centerColor; float centerViewZ; vec4 depthAwareColor( vec2 uv ) { float sampleViewZ = getViewZ( getDepth( uv ) ); float allowSample = step( centerViewZ - 1.0, sampleViewZ ); return mix( centerColor, texture2D( tColor, uv ), allowSample ); } void main() {"
+                ).replace(
+                    "float viewZ = getViewZ( getDepth( vUv ) );",
+                    "float viewZ = getViewZ( getDepth( vUv ) ); centerViewZ = viewZ; centerColor = texture2D(tColor, vUv.xy);"
+                ).replace(
+                    "float factor = ( focus + viewZ );",
+                    "float distDiff = abs( -viewZ - focus ); float factor = max( distDiff - sharpRange, 0.0 ) * 0.5;"
+                ).replace(
+                    "gl_FragColor = col / 41.0;",
+                    "vec4 blurredColor = col / 41.0; float blurMix = smoothstep( sharpRange, sharpRange + 1.0, distDiff ); gl_FragColor = mix( centerColor, blurredColor, blurMix );"
+                );
+                THREE.BokehShader.fragmentShader = THREE.BokehShader.fragmentShader
+                    .split("texture2D( tColor, vUv.xy")
+                    .join("depthAwareColor( vUv.xy");
+                if (!THREE.BokehShader.fragmentShader.includes("blurMix")) {
+                    console.warn("BokehShader source-pixel preservation patch was not applied.");
+                }
+                if (!THREE.BokehShader.fragmentShader.includes("depthAwareColor")) {
+                    console.warn("BokehShader depth-aware sampling patch was not applied.");
+                }
+            }
+
+            bokehPass = new THREE.BokehPass(scene, camera, {
+                focus: 37.5, // 1.5諛?怨듦컙 源딆씠 諛섏쁺
+                aperture: apVal,
+                maxblur: mbVal,
+                width: w,
+                height: h
+            });
+            bokehPass.uniforms[ 'sharpRange' ].value = parseFloat(document.getElementById('sharp-range-slider').value);
+
+            composer = new THREE.EffectComposer(renderer);
+            composer.addPass(renderPass);
+            composer.addPass(bokehPass);
+
+            // Resize listener
+            window.addEventListener('resize', onWindowResize);
+
+            isThreeInitialized = true;
+        }
+
+        // --- Start the game (Single Player) ---
+        function startGame() {
+            const inputName = document.getElementById('player-name').value.trim();
+            if (inputName.length < 2) {
+                alert('닉네임을 2자 이상 입력해주세요!');
+                return;
+            }
+            playerName = inputName;
+            userRole = 'single';
+            isMultiplayer = false;
+            
+            lobbyScreen.style.display = 'none';
+            arenaScreen.style.display = 'grid';
+            
+            gameMode = 'active';
+            currentRound = 1;
+            score = 0;
+            combo = 0;
+            
+            shutterWaitTime = 150.0;
+
+            updateHud();
+
+            if (!isThreeInitialized) {
+                initThreeJS();
+            } else {
+                bokehPass.uniforms[ 'aperture' ].value = parseFloat(document.getElementById('single-aperture-slider').value);
+                bokehPass.uniforms[ 'maxblur' ].value = parseFloat(document.getElementById('single-maxblur-slider').value);
+                createTargetObjects();
+            }
+
+            if (gaugeWrapper) {
+                if (difficulty === 'hard') {
+                    gaugeWrapper.style.display = 'none';
+                } else {
+                    gaugeWrapper.style.display = 'flex';
+                }
+            }
+
+            document.getElementById('realtime-blur-panel').style.display = 'none';
+            if (!isMultiplayer) {
+                // Sync values
+                const apVal = parseFloat(document.getElementById('single-aperture-slider').value);
+                const mbVal = parseFloat(document.getElementById('single-maxblur-slider').value);
+                document.getElementById('game-aperture-slider').value = apVal;
+                document.getElementById('game-aperture-val').textContent = apVal.toFixed(3);
+                document.getElementById('game-maxblur-slider').value = mbVal;
+                document.getElementById('game-maxblur-val').textContent = mbVal.toFixed(4);
+            }
+
+            // Hide rankings row in results modal
+            document.getElementById('res-rank-row').style.display = 'none';
+                        nextRoundBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> 다음 라운드';
+            startNewRound();
+            animate();
+        }
+
+        // --- HUD updates ---
+        function updateHud() {
+            if (roundVal) {
+                if (isMultiplayer) {
+                    roundVal.textContent = "멀티 실험";
+                } else {
+                    roundVal.textContent = `${currentRound} / ${maxRounds}`;
+                }
+            }
+            if (scoreVal) scoreVal.textContent = score;
+            if (comboVal) comboVal.textContent = `${combo} Combo`;
+        }
+
+        // --- Set up a new round ---
+        function updateTimeWarning(secondsLeft) {
+            const seconds = Math.ceil(secondsLeft);
+            countdownHud.textContent = seconds;
+            countdownHud.classList.remove('urgent');
+
+            timeWarningOverlay.className = 'time-warning-overlay';
+            if (seconds > 5) return;
+
+            void countdownHud.offsetWidth;
+            countdownHud.classList.add('urgent');
+            timeWarningOverlay.classList.add(`level-${Math.max(0, seconds)}`);
+            void timeWarningOverlay.offsetWidth;
+            timeWarningOverlay.classList.add('active');
+
+            if (seconds <= 5 && seconds > 0) {
+                gameAudio.playBeep(740 + (5 - seconds) * 180, 0.12, 'sine');
+            }
+        }
+
+        function resetFocusForRound() {
+            ciliaryContraction = 0.0;
+            isButtonPressed = false;
+            focalDistance = 37.5;
+
+            if (focalFrameMesh) {
+                focalFrameMesh.position.z = focalDistance;
+            }
+            if (focalShadowMesh) {
+                focalShadowMesh.position.z = focalDistance;
+            }
+            if (bokehPass) {
+                bokehPass.uniforms[ 'focus' ].value = focalDistance;
+            }
+        }
+
+        function getCameraDepth(position) {
+            return -position.clone().applyMatrix4(camera.matrixWorldInverse).z;
+        }
+
+        function startNewRound() {
+            resetFocusForRound();
+
+            // Select random target object index
+            targetObjectIndex = Math.floor(Math.random() * meshes.length);
+            const targetCfg = objectsConfig[targetObjectIndex];
+            
+            targetDot.style.backgroundColor = targetCfg.color;
+            targetDot.style.color = targetCfg.color;
+            targetDesc.textContent = `이번 타겟: ${targetCfg.name}`;
+
+            // Reset round parameters
+            roundTimeLeft = shutterWaitTime;
+            countdownHud.style.display = 'block';
+            updateTimeWarning(roundTimeLeft);
+
+            gameAudio.playBeep(440, 0.15, 'sine');
+
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
+            gameTimerInterval = setInterval(() => {
+                roundTimeLeft -= 1.0;
+                
+                if (roundTimeLeft <= 0) {
+                    clearInterval(gameTimerInterval);
+                    updateTimeWarning(0);
+                    photoCaptureTimeout = setTimeout(takePhotoAction, 250);
+                } else {
+                    updateTimeWarning(roundTimeLeft);
+                }
+            }, 1000);
+
+            showToast(`라운드 ${currentRound}: ${targetCfg.name}에 초점을 맞추세요!`);
+        }
+
+        // --- Start round specifically synced by teacher ---
+        function startNewRoundMultiplayer() {
+            resetFocusForRound();
+
+            // Target is already synced by teacher's broadcast
+            // Find target mesh by its index
+            const targetCfg = objectsConfig[targetObjectIndex];
+            
+            targetDot.style.backgroundColor = targetCfg.color;
+            targetDot.style.color = targetCfg.color;
+            targetDesc.textContent = `이번 타겟: ${targetCfg.name}`;
+
+            roundTimeLeft = shutterWaitTime;
+            countdownHud.style.display = 'block';
+            updateTimeWarning(roundTimeLeft);
+
+            gameAudio.playBeep(440, 0.15, 'sine');
+
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
+            gameTimerInterval = setInterval(() => {
+                roundTimeLeft -= 1.0;
+                
+                if (roundTimeLeft <= 0) {
+                    clearInterval(gameTimerInterval);
+                    updateTimeWarning(0);
+                    photoCaptureTimeout = setTimeout(takePhotoAction, 250);
+                } else {
+                    updateTimeWarning(roundTimeLeft);
+                }
+            }, 1000);
+        }
+
+        // --- The "찰칵" camera capture event ---
+        function takePhotoAction() {
+            gameMode = 'result';
+            countdownHud.style.display = 'none';
+            countdownHud.classList.remove('urgent');
+            timeWarningOverlay.className = 'time-warning-overlay';
+            photoCaptureTimeout = null;
+
+            // 1. White shutter flash overlay
+            shutterFlash.style.opacity = '1.0';
+            setTimeout(() => {
+                shutterFlash.style.transition = 'opacity 0.8s ease-out';
+                shutterFlash.style.opacity = '0.0';
+                setTimeout(() => {
+                    shutterFlash.style.transition = 'none';
+                }, 800);
+            }, 50);// 2. Play shutter sound synthesizer
+            gameAudio.playShutter();
+
+            // 3. Extract screen image from WebGL canvas
+            renderer.render(scene, camera);
+            composer.render();
+            const dataUrl = renderer.domElement.toDataURL('image/png');
+            snapImg.src = dataUrl;
+
+            // 4. Record timestamp and caption
+            const now = new Date();
+            snapCaptionText.textContent = `스냅 ${objectsConfig[targetObjectIndex].name} 촬영`;
+            snapDate.textContent = `${now.getFullYear()}.${String(now.getMonth() + 1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+
+            // 5. Calculate focal error & Score using the same camera-depth axis as the shader.
+            const targetMesh = meshes[targetObjectIndex];
+            const actualDist = getCameraDepth(targetMesh.position);
+            const errOffset = Math.abs(focalDistance - actualDist);
+
+            let rank = 'MISS';
+            let earned = 0;
+            let feedback = '';
+
+            const focusDirectionFeedback = focalDistance > actualDist 
+                ? "초점 거리가 타겟보다 너무 멉니다. 섬모체를 수축시켜(버튼을 눌러) 수정체를 더 두껍게 만들어 초점을 가까이 당기세요."
+                : "초점 거리가 타겟보다 너무 가깝습니다! 섬모체를 이완시켜(버튼을 놓아) 수정체를 얇게 만들어 초점을 멀리 보내세요.";
+
+            if (errOffset <= 2.0) { // 오차 범위 판정 (PERFECT)
+                rank = 'PERFECT';
+                earned = 100 + (combo * 10);
+                combo++;
+                feedback = "완벽한 조절 작용! 섬모체가 알맞게 수축하여 수정체의 두께가 타겟과의 거리에 정확하게 일치했습니다. 빛의 초점이 망막 위에 아주 선명하게 맺혔습니다.";
+                gameAudio.playSuccess();
+            } else if (errOffset <= 4.0) { // 오차 범위 판정 (GREAT)
+                rank = 'GREAT';
+                earned = 80 + (combo * 5);
+                combo++;
+                feedback = "훌륭합니다! 약간의 오차는 있으나 타겟의 형체가 선명하게 잡혔습니다. " + focusDirectionFeedback;
+                gameAudio.playSuccess();
+            } else if (errOffset <= 6.0) { // 오차 범위 판정 (GOOD)
+                rank = 'GOOD';
+                earned = 50;
+                combo = 0;
+                feedback = "조금 아쉽습니다. 물체가 흐려져 디테일이 뭉개졌습니다. " + focusDirectionFeedback;
+                gameAudio.playBeep(300, 0.3, 'triangle');
+            } else {
+                rank = 'MISS';
+                earned = 10;
+                combo = 0;
+                feedback = "초점이 완전히 빗나갔습니다! 타겟 물체가 극도로 뿌옇게 보입니다. " + focusDirectionFeedback;
+                gameAudio.playFail();
+            }
+
+            score += earned;
+            updateHud();
+
+            // Render evaluation panel values
+            resultRankBadge.textContent = rank;
+            resultRankBadge.className = `result-rank ${rank.toLowerCase()}`;
+            evalFeedbackTxt.textContent = feedback;
+            resTargetDist.textContent = `${actualDist.toFixed(1)}m`;
+            resFocusDist.textContent = `${focalDistance.toFixed(1)}m`;
+            resErrorOffset.textContent = `${errOffset.toFixed(1)}m (${rank})`;
+            resEarnedScore.textContent = `${earned}점 ${combo > 1 ? `(${combo - 1} Combo 보너스 포함)` : ''}`;
+
+            // Check if multiplayer student
+            if (isMultiplayer && userRole === 'student') {
+                nextRoundBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 교사 신호 대기 중...';
+                nextRoundBtn.disabled = true;
+                
+                // Transmit score details back to teacher
+                classroomNetwork.sendResult(earned, {
+                    targetDistance: actualDist,
+                    focusDistance: focalDistance,
+                    errorOffset: errOffset
+                });
+            } else {
+                nextRoundBtn.disabled = false;
+                if (currentRound >= maxRounds) {
+                    nextRoundBtn.innerHTML = '<i class="fa-solid fa-trophy"></i> 최종 성적 확인';
+                } else {
+                    nextRoundBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> 다음 라운드';
+                }
+            }
+
+            // Show results modal
+            setTimeout(() => {
+                resultModal.classList.add('show');
+            }, 600);
+        }
+
+        // --- Next round progression ---
+        function proceedToNextRound() {
+            resultModal.classList.remove('show');
+
+            if (isMultiplayer) {
+                // Return to student lobby waiting overlay
+                document.getElementById('student-waiting-overlay').style.display = 'flex';
+                gameMode = 'lobby';
+            } else {
+                if (currentRound >= maxRounds) {
+                    alert(`축하합니다! 최종 훈련을 완료했습니다.\n최종 점수: ${score}점`);
+                    exitToLobby();
+                } else {
+                    currentRound++;
+                    updateHud();
+                    gameMode = 'active';
+                    startNewRound();
+                    animate();
+                }
+            }
+        }
+
+        function exitToLobby() {
+            resultModal.classList.remove('show');
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
+            timeWarningOverlay.className = 'time-warning-overlay';
+            
+            lobbyScreen.style.display = 'block';
+            arenaScreen.style.display = 'none';
+            gameMode = 'lobby';
+
+            if (isMultiplayer && classroomNetwork) {
+                classroomNetwork.disconnect();
+                isMultiplayer = false;
+            }
+        }
+
+        // --- Student Join Action ---
+        async function joinAsStudent() {
+            const pin = document.getElementById('student-pin-input').value.trim();
+            const nickname = document.getElementById('student-nickname-input').value.trim();
+            if (!pin || pin.length < 4) {
+                alert("올바른 PIN 번호를 입력해주세요!");
+                return;
+            }
+            if (!nickname || nickname.length < 2) {
+                alert("닉네임을 2자 이상 입력해주세요!");
+                return;
+            }
+
+            showToast("실험실 세션 연결 시도 중...");
+            classroomNetwork = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
+            const success = await classroomNetwork.joinSession(pin, nickname, 'student');
+
+            if (success) {
+                showToast("실험실에 성공적으로 참가했습니다!");
+                userRole = 'student';
+                isMultiplayer = true;
+                sessionPin = pin;
+                playerName = nickname;
+
+                document.getElementById('student-waiting-overlay').style.display = 'flex';
+                document.getElementById('wait-pin-display').textContent = pin;
+                document.getElementById('wait-nick-display').textContent = nickname;
+
+                // Listen for settings and start signals
+                classroomNetwork.on('onReceiveSettings', (payload) => {
+                    targetDistance = payload.targetDistance;
+                    shutterWaitTime = payload.shutterWaitTime;
+                    difficulty = payload.difficulty || 'easy';
+                    targetObjectIndex = payload.targetObjectIndex || 0;
+
+                    // Update waiting HUD
+                    document.getElementById('wait-target-display').textContent = `${targetDistance.toFixed(1)}m`;
+                    document.getElementById('wait-timer-display').textContent = `${shutterWaitTime}초`;
+                });
+
+                classroomNetwork.on('onStart', () => {
+                    // Hide waiting overlay
+                    document.getElementById('student-waiting-overlay').style.display = 'none';
+                    lobbyScreen.style.display = 'none';
+                    arenaScreen.style.display = 'grid';
+                    gameMode = 'active';
+
+                    // Position the target mesh exactly at the distance set by teacher
+                    if (meshes[targetObjectIndex]) {
+                        meshes[targetObjectIndex].position.z = targetDistance;
+                    }
+
+                    startNewRoundMultiplayer();
+                    animate();
+                });
+
+                classroomNetwork.on('onRankingUpdate', (payload) => {
+                    const rankings = payload.rankings || [];
+                    const myRankIndex = rankings.findIndex(r => r.studentId === classroomNetwork.id);
+                    const myRank = myRankIndex !== -1 ? myRankIndex + 1 : rankings.length;
+
+                    document.getElementById('res-rank-row').style.display = 'flex';
+                    document.getElementById('res-rank-txt').textContent = `${myRank}위 / ${rankings.length}명`;
+                });
+
+                classroomNetwork.on('onKick', () => {
+                    alert("중복 로그인으로 인해 접속이 해제되었습니다.");
+                    location.reload();
+                });
+            } else {
+                alert("가상실험 접속에 실패했습니다. PIN 번호를 확인해 주세요.");
+            }
+        }
+
+        async function initTeacherMode() {
+            classroomNetwork = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
+            if (!classroomNetwork.isConnected()) return;
+
+            const { data: { session } } = await classroomNetwork.client.auth.getSession();
+            const loginBlock = document.getElementById('teacher-login-block');
+            const dashboardBlock = document.getElementById('teacher-dashboard-block');
+
+            if (session) {
+                const email = session.user.email;
+                const { data, error } = await classroomNetwork.client
+                    .from('allowed_teachers')
+                    .select('email');
+
+                const isAllowed = !error && data.some(item => 
+                    item.email && item.email.trim().toLowerCase() === email.trim().toLowerCase()
+                );
+
+                if (isAllowed) {
+                    // Allowed teacher logged in successfully
+                    loginBlock.style.display = 'none';
+                    dashboardBlock.style.display = 'block';
+                    document.getElementById('teacher-email-txt').innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--neon-green)"></i> 승인완료: ${email}`;
+                    
+                    // Generate Session PIN
+                    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+                    document.getElementById('teacher-pin-txt').textContent = pin;
+                    
+                    userRole = 'teacher';
+                    isMultiplayer = true;
+                    sessionPin = pin;
+
+                    // Join session
+                    await classroomNetwork.joinSession(pin, 'Teacher', 'teacher');
+                    showToast(`실험실 PIN [${pin}] 개설 완료!`);
+
+                    // Roster Presence synchronization
+                    classroomNetwork.on('onStudentSync', (students) => {
+                        activeStudents = students;
+                        document.getElementById('connected-students-count').textContent = students.length;
+                        
+                        const list = document.getElementById('teacher-student-list');
+                        if (students.length === 0) {
+                            list.innerHTML = '<span style="color:#64748b; font-size:0.85rem;">학생 접속 대기 중..</span>';
+                        } else {
+                            list.innerHTML = students.map(s => `
+                                <span style="display:inline-block; margin:3px; background:rgba(99,102,241,0.15); border:1px solid rgba(99,102,241,0.35); color:#a5b4fc; padding:4px 10px; border-radius:8px; font-size:0.8rem; font-weight:700;">
+                                    <i class="fa-solid fa-user-graduate"></i> ${s.nickname}
+                                </span>
+                            `).join('');
+                        }
+                    });
+
+                    // Student result reporting listener
+                    classroomNetwork.on('onResultReported', (payload) => {
+                        const index = studentResults.findIndex(r => r.studentId === payload.studentId);
+                        if (index !== -1) {
+                            studentResults[index] = payload;
+                        } else {
+                            studentResults.push(payload);
+                        }
+
+                        // Sort rankings (smallest errorOffset is top rank)
+                        studentResults.sort((a, b) => a.errorOffset - b.errorOffset);
+
+                        // Render teacher rankings UI
+                        renderTeacherRankingsTable();
+
+                        // Sync leaderboard rankings to all students
+                        classroomNetwork.broadcastRankings({ rankings: studentResults });
+                    });
+
+                    // Initialize slider sync
+                    teacherSyncSettings();
+
+                } else {
+                    alert(`교사 권한이 없는 계정입니다.\n이메일: ${email}`);
+                    await classroomNetwork.client.auth.signOut();
+                    window.location.reload();
+                }
+            } else {
+                loginBlock.style.display = 'block';
+                dashboardBlock.style.display = 'none';
+            }
+        }
+
+        async function handleTeacherLogin() {
+            if (!classroomNetwork) return;
+            const redirectUrl = window.location.origin + window.location.pathname + "?tab=teacher";
+            await classroomNetwork.client.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: redirectUrl
+                }
+            });
+        }
+
+        // --- Teacher Settings Synchronize & Start Signal ---
+        function teacherSyncSettings() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+
+            const targetVal = parseFloat(document.getElementById('teacher-target-slider').value);
+            const waitVal = parseInt(document.getElementById('teacher-wait-slider').value);
+            const diffVal = document.getElementById('teacher-diff-select').value;
+
+            document.getElementById('teacher-target-val').textContent = `${targetVal.toFixed(1)}m`;
+            document.getElementById('teacher-wait-val').textContent = `${waitVal}초`;
+
+            // Select matching object configuration based on distance intervals
+            // Split 21.0m to 48.75m into 3 target zones
+            let objectIdx = 0;
+            if (targetVal <= 30.0) objectIdx = 0; // robot
+            else if (targetVal <= 40.0) objectIdx = 1; // torus
+            else objectIdx = 2; // drone
+
+            // Broadcast setting change
+            classroomNetwork.broadcastSettings({
+                targetDistance: targetVal,
+                shutterWaitTime: waitVal,
+                difficulty: diffVal,
+                targetObjectIndex: objectIdx
+            });
+        }
+
+        function teacherTriggerLaunch() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            if (activeStudents.length === 0) {
+                alert("대기실에 참여 중인 학생이 없습니다! 학생이 들어와야 가동할 수 있습니다.");
+                return;
+            }
+
+            // Clear previous leaderboard results
+            studentResults = [];
+            document.getElementById('teacher-rankings-rows').innerHTML = `
+                <tr>
+                    <td colspan="5" style="text-align:center; color:#64748b; padding:15px;">실험 진행 중.. 학생 제출을 기다립니다</td>
+                </tr>
+            `;
+
+            // Triggers start on all student screens
+            classroomNetwork.broadcastStart();
+            showToast("모든 학생 화면에 실험이 개시되었습니다!");
+        }
+
+        function teacherResetRound() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            
+            // Broadcasts settings (forcing kids back to waiting overlay)
+            const targetVal = parseFloat(document.getElementById('teacher-target-slider').value);
+            const waitVal = parseInt(document.getElementById('teacher-wait-slider').value);
+            const diffVal = document.getElementById('teacher-diff-select').value;
+            
+            classroomNetwork.broadcastSettings({
+                targetDistance: targetVal,
+                shutterWaitTime: waitVal,
+                difficulty: diffVal,
+                targetObjectIndex: 0
+            });
+            showToast("모든 학생 화면을 대기실로 리셋했습니다.");
+        }
+
+        function renderTeacherRankingsTable() {
+            const tbody = document.getElementById('teacher-rankings-rows');
+            if (studentResults.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="5" style="text-align:center; color:#64748b; padding:15px;">제출 학생이 없습니다.</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = studentResults.map((r, index) => {
+                const rank = index + 1;
+                const isTop = rank === 1;
+                return `
+                    <tr class="${isTop ? 'top-rank' : ''}">
+                        <td>${isTop ? '★ 1' : rank}</td>
+                        <td>${r.nickname}</td>
+                        <td>${r.focusDistance.toFixed(1)}m</td>
+                        <td>${r.errorOffset.toFixed(1)}m</td>
+                        <td>${r.score}점</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // --- Physics Update & Button Control Loop ---
+        function updatePhysics(deltaTime) {
+            const speed = 0.175;
+            
+            if (isButtonPressed) {
+                ciliaryContraction = Math.min(1.0, ciliaryContraction + speed * deltaTime);
+            } else {
+                ciliaryContraction = Math.max(0.0, ciliaryContraction - speed * deltaTime);
+            }
+
+            const minFocal = 7.5; // 1.5배 공간 깊이 반영
+            const maxFocal = 52.5; // 1.5배 공간 깊이 반영
+            // [기존 수식 - 선형 초점 제어]
+            // const targetFocal = maxFocal - ciliaryContraction * (maxFocal - minFocal);
+            // [수정 수식 - 2차 비선형 곡선 적용] 먼 거리에서 초점을 미세하고 정밀하게 움직이도록 감도 개선
+            const targetFocal = maxFocal - Math.pow(ciliaryContraction, 2) * (maxFocal - minFocal);
+            
+            const oldFocal = focalDistance;
+            focalDistance = THREE.MathUtils.lerp(focalDistance, targetFocal, 0.15);
+
+            /* 기존 코드 (초점 이동 피드백):
+            if (Math.abs(focalDistance - oldFocal) > 0.6) {
+                const pitch = 250 + (focalDistance - minFocal) * 6;
+                gameAudio.playFocusTick(pitch);
+            }
+            */
+
+            if (isThreeInitialized) {
+                // Keep the shader focus and yellow focal frame on the same camera-depth plane.
+                bokehPass.uniforms[ 'focus' ].value = focalDistance;
+                if (focalFrameMesh) {
+                    focalFrameMesh.position.z = focalDistance;
+                }
+                if (focalShadowMesh) {
+                    focalShadowMesh.position.z = focalDistance;
+                }
+            }
+
+            focalIndicatorTxt.textContent = `${focalDistance.toFixed(1)}m`;
+            updateGridFocusColors();
+
+            if (difficulty !== 'hard' && focalPlaneMarker && targetDistMarker) {
+                const rangeWidth = maxFocal - minFocal;
+                const markerPosPercent = ((focalDistance - minFocal) / rangeWidth) * 100;
+                if (focalPlaneMarker) focalPlaneMarker.style.left = `${markerPosPercent}%`;
+
+                if (meshes[targetObjectIndex]) {
+                    const targetDist = getCameraDepth(meshes[targetObjectIndex].position);
+                    const targetPosPercent = ((targetDist - minFocal) / rangeWidth) * 100;
+                    if (targetDistMarker) targetDistMarker.style.left = `${targetPosPercent}%`;
+                }
+            }
+
+            // Calculate each object's error from the visible yellow focal frame.
+            for (let i = 0; i < 3; i++) {
+                const mesh = meshes[i];
+                const valSpan = document.getElementById(`dist-val-${i}`);
+                if (mesh && valSpan) {
+                    const actualDist = getCameraDepth(mesh.position);
+                    const errOffset = Math.abs(focalDistance - actualDist);
+                    valSpan.textContent = `${errOffset.toFixed(1)}m`;
+                }
+            }
+
+            drawEyeDiagram(ciliaryContraction);
+        }
+
+        // --- Render the 2D Eye Accommodation Diagram ---
+        function drawEyeDiagram(ratio) {
+            const ctx = eyeCtx;
+            const w = eyeCanvas.width;   // 600
+            const h = eyeCanvas.height;  // 300
+
+            ctx.clearRect(0, 0, w, h);
+
+            // ──────────────────────────────────────────
+            // 분할선 (캔버스 정중앙)
+            // ──────────────────────────────────────────
+            const divX = w / 2;  // 300
+
+            // 좌우 구분선
+            ctx.beginPath();
+            ctx.moveTo(divX, 10);
+            ctx.lineTo(divX, h - 10);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([4, 6]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // ──────────────────────────────────────────
+            // 왼쪽 패널: 남은 시간
+            // ──────────────────────────────────────────
+            const leftCx = divX / 2;   // 150
+            const leftCy = h / 2;      // 150
+
+            // 섹션 제목
+            ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+            ctx.textAlign = 'center';
+            ctx.fillText('남은 시간', leftCx, 30);
+
+            // 남은 시간 수치
+            const timeLeft = Math.max(0, Math.ceil(shutterWaitTime));
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            const timeStr = minutes > 0
+                ? `${minutes}:${String(seconds).padStart(2, '0')}`
+                : `${seconds}`;
+
+            // 원형 타이머 배경
+            const timerR = 72;
+            ctx.beginPath();
+            ctx.arc(leftCx, leftCy, timerR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255,255,255,0.04)';
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 남은 시간 진행 바 (총 게임시간 기준)
+            const totalTime = 15.0;
+            const progressRatio = Math.max(0, Math.min(1, shutterWaitTime / totalTime));
+            const startAngle = -Math.PI / 2;
+            const endAngle = startAngle + progressRatio * Math.PI * 2;
+            const timerColor = shutterWaitTime > 5 ? '#38bdf8' : '#f87171';
+            ctx.beginPath();
+            ctx.arc(leftCx, leftCy, timerR, startAngle, endAngle);
+            ctx.strokeStyle = timerColor;
+            ctx.lineWidth = 6;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+            ctx.lineCap = 'butt';
+
+            // 시간 숫자
+            const timeFontSize = timeStr.length > 3 ? 44 : 58;
+            ctx.font = `900 ${timeFontSize}px 'Outfit', monospace`;
+            ctx.fillStyle = shutterWaitTime > 5 ? 'rgba(255,255,255,0.95)' : '#f87171';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(timeStr, leftCx, leftCy);
+            ctx.textBaseline = 'alphabetic';
+
+            // 단위
+            ctx.font = 'bold 13px "Noto Sans KR", sans-serif';
+            ctx.fillStyle = 'rgba(148,163,184,0.7)';
+            ctx.fillText('초', leftCx, leftCy + timerR + 20);
+
+            // 오른쪽 패널: 수정체 + 모식도
+            const rightCx = divX + divX / 2;  // 450
+            const rightCy = h / 2;             // 150
+
+            // 섹션 제목
+            ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText('수정체', rightCx, 30);
+
+            // 수정체 크기: ratio=0(이완)→얇고 납작, ratio=1(수축)→두껍고 볼록
+            const lensHalfW = 14 + ratio * 40;   // 볼록도: 14~54px
+            const lensHalfH = 90 - ratio * 28;   // 높이: 62~90px
+
+            // 수정체 렌즈 그리기
+            ctx.beginPath();
+            ctx.moveTo(rightCx, rightCy - lensHalfH);
+            ctx.quadraticCurveTo(rightCx - lensHalfW, rightCy, rightCx, rightCy + lensHalfH);
+            ctx.quadraticCurveTo(rightCx + lensHalfW, rightCy, rightCx, rightCy - lensHalfH);
+            ctx.closePath();
+
+            const grad = ctx.createRadialGradient(
+                rightCx - lensHalfW * 0.3, rightCy - lensHalfH * 0.3, 2,
+                rightCx, rightCy, lensHalfH);
+            grad.addColorStop(0, 'rgba(186, 230, 253, 0.95)');
+            grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.75)');
+            grad.addColorStop(1, 'rgba(14, 165, 233, 0.55)');
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 광택 하이라이트
+            ctx.beginPath();
+            ctx.moveTo(rightCx, rightCy - lensHalfH + 8);
+            ctx.quadraticCurveTo(rightCx - lensHalfW * 0.45, rightCy - lensHalfH * 0.3,
+                                 rightCx, rightCy - lensHalfH * 0.1);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // 수축력 화살표
+            const arrowLength = 16 + ratio * 46;
+            const headSize    =  8 + ratio * 16;
+            const lineW       = 2.5 + ratio * 4;
+            const alpha       = 0.35 + ratio * 0.65;
+            const arrowColor  = `rgba(251, 146, 60, ${alpha})`;
+
+            function drawArrow(tipX, tipY, tailX, tailY, hs) {
+                ctx.beginPath();
+                ctx.moveTo(tailX, tailY);
+                ctx.lineTo(tipX, tipY);
+                ctx.strokeStyle = arrowColor;
+                ctx.lineWidth = lineW;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                ctx.lineCap = 'butt';
+                const angle = Math.atan2(tipY - tailY, tipX - tailX);
+                ctx.beginPath();
+                ctx.moveTo(tipX, tipY);
+                ctx.lineTo(tipX - hs * Math.cos(angle - Math.PI / 6),
+                           tipY - hs * Math.sin(angle - Math.PI / 6));
+                ctx.lineTo(tipX - hs * Math.cos(angle + Math.PI / 6),
+                           tipY - hs * Math.sin(angle + Math.PI / 6));
+                ctx.closePath();
+                ctx.fillStyle = arrowColor;
+                ctx.fill();
+            }
+
+            // 위 화살표 (위에서 수정체 위 테두리로)
+            drawArrow(rightCx, rightCy - lensHalfH, rightCx, rightCy - lensHalfH - arrowLength, headSize);
+            // 아래 화살표 (아래에서 수정체 아래 테두리로)
+            drawArrow(rightCx, rightCy + lensHalfH, rightCx, rightCy + lensHalfH + arrowLength, headSize);
+
+            // 수축 퍼센트 레이블
+            const forceLabel = ratio < 0.05 ? '이완' : `${Math.round(ratio * 100)}%`;
+            ctx.font = `bold ${11 + ratio * 4}px 'Noto Sans KR', sans-serif`;
+            ctx.fillStyle = `rgba(251, 146, 60, ${Math.max(0.5, alpha)})`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(forceLabel, rightCx, rightCy - lensHalfH - arrowLength - 8);
+            ctx.fillText(forceLabel, rightCx, rightCy + lensHalfH + arrowLength + 18);
+
+            ctx.textAlign = 'left';
+
+            // ──────────────────────────────────────────
+            // 하단 레이블 DOM 업데이트
+            // ──────────────────────────────────────────
+            labelCiliary.textContent = `섬모체 수축: ${Math.round(ratio * 100)}%`;
+            labelCiliary.className = ratio > 0.5 ? 'active' : '';
+
+            let thicknessTxt = '보통 (Normal)';
+            if (ratio > 0.7) thicknessTxt = '두꺼움 (Thick)';
+            else if (ratio < 0.3) thicknessTxt = '얇음 (Thin)';
+            labelLens.textContent = `수정체: ${thicknessTxt}`;
+            labelLens.className = ratio > 0.7 ? 'active' : '';
+        }
+
+        // --- Main Animation Frame Loop ---
+        let clock = new THREE.Clock();
+
+        function animate() {
+            if (gameMode !== 'active') return;
+
+            requestAnimationFrame(animate);
+
+            const deltaTime = clock.getDelta();
+            const time = clock.getElapsedTime();
+
+            // 1. Update 3D meshes positions
+
+            meshes.forEach((mesh, index) => {
+                const ud = mesh.userData;
+
+                // Drift motion in 3D using velocity integration
+                let nextX = mesh.position.x + ud.speedX * deltaTime;
+                let nextY = mesh.position.y + ud.speedY * deltaTime;
+                let nextZ = mesh.position.z + ud.speedZ * deltaTime;
+
+                // If student multiplayer, clamp mesh Z position strictly to the teacher's synced target distance
+                // and keep X/Y centered to match distance perfectly
+                if (isMultiplayer && userRole === 'student' && index === targetObjectIndex) {
+                    nextX = 0;
+                    nextY = ud.floorY;
+                    nextZ = targetDistance;
+                } else {
+                    // Objects are locked to their horizontal lanes (X fixed, Y fixed)
+                    // Only Z-axis boundary bounce is needed
+                    if (nextZ < ud.bounds.minZ || nextZ > ud.bounds.maxZ) {
+                        ud.speedZ *= -1;
+                        nextZ = THREE.MathUtils.clamp(nextZ, ud.bounds.minZ, ud.bounds.maxZ);
+                    }
+                }
+
+                mesh.position.set(nextX, nextY, nextZ);
+                const isTarget = index === targetObjectIndex;
+                const blinkIntensity = 0.45 + Math.sin(time * 7.0) * 0.35;
+                const blinkScale = isTarget ? 1.0 + Math.sin(time * 7.0) * 0.025 : 1.0;
+                ud.outlineMaterial.color.setHex(0x000000);
+                ud.outlineMaterial.opacity = 1.0;
+                ud.outlineMaterial.transparent = false;
+                ud.outlineMesh.scale.set(1.0, 1.0, 1.0);
+                ud.targetOutlineMesh.visible = isTarget;
+                ud.targetOutlineMaterial.opacity = isTarget ? blinkIntensity : 0.0;
+                ud.targetOutlineMesh.scale.set(blinkScale, blinkScale, 1.0);
+            });
+
+            // 2. Physics & Control updates
+            updatePhysics(deltaTime);
+
+            // 3. Render
+            renderer.render(scene, camera);
+            composer.render();
+        }
+
+        // --- Button & Input Bindings ---
+        function setPressed(pressed) {
+            if (gameMode !== 'active') return;
+            isButtonPressed = pressed;
+            if (pressed) {
+                holdBtn.classList.add('pressed');
+            } else {
+                holdBtn.classList.remove('pressed');
+            }
+        }
+
+        // Mouse & Touch triggers on button
+        holdBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            setPressed(true);
+        });
+        holdBtn.addEventListener('mouseup', () => setPressed(false));
+        holdBtn.addEventListener('mouseleave', () => setPressed(false));
+
+        holdBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            setPressed(true);
+        });
+        holdBtn.addEventListener('touchend', () => setPressed(false));
+
+        // Keyboard bindings
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                e.preventDefault();
+                setPressed(true);
+            }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'Space' || e.code === 'ArrowUp') {
+                setPressed(false);
+            }
+        });
+
+        // Initialize 2D Canvas on load
+        drawEyeDiagram(0.0);
+
+        // Check query param to auto-switch to teacher tab (after Google redirect)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('tab') === 'teacher') {
+            switchLobbyTab('teacher');
+        }
+
+        // Expose functions to global window context for HTML onclicks
+        window.startGame = startGame;
+        window.setDifficulty = setDifficulty;
+        window.toggleSound = toggleSound;
+        window.proceedToNextRound = proceedToNextRound;
+        window.exitToLobby = exitToLobby;
+        window.switchLobbyTab = switchLobbyTab;
+        window.joinAsStudent = joinAsStudent;
+        window.initTeacherMode = initTeacherMode;
+        window.handleTeacherLogin = handleTeacherLogin;
+        window.teacherSyncSettings = teacherSyncSettings;
+        window.teacherTriggerLaunch = teacherTriggerLaunch;
+        window.teacherResetRound = teacherResetRound;
+        window.updateSingleBlurSettings = updateSingleBlurSettings;
+        window.updateGameBlurSettings = updateGameBlurSettings;
+        window.updateSharpRange = updateSharpRange;
+        window.updateGridSharpRange = updateGridSharpRange;
+        window.toggleFocalGuide = toggleFocalGuide;
+
+    </script>
+</body>
+</html>

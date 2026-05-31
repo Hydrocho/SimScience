@@ -1,0 +1,1917 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>눈의 구조 - 실시간 스피드 타임어택 퀴즈</title>
+    <link rel="icon" href="data:,">
+    <!-- Google Fonts Outfit & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #e0e7ff;
+            --neon-blue: #06b6d4;
+            --neon-pink: #ec4899;
+            --neon-pink-light: #fce7f3;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --danger-light: #fee2e2;
+            
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-600: #475569;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.6);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 8px 24px rgba(149, 157, 165, 0.12);
+            --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08);
+            
+            --radius-md: 12px;
+            --radius-lg: 24px;
+        }
+
+        /* Reset & Base Style */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%);
+            color: var(--slate-800);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        /* Layout Container */
+        .app-container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 1.5rem auto;
+            padding: 0 1.5rem;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Header design */
+        header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-md);
+            padding: 1rem 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .logo-icon {
+            width: 2.75rem;
+            height: 2.75rem;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--neon-blue) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.2);
+        }
+
+        .logo-text h1 {
+            font-size: 1.2rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            letter-spacing: -0.03em;
+        }
+
+        .logo-text p {
+            font-size: 0.75rem;
+            color: var(--slate-600);
+            font-weight: 500;
+        }
+
+        .link-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .link-back:hover {
+            color: var(--primary-hover);
+            transform: translateX(-3px);
+            border-color: var(--slate-300);
+        }
+
+        /* Glassmorphic Panel Base */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Lobby / Lobby custom selection board */
+        .lobby-screen {
+            max-width: 1100px;
+            margin: 2rem auto;
+            text-align: center;
+        }
+
+        .lobby-main-layout {
+            display: grid;
+            grid-template-columns: 1.15fr 1.0fr;
+            gap: 2rem;
+            width: 100%;
+            margin-top: 1.5rem;
+        }
+
+        .lobby-setup-diagram-panel {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+        }
+
+        .lobby-setup-controls-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            text-align: left;
+        }
+
+        @media (max-width: 900px) {
+            .lobby-main-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .preset-btn {
+            background: white;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 0.35rem 0.65rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--slate-600);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .preset-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+        .preset-btn:active {
+            transform: scale(0.96);
+        }
+
+        .lobby-title h2 {
+            font-size: 1.75rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            letter-spacing: -0.02em;
+        }
+
+        .lobby-title p {
+            font-size: 0.9rem;
+            color: var(--slate-600);
+            margin-top: 0.5rem;
+        }
+
+        .input-group {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .input-group label {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--slate-600);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius-md);
+            border: 2px solid var(--slate-200);
+            font-size: 1rem;
+            font-weight: 700;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .input-group input:focus {
+            border-color: var(--primary);
+        }
+
+        /* Selection chips board */
+        .selection-board {
+            width: 100%;
+            text-align: left;
+            background: white;
+            padding: 1.25rem;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--slate-200);
+        }
+
+        .selection-board-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--slate-600);
+            margin-bottom: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .select-toggle-btn {
+            background: none;
+            border: none;
+            color: var(--primary);
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+        }
+
+        .selection-chips-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 0.5rem;
+        }
+
+        .chip-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 8px;
+            border: 1.5px solid var(--slate-200);
+            background: var(--slate-50);
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--slate-600);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .chip-item:hover {
+            background: var(--slate-100);
+            border-color: var(--slate-300);
+        }
+
+        .chip-item.active {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .chip-item i {
+            font-size: 0.85rem;
+            opacity: 0.3;
+        }
+
+        .chip-item.active i {
+            opacity: 1;
+            color: var(--primary);
+        }
+
+        .start-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--neon-blue) 100%);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 1.25rem;
+            padding: 1rem;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(79, 70, 229, 0.4);
+        }
+
+        .start-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Game Arena Layout */
+        .arena-screen {
+            display: none;
+            grid-template-columns: 1fr 340px;
+            gap: 1.5rem;
+        }
+
+        @media (max-width: 1024px) {
+            .arena-screen {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Live Scoreboard Panel */
+        .scoreboard-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .timer-stopwatch {
+            font-family: 'Outfit', monospace;
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            display: flex;
+            align-items: baseline;
+            gap: 0.15rem;
+        }
+
+        .timer-stopwatch .ms {
+            font-size: 1.25rem;
+            color: var(--slate-600);
+        }
+
+        .penalty-display {
+            font-family: 'Outfit', monospace;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--danger);
+            background: var(--danger-light);
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            margin-left: 0.5rem;
+            display: none;
+            align-items: center;
+            gap: 0.25rem;
+            animation: pulseDanger 1s infinite;
+        }
+
+        @keyframes pulseDanger {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .combo-meter {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1.1rem;
+            color: var(--neon-pink);
+            background: var(--neon-pink-light);
+            padding: 0.35rem 0.75rem;
+            border-radius: 9999px;
+            box-shadow: 0 2px 10px rgba(236, 72, 153, 0.15);
+        }
+
+        /* Billboard Prompter Board */
+        .billboard-prompter {
+            background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+            color: var(--slate-800);
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            text-align: center;
+            border: 1px solid var(--slate-200);
+            border-left: 5px solid var(--primary);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .billboard-lbl {
+            font-size: 0.7rem;
+            font-weight: 800;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.25rem;
+        }
+
+        .billboard-desc {
+            font-size: 1.15rem;
+            font-weight: 700;
+            line-height: 1.5;
+            color: var(--slate-900);
+        }
+
+        /* Viewport Frame for Diagram */
+        .viewport-frame {
+            background: white;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+            padding: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .image-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            aspect-ratio: 916 / 633;
+            user-select: none;
+        }
+
+        .image-container img {
+            width: 100%;
+            height: 100%;
+            display: block;
+            pointer-events: none;
+        }
+
+        /* Overlay rectangle boxes */
+        .mask-badge {
+            position: absolute;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+            box-sizing: border-box;
+        }
+
+        /* Covered state: Solid bright glass cover to hide image text labels */
+        .mask-badge.covered {
+            background: #ffffff; /* Solid white background to hide labels */
+            border: 2.5px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.15);
+        }
+
+        .mask-badge.covered:hover {
+            transform: scale(1.03);
+            border-color: var(--neon-blue);
+            box-shadow: 0 0 15px rgba(14, 165, 233, 0.35);
+        }
+
+        /* Number inside cover badge */
+        .mask-badge .badge-num {
+            background: var(--primary);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+            box-shadow: 0 2px 6px rgba(79, 70, 229, 0.3);
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .mask-badge.covered:hover .badge-num {
+            background: var(--neon-blue);
+            transform: scale(1.1);
+        }
+
+        /* Target highlighted hint state */
+        .mask-badge.hint-glow {
+            animation: pulseGlow 1.5s infinite;
+        }
+
+        @keyframes pulseGlow {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(79, 70, 229, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+
+        /* Correct state: reveal actual text name label */
+        .mask-badge.revealed {
+            background: rgba(16, 185, 129, 0.05); /* Soft success green transparent tint */
+            border: 2px solid var(--success);
+            border-radius: 8px;
+            cursor: default;
+            pointer-events: none;
+            box-shadow: none;
+        }
+
+        /* Default revealed (not in pool) */
+        .mask-badge.revealed-default {
+            background: transparent;
+            border: none;
+            pointer-events: none;
+        }
+
+        /* Setup states for teacher lobby setting */
+        .mask-badge.setup-active {
+            background: #ffffff;
+            border: 2.5px solid var(--primary);
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.1);
+        }
+        .mask-badge.setup-active .badge-num {
+            background: var(--primary);
+            color: white;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+        }
+        .mask-badge.setup-inactive {
+            background: rgba(241, 245, 249, 0.85);
+            border: 2.5px dashed var(--slate-300);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .mask-badge.setup-inactive .badge-num {
+            background: var(--slate-300);
+            color: var(--slate-600);
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1rem;
+        }
+        .mask-badge.setup-active:hover {
+            transform: scale(1.03);
+            border-color: var(--danger);
+        }
+        .mask-badge.setup-active:hover .badge-num {
+            background: var(--danger);
+        }
+        .mask-badge.setup-inactive:hover {
+            transform: scale(1.03);
+            border-color: var(--primary);
+        }
+        .mask-badge.setup-inactive:hover .badge-num {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Correct/Wrong feedback triggers */
+        .mask-badge.success-flash {
+            background: var(--success) !important;
+            border-color: white !important;
+            color: white !important;
+            transform: scale(1.2);
+            z-index: 20;
+        }
+
+        .mask-badge.wrong-flash {
+            background: var(--danger) !important;
+            border-color: white !important;
+            color: white !important;
+            animation: shake 0.5s ease;
+            z-index: 20;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-6px); }
+            40%, 80% { transform: translateX(6px); }
+        }
+
+        /* Combo popup badge on the map */
+        .combo-popup-badge {
+            position: absolute;
+            background: linear-gradient(135deg, #f59e0b 0%, #ec4899 100%);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 0.85rem;
+            padding: 0.25rem 0.65rem;
+            border-radius: 9999px;
+            box-shadow: 0 4px 10px rgba(236, 72, 153, 0.4);
+            pointer-events: none;
+            z-index: 50;
+            transform: scale(0);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .combo-popup-badge.show {
+            transform: scale(1);
+        }
+
+        /* Sidebar stats panel & program status list */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .progress-card {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1.25rem;
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .prog-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--slate-600);
+            margin-bottom: 0.5rem;
+        }
+
+        .prog-bar-bg {
+            width: 100%;
+            height: 10px;
+            background: var(--slate-100);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+
+        .prog-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--neon-blue) 100%);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            max-height: 380px;
+            overflow-y: auto;
+            padding-right: 0.25rem;
+        }
+
+        .status-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .status-list::-webkit-scrollbar-thumb {
+            background-color: var(--slate-300);
+            border-radius: 3px;
+        }
+
+        .status-item {
+            background: white;
+            border: 1px solid var(--slate-200);
+            padding: 0.65rem 0.85rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--slate-800);
+            transition: border-color 0.2s;
+        }
+
+        .status-item.solved {
+            border-color: var(--success);
+            background: #ecfdf5;
+            color: #065f46;
+        }
+
+        .status-item.solved span.badge {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-item span.badge {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            background: var(--slate-100);
+            color: var(--slate-600);
+            border-radius: 9999px;
+        }
+
+        /* 1~11 Number input pad */
+        .number-pad-panel {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            border: 1px solid var(--slate-200);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .pad-title {
+            font-size: 0.8rem;
+            font-weight: 800;
+            color: var(--slate-600);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .pad-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.4rem;
+        }
+
+        .pad-btn {
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            color: var(--slate-800);
+            border-radius: 8px;
+            padding: 0.65rem 0;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 1.15rem;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .pad-btn:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        .pad-btn:active {
+            transform: scale(0.95);
+        }
+
+        .pad-btn.disabled {
+            opacity: 0.25;
+            pointer-events: none;
+            background: var(--slate-100);
+        }
+
+        /* Game Over Complete Modal Screen */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(8px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            opacity: 1;
+        }
+
+        .modal-card {
+            background: white;
+            border-radius: var(--radius-lg);
+            width: 100%;
+            max-width: 480px;
+            box-shadow: var(--shadow-lg);
+            padding: 2.25rem;
+            transform: scale(0.9);
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+        }
+
+        .modal-overlay.show .modal-card {
+            transform: scale(1);
+        }
+
+        .rank-seal {
+            width: 84px;
+            height: 84px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--neon-pink) 0%, var(--primary) 100%);
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 900;
+            font-size: 2.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.25rem auto;
+            box-shadow: 0 8px 20px rgba(236, 72, 153, 0.3);
+            border: 4px solid white;
+        }
+
+        .modal-card h2 {
+            font-size: 1.5rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            margin-bottom: 0.25rem;
+        }
+
+        .modal-card p.subtitle {
+            font-size: 0.85rem;
+            color: var(--slate-600);
+            margin-bottom: 1.5rem;
+        }
+
+        .result-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+
+        .result-table td {
+            padding: 0.65rem 0.85rem;
+            border-bottom: 1px solid var(--slate-100);
+        }
+
+        .result-table td.lbl {
+            color: var(--slate-600);
+            font-weight: 500;
+            text-align: left;
+        }
+
+        .result-table td.val {
+            color: var(--slate-900);
+            font-weight: 800;
+            text-align: right;
+        }
+
+        .restart-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            color: white;
+            font-weight: 800;
+            font-size: 1.05rem;
+            padding: 0.85rem;
+            border: none;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            transition: all 0.2s;
+        }
+
+        .restart-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.4);
+        }
+
+        /* Screen Danger Red Flash */
+        .danger-flash-border {
+            animation: flashBorder 0.4s ease-out;
+        }
+
+        @keyframes flashBorder {
+            0% { box-shadow: inset 0 0 0 0px var(--danger); }
+            50% { box-shadow: inset 0 0 0 12px rgba(239, 68, 68, 0.25); }
+            100% { box-shadow: inset 0 0 0 0px var(--danger); }
+        }
+
+        /* Confetti Overlay canvas */
+        #confetti-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1100;
+            display: none;
+        }
+
+        /* Sound control toggle inside arena screen */
+        .arena-header-controls {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .sound-switch {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--slate-600);
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+            cursor: pointer;
+        }
+
+        .sound-switch input {
+            accent-color: var(--primary);
+            width: 1rem;
+            height: 1rem;
+        }
+
+        /* Custom Toast notification */
+        .toast-notification {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--slate-900);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            box-shadow: var(--shadow-lg);
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .toast-notification.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <!-- Header -->
+        <header>
+            <div class="logo-area">
+                <div class="logo-icon">
+                    <i class="fa-solid fa-gauge-high"></i>
+                </div>
+                <div class="logo-text">
+                    <h1>눈의 구조 스피드 퀴즈 레이싱</h1>
+                    <p>설명을 읽고 올바른 숫자를 순식간에 매칭하는 레이스</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                <a href="eye_focus.html" class="link-back" style="color: var(--neon-pink); border-color: var(--neon-pink-light);">
+                    <i class="fa-solid fa-compress"></i> 초점 조절 게임하기
+                </a>
+                <a href="index.html" class="link-back">
+                    <i class="fa-solid fa-arrow-left"></i> 과학실험실 홈으로 돌아가기
+                </a>
+            </div>
+        </header>
+
+        <!-- LOBBY SCREEN (Custom settings before play) -->
+        <section class="glass-panel lobby-screen" id="lobby-screen">
+            <div class="lobby-title">
+                <h2>🚥 레이싱 엔트리 서류 작성</h2>
+                <p>도전할 부위를 고르고 레이서 닉네임을 입력해 퀴즈를 준비하세요.</p>
+            </div>
+
+            <div class="lobby-main-layout">
+                <!-- Left: Interactive Setup Diagram -->
+                <div class="lobby-setup-diagram-panel">
+                    <h3 style="font-size: 0.95rem; font-weight: 800; color: var(--slate-800); margin-bottom: 0.75rem; text-align: left; display: flex; align-items: center; gap: 0.35rem;">
+                        <i class="fa-solid fa-eye" style="color: var(--primary);"></i>
+                        출제할 눈 부위 그림에서 직접 선택/해제
+                    </h3>
+                    <div class="viewport-frame" style="padding: 0.5rem; background: #f8fafc;">
+                        <div class="image-container" id="lobby-image-container">
+                            <img src="eye.png" alt="눈의 구조도">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Configuration Controls -->
+                <div class="lobby-setup-controls-panel">
+                    <div class="input-group" style="margin-bottom: 1.25rem;">
+                        <label for="player-name">🏁 레이서 닉네임</label>
+                        <input type="text" id="player-name" placeholder="닉네임 입력 (2~6자)" value="초고속레이서">
+                    </div>
+
+                    <!-- Custom selection chips container -->
+                    <div class="selection-board" style="margin-bottom: 1.25rem;">
+                        <div class="selection-board-title" style="margin-bottom: 0.75rem;">
+                            <span>💡 오늘의 레이스 코스 사전 조율</span>
+                        </div>
+                        
+                        <!-- Preset buttons -->
+                        <div class="preset-buttons-container" style="display: flex; gap: 0.4rem; margin-bottom: 0.75rem; flex-wrap: wrap;">
+                            <button class="preset-btn" onclick="applyPreset('all')">전체 선택</button>
+                            <button class="preset-btn" onclick="applyPreset('basic')">기초 (1~5번)</button>
+                            <button class="preset-btn" onclick="applyPreset('advanced')">심화 (6~11번)</button>
+                            <button class="preset-btn" onclick="applyPreset('none')">해제</button>
+                        </div>
+
+                        <div class="selection-chips-grid" id="selection-chips-grid">
+                            <!-- Chip items dynamically rendered -->
+                        </div>
+                    </div>
+
+                    <!-- Teacher Link Copy Card -->
+                    <div class="teacher-share-card" style="background: var(--primary-light); border: 1.5px dashed var(--primary); padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; text-align: left;">
+                        <div style="font-size: 0.8rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.35rem;">
+                            <i class="fa-solid fa-chalkboard-user"></i>
+                            <span>교사용 기능: 학생용 맞춤 퀴즈 링크</span>
+                        </div>
+                        <p style="font-size: 0.75rem; color: var(--slate-600); line-height: 1.4;">
+                            선택된 문제 세트로 링크를 복사하여 학생들에게 배포할 수 있습니다.
+                        </p>
+                        <button class="share-copy-btn" onclick="copyTeacherShareLink()" style="background: white; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; padding: 0.5rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem; transition: all 0.2s; width: 100%;">
+                            <i class="fa-solid fa-link"></i> 현재 출제 세트 링크 복사
+                        </button>
+                    </div>
+
+                    <button class="start-btn" onclick="startQuizRace()">
+                        <i class="fa-solid fa-flag-checkered"></i> 레이스 스타트!
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- GAME PLAY ARENA SCREEN -->
+        <section class="arena-screen" id="arena-screen">
+            
+            <!-- Left Display: Prompter and Image -->
+            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                
+                <!-- Live Scoreboard -->
+                <div class="glass-panel scoreboard-panel">
+                    <div style="display: flex; align-items: center;">
+                        <div class="timer-stopwatch" id="timer-stopwatch">
+                            <span>00:00</span><span class="ms">.00</span>
+                        </div>
+                        <!-- Penalty time addition notifier -->
+                        <div class="penalty-display" id="penalty-display">
+                            <i class="fa-solid fa-circle-exclamation"></i> 오답 +3.0s
+                        </div>
+                    </div>
+
+                    <div class="arena-header-controls">
+                        <!-- Sound toggle -->
+                        <label class="sound-switch">
+                            <input type="checkbox" id="chk-sound" checked>
+                            <span><i class="fa-solid fa-volume-high"></i> 효과음</span>
+                        </label>
+
+                        <!-- Combo meter -->
+                        <div class="combo-meter" id="combo-meter" style="opacity: 0;">
+                            <i class="fa-solid fa-fire animate-bounce"></i>
+                            <span><span id="combo-count">0</span> COMBO</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text explanation billboard -->
+                <div class="billboard-prompter">
+                    <div class="billboard-lbl">출제 부위 기능 설명</div>
+                    <div class="billboard-desc" id="question-billboard-text">
+                        설명이 여기에 출제됩니다. 알맞은 숫자를 아래 그림에서 고르세요!
+                    </div>
+                </div>
+
+                <!-- Image Viewport Frame -->
+                <div class="viewport-frame">
+                    <div class="image-container" id="image-container">
+                        <img src="eye.png" alt="눈의 구조도">
+                        <!-- Overlays dynamically placed here -->
+                        <div class="combo-popup-badge" id="combo-popup-badge">🔥 +<span id="combo-popup-count">0</span> Combo!</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Display: Control Panel / Keyboard list -->
+            <div class="sidebar">
+                
+                <!-- Round Progress card -->
+                <div class="progress-card">
+                    <div class="prog-header">
+                        <span>진행 점검 스피드 런</span>
+                        <span id="progress-lbl">0 / 11 완료</span>
+                    </div>
+                    <div class="prog-bar-bg">
+                        <div class="prog-bar-fill" id="progress-bar-fill"></div>
+                    </div>
+                </div>
+
+                <!-- Program active list -->
+                <div class="glass-panel" style="flex: 1; display: flex; flex-direction: column; gap: 0.75rem;">
+                    <h3 style="font-size: 0.95rem; font-weight: 800; border-bottom: 2.5px solid var(--slate-200); padding-bottom: 0.5rem; color: var(--slate-900);">
+                        <i class="fa-solid fa-list-check" style="color: var(--primary); margin-right: 0.25rem;"></i>
+                        오늘의 출제 목록
+                    </h3>
+                    <div class="status-list" id="status-list-container">
+                        <!-- Solved list dynamically items here -->
+                    </div>
+                </div>
+
+                <!-- Quick Keypad panel -->
+                <div class="number-pad-panel">
+                    <div class="pad-title">
+                        <i class="fa-solid fa-circle-play" style="color: var(--neon-pink);"></i>
+                        <span>핀패드 퀵 입력</span>
+                    </div>
+                    <div class="pad-grid">
+                        <button class="pad-btn" id="pad-1" onclick="pressPad(1)">1</button>
+                        <button class="pad-btn" id="pad-2" onclick="pressPad(2)">2</button>
+                        <button class="pad-btn" id="pad-3" onclick="pressPad(3)">3</button>
+                        <button class="pad-btn" id="pad-4" onclick="pressPad(4)">4</button>
+                        <button class="pad-btn" id="pad-5" onclick="pressPad(5)">5</button>
+                        <button class="pad-btn" id="pad-6" onclick="pressPad(6)">6</button>
+                        <button class="pad-btn" id="pad-7" onclick="pressPad(7)">7</button>
+                        <button class="pad-btn" id="pad-8" onclick="pressPad(8)">8</button>
+                        <button class="pad-btn" id="pad-9" onclick="pressPad(9)">9</button>
+                        <button class="pad-btn" id="pad-10" onclick="pressPad(10)">10</button>
+                        <button class="pad-btn" id="pad-11" onclick="pressPad(11)">11</button>
+                        <button class="pad-btn" onclick="showGlowHint()" style="background: var(--neon-pink-light); color: var(--neon-pink); border-color: var(--neon-pink); font-size: 0.72rem; font-weight: 800;">힌트</button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+    </div>
+
+    <!-- Complete Result modal window -->
+    <div class="modal-overlay" id="result-modal-overlay">
+        <div class="modal-card">
+            <div class="rank-seal" id="modal-rank-seal">S</div>
+            <h2 id="modal-title-congrat">완주 성공! 골인! 🏁</h2>
+            <p class="subtitle" id="modal-subtitle-eval">대단합니다! 눈 구조를 신속하게 마스터하셨습니다.</p>
+
+            <table class="result-table">
+                <tr>
+                    <td class="lbl"><i class="fa-solid fa-user text-slate-400 mr-1"></i> 레이서</td>
+                    <td class="val" id="modal-racer-name">레이서</td>
+                </tr>
+                <tr>
+                    <td class="lbl"><i class="fa-solid fa-stopwatch text-indigo-500 mr-1"></i> 순수 주행 시간</td>
+                    <td class="val" id="modal-raw-time">00.00초</td>
+                </tr>
+                <tr>
+                    <td class="lbl"><i class="fa-solid fa-triangle-exclamation text-red-500 mr-1"></i> 오답 패널티 시간 (+3초/회)</td>
+                    <td class="val" id="modal-penalty-time">0.0초 (0회)</td>
+                </tr>
+                <tr>
+                    <td class="lbl"><i class="fa-solid fa-flag-checkered text-neon-blue mr-1"></i> 최종 랩타임</td>
+                    <td class="val"><strong id="modal-final-time" style="color: var(--primary); font-size: 1.15rem;">00.00초</strong></td>
+                </tr>
+                <tr>
+                    <td class="lbl"><i class="fa-solid fa-fire text-neon-pink mr-1"></i> 최대 콤보</td>
+                    <td class="val" id="modal-max-combo">0 Combo</td>
+                </tr>
+            </table>
+
+            <button class="restart-btn" onclick="restartRaceLobby()">
+                <i class="fa-solid fa-rotate-left mr-1"></i> 다시 레이싱 하기 🔄
+            </button>
+        </div>
+    </div>
+
+    <!-- Canvas Confetti Overlay -->
+    <canvas id="confetti-canvas"></canvas>
+
+    <script>
+        // Eye anatomy coordinates matching image resolution (916x633) in %
+        const coordinates = {
+            1: {
+                name: "공막",
+                nameBox: { left: 26.5, top: 10.5, width: 17.5, height: 7.5 },
+                description: "눈의 가장 바깥을 싸고 있는 막으로, 흰자위에 해당한다."
+            },
+            2: {
+                name: "각막",
+                nameBox: { left: 6.5, top: 31.5, width: 18.0, height: 8.5 },
+                description: "홍채의 바깥을 싸는 투명한 막이다."
+            },
+            3: {
+                name: "홍채",
+                nameBox: { left: 6.5, top: 54.0, width: 18.0, height: 8.5 },
+                description: "눈으로 들어오는 빛의 양을 조절한다."
+            },
+            4: {
+                name: "동공",
+                nameBox: { left: 6.5, top: 70.0, width: 18.0, height: 8.5 },
+                description: "눈 안쪽으로 빛이 들어가는 구멍이다."
+            },
+            5: {
+                name: "수정체",
+                nameBox: { left: 6.5, top: 82.5, width: 18.0, height: 12.0 },
+                description: "볼록 렌즈와 같이 빛을 굴절시켜 망막에 상이 맺히게 한다."
+            },
+            6: {
+                name: "맥락막",
+                nameBox: { left: 47.0, top: 6.5, width: 22.0, height: 8.5 },
+                description: "검은색 색소가 있어 눈 속을 어둡게 한다."
+            },
+            7: {
+                name: "유리체",
+                nameBox: { left: 77.0, top: 18.0, width: 18.0, height: 12.0 },
+                description: "눈 속을 채우고 있는 투명한 물질로 눈의 형태를 유지한다."
+            },
+            8: {
+                name: "시각 신경",
+                nameBox: { left: 77.0, top: 34.0, width: 18.0, height: 8.5 },
+                description: "시각 세포의 자극을 뇌로 전달한다."
+            },
+            9: {
+                name: "망막",
+                nameBox: { left: 77.0, top: 54.0, width: 18.0, height: 8.5 },
+                description: "상이 맺히는 곳으로, 시각 세포가 있다."
+            },
+            10: {
+                name: "맹점",
+                nameBox: { left: 77.0, top: 65.0, width: 18.0, height: 14.0 },
+                description: "시각 신경이 모여 나가는 부분으로, 시각 세포가 없어 상이 맺히더라도 볼 수 없다."
+            },
+            11: {
+                name: "섬모체",
+                nameBox: { left: 77.0, top: 82.5, width: 18.0, height: 8.5 },
+                description: "수정체의 두께를 조절한다."
+            }
+        };
+
+        // App States
+        let racerName = "초고속레이서";
+        let activeQuestionsPool = [1,2,3,4,5,6,7,8,9,10,11]; // User customized questions subset
+        let speedQuestions = []; // Shuffled subset
+        let currentQuestionIndex = 0;
+        let quizTarget = null; // target ID
+        
+        let startTime = 0;
+        let rawElapsedTime = 0; // seconds
+        let penaltyCount = 0;
+        let combo = 0;
+        let maxCombo = 0;
+        let gameTimer = null;
+        let isRaceActive = false;
+
+        // Web Audio System
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return audioCtx;
+        }
+
+        function playTone(freq, type, duration, delay = 0) {
+            if (!document.getElementById('chk-sound').checked) return;
+            try {
+                const ctx = getAudioContext();
+                if (ctx.state === 'suspended') {
+                    ctx.resume();
+                }
+                const osc = ctx.createOscillator();
+                const gainNode = ctx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+                
+                gainNode.gain.setValueAtTime(0, ctx.currentTime + delay);
+                gainNode.gain.linearRampToValueAtTime(0.12, ctx.currentTime + delay + 0.02);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + duration);
+                
+                osc.connect(gainNode);
+                gainNode.connect(ctx.destination);
+                
+                osc.start(ctx.currentTime + delay);
+                osc.stop(ctx.currentTime + delay + duration);
+            } catch (e) {
+                console.log("Audio failed:", e);
+            }
+        }
+
+        function playSuccessSound() {
+            playTone(523.25, 'sine', 0.12, 0);       // C5
+            playTone(659.25, 'sine', 0.12, 0.07);    // E5
+            playTone(783.99, 'sine', 0.12, 0.14);    // G5
+        }
+
+        function playErrorSound() {
+            playTone(180, 'triangle', 0.22, 0);      // Dissonant buzz
+        }
+
+        function playCompleteSound() {
+            const scale = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
+            scale.forEach((note, index) => {
+                playTone(note, 'sine', 0.5, index * 0.07);
+            });
+        }
+
+        // Initialize Lobby Options
+        window.addEventListener('DOMContentLoaded', () => {
+            // Check for q query parameter (teacher share link)
+            const urlParams = new URLSearchParams(window.location.search);
+            const qParam = urlParams.get('q');
+            if (qParam) {
+                const parsed = qParam.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 11);
+                if (parsed.length >= 2) {
+                    activeQuestionsPool = parsed;
+                    activeQuestionsPool.sort((a, b) => a - b);
+                    setTimeout(() => showToast("🎒 교사가 지정한 문제 세트가 로드되었습니다!"), 500);
+                }
+            }
+
+            renderLobbyDiagramBadges();
+            renderLobbySelectionChips();
+        });
+
+        function renderLobbyDiagramBadges() {
+            const container = document.getElementById('lobby-image-container');
+            if (!container) return;
+            const existing = container.querySelectorAll('.mask-badge');
+            existing.forEach(el => el.remove());
+
+            for (let id in coordinates) {
+                const item = coordinates[id];
+                const badge = document.createElement('div');
+                badge.style.left = `${item.nameBox.left}%`;
+                badge.style.top = `${item.nameBox.top}%`;
+                badge.style.width = `${item.nameBox.width}%`;
+                badge.style.height = `${item.nameBox.height}%`;
+                
+                const numId = parseInt(id);
+                const isActive = activeQuestionsPool.includes(numId);
+                
+                badge.className = isActive ? 'mask-badge setup-active' : 'mask-badge setup-inactive';
+                badge.innerHTML = `<span class="badge-num">${id}</span>`;
+                
+                badge.onclick = () => {
+                    toggleLobbyQuestion(numId);
+                };
+                
+                container.appendChild(badge);
+            }
+        }
+
+        function toggleLobbyQuestion(id) {
+            const idx = activeQuestionsPool.indexOf(id);
+            if (idx > -1) {
+                if (activeQuestionsPool.length <= 2) {
+                    showToast("⚠️ 최소한 2개 이상의 문항이 선택되어야 합니다!");
+                    return;
+                }
+                activeQuestionsPool.splice(idx, 1);
+            } else {
+                activeQuestionsPool.push(id);
+                activeQuestionsPool.sort((a, b) => a - b);
+            }
+            
+            renderLobbyDiagramBadges();
+            renderLobbySelectionChips();
+        }
+
+        function renderLobbySelectionChips() {
+            const grid = document.getElementById('selection-chips-grid');
+            if (!grid) return;
+            grid.innerHTML = '';
+
+            for (let id in coordinates) {
+                const item = coordinates[id];
+                const chip = document.createElement('div');
+                const numId = parseInt(id);
+                const isActive = activeQuestionsPool.includes(numId);
+                
+                chip.className = isActive ? 'chip-item active' : 'chip-item';
+                chip.id = `lobby-chip-${id}`;
+                chip.innerHTML = `
+                    <i class="fa-solid fa-circle-check"></i>
+                    <span>${id}. ${item.name}</span>
+                `;
+                
+                chip.onclick = () => {
+                    toggleLobbyQuestion(numId);
+                };
+                grid.appendChild(chip);
+            }
+        }
+
+        function applyPreset(type) {
+            const allIds = [1,2,3,4,5,6,7,8,9,10,11];
+            if (type === 'all') {
+                activeQuestionsPool = [...allIds];
+            } else if (type === 'basic') {
+                activeQuestionsPool = [1, 2, 3, 4, 5];
+            } else if (type === 'advanced') {
+                activeQuestionsPool = [6, 7, 8, 9, 10, 11];
+            } else if (type === 'none') {
+                activeQuestionsPool = [1, 2];
+            }
+            
+            renderLobbyDiagramBadges();
+            renderLobbySelectionChips();
+            showToast("🎯 출제 문항 프리셋이 적용되었습니다.");
+        }
+
+        function copyTeacherShareLink() {
+            const qStr = activeQuestionsPool.join(',');
+            const baseUrl = window.location.origin + window.location.pathname;
+            const shareUrl = `${baseUrl}?q=${qStr}`;
+            
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                showToast("🔗 출제 공유 링크가 클립보드에 복사되었습니다!");
+            }).catch(err => {
+                console.error("Link copy failed:", err);
+                showToast("❌ 링크 복사에 실패했습니다. 주소 표시줄에서 복사해주세요.");
+            });
+        }
+
+        function showToast(msg) {
+            let toast = document.getElementById('custom-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'custom-toast';
+                toast.className = 'toast-notification';
+                document.body.appendChild(toast);
+            }
+            toast.innerHTML = `<i class="fa-solid fa-info-circle"></i> <span>${msg}</span>`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        // ==============================================
+        // 🏁 START RACE RUN
+        // ==============================================
+        function startQuizRace() {
+            const nameInput = document.getElementById('player-name');
+            racerName = nameInput.value.trim() || "도전자";
+
+            if (activeQuestionsPool.length < 2) {
+                alert("최소 2개 이상의 부위를 조율해 주세요!");
+                return;
+            }
+
+            // Shuffle target list
+            speedQuestions = [...activeQuestionsPool];
+            shuffleArray(speedQuestions);
+
+            // Set state variables
+            currentQuestionIndex = 0;
+            penaltyCount = 0;
+            combo = 0;
+            maxCombo = 0;
+            isRaceActive = true;
+            rawElapsedTime = 0;
+
+            // Switch screen display
+            document.getElementById('lobby-screen').style.display = 'none';
+            document.getElementById('arena-screen').style.display = 'grid';
+
+            // Configure keypad keys (disable buttons that are not in play)
+            for (let i = 1; i <= 11; i++) {
+                const btn = document.getElementById(`pad-${i}`);
+                if (activeQuestionsPool.includes(i)) {
+                    btn.classList.remove('disabled');
+                } else {
+                    btn.classList.add('disabled');
+                }
+            }
+
+            // Populate the right sidebar solver status lists
+            const statusContainer = document.getElementById('status-list-container');
+            statusContainer.innerHTML = '';
+            speedQuestions.forEach(id => {
+                const item = coordinates[id];
+                const div = document.createElement('div');
+                div.className = 'status-item';
+                div.id = `status-item-${id}`;
+                div.innerHTML = `
+                    <span>${item.name}</span>
+                    <span class="badge" id="solve-badge-${id}">대기 중</span>
+                `;
+                statusContainer.appendChild(div);
+            });
+
+            // Start stopwatch
+            startTime = Date.now();
+            if (gameTimer) cancelAnimationFrame(gameTimer);
+            updateStopwatch();
+
+            // Render covered numeric badges onto the eye diagram
+            renderNumericDiagramBadges();
+
+            // Fetch first question
+            selectNextRaceQuestion();
+            playTone(800, 'sine', 0.1, 0);
+            playTone(1200, 'sine', 0.15, 0.08);
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        // Render rectangular number cover overlays
+        function renderNumericDiagramBadges() {
+            const container = document.getElementById('image-container');
+            const existing = container.querySelectorAll('.mask-badge');
+            existing.forEach(el => {
+                if (el.id !== 'combo-popup-badge') el.remove();
+            });
+
+            for (let id in coordinates) {
+                const item = coordinates[id];
+                const badge = document.createElement('div');
+                badge.style.left = `${item.nameBox.left}%`;
+                badge.style.top = `${item.nameBox.top}%`;
+                badge.style.width = `${item.nameBox.width}%`;
+                badge.style.height = `${item.nameBox.height}%`;
+                
+                const numId = parseInt(id);
+                if (activeQuestionsPool.includes(numId)) {
+                    // Part of quiz -> Covered initially
+                    badge.className = 'mask-badge covered';
+                    badge.id = `mask-badge-${id}`;
+                    badge.innerHTML = `<span class="badge-num">${id}</span>`;
+                    badge.onclick = (e) => handleRacerTap(id);
+                } else {
+                    // Not in pool -> Revealed default (fully transparent)
+                    badge.className = 'mask-badge revealed-default';
+                    badge.innerHTML = '';
+                    badge.onclick = null;
+                }
+                container.appendChild(badge);
+            }
+        }
+
+        // stopwatch animation tick loop
+        function updateStopwatch() {
+            if (!isRaceActive) return;
+
+            const now = Date.now();
+            const deltaMs = now - startTime;
+            
+            // Format mm:ss.xx
+            rawElapsedTime = deltaMs / 1000;
+            const minutes = Math.floor(deltaMs / 60000);
+            const seconds = Math.floor((deltaMs % 60000) / 1000);
+            const ms = Math.floor((deltaMs % 1000) / 10);
+
+            const displayMinSec = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+            const displayMs = '.' + String(ms).padStart(2, '0');
+
+            const stopwatchEl = document.getElementById('timer-stopwatch');
+            stopwatchEl.innerHTML = `${displayMinSec}<span class="ms">${displayMs}</span>`;
+
+            gameTimer = requestAnimationFrame(updateStopwatch);
+        }
+
+        function selectNextRaceQuestion() {
+            if (currentQuestionIndex >= speedQuestions.length) {
+                endQuizRace();
+                return;
+            }
+
+            quizTarget = speedQuestions[currentQuestionIndex];
+            
+            // Render prompt explanation
+            const billboardText = document.getElementById('question-billboard-text');
+            billboardText.innerText = coordinates[quizTarget].description;
+
+            // Highlight target in lists & clear keypad animations
+            const padButtons = document.querySelectorAll('.pad-btn');
+            padButtons.forEach(btn => btn.classList.remove('wrong-flash', 'success-flash'));
+
+            // Focus sidebar list row
+            const listRow = document.getElementById(`status-item-${quizTarget}`);
+            if (listRow) {
+                listRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                listRow.style.borderColor = 'var(--neon-pink)';
+            }
+
+            // Sync visual bar fill
+            const barFill = document.getElementById('progress-bar-fill');
+            const progressPercent = Math.round((currentQuestionIndex / speedQuestions.length) * 100);
+            barFill.style.width = `${progressPercent}%`;
+
+            const progLbl = document.getElementById('progress-lbl');
+            progLbl.innerText = `${currentQuestionIndex} / ${speedQuestions.length} 완료`;
+        }
+
+        function pressPad(num) {
+            handleRacerTap(num);
+        }
+
+        // Core Input Validator
+        function handleRacerTap(inputId) {
+            if (!isRaceActive || !quizTarget) return;
+
+            const selectedNum = parseInt(inputId);
+            
+            if (selectedNum === quizTarget) {
+                // CORRECT INPUT
+                combo++;
+                if (combo > maxCombo) maxCombo = combo;
+
+                playSuccessSound();
+
+                // Reveal diagram cover badge (removes cover class, keeps dimensions and hides number badge)
+                const badgeEl = document.getElementById(`mask-badge-${quizTarget}`);
+                if (badgeEl) {
+                    badgeEl.className = 'mask-badge revealed';
+                    badgeEl.innerHTML = ''; // Clears number to let the text show through completely
+                    badgeEl.onclick = null;
+                }
+
+                // keypad feedback
+                const padBtn = document.getElementById(`pad-${quizTarget}`);
+                if (padBtn) {
+                    padBtn.classList.add('success-flash');
+                }
+
+                // Solved list feedback
+                const row = document.getElementById(`status-item-${quizTarget}`);
+                const badge = document.getElementById(`solve-badge-${quizTarget}`);
+                if (row && badge) {
+                    row.className = 'status-item solved';
+                    row.style.borderColor = 'var(--success)';
+                    badge.innerText = '완료';
+                }
+
+                // Combo pop badge
+                showComboPopupEffect(combo);
+
+                currentQuestionIndex++;
+                setTimeout(() => {
+                    if (padBtn) padBtn.classList.remove('success-flash');
+                    selectNextRaceQuestion();
+                }, 450);
+
+            } else {
+                // INCORRECT INPUT
+                combo = 0; // Combo breaks
+                penaltyCount++;
+
+                playErrorSound();
+
+                // Apply time penalty to stopwatch time (+3 seconds by adding a delay offset)
+                startTime -= 3000; // Deducting 3000ms makes elapsed stopwatch skip 3s forward
+                showPenaltyTimeToast();
+
+                // Flash wrong animations on badge
+                const wrongBadge = document.getElementById(`mask-badge-${selectedNum}`);
+                if (wrongBadge) {
+                    wrongBadge.classList.add('wrong-flash');
+                    setTimeout(() => wrongBadge.classList.remove('wrong-flash'), 500);
+                }
+
+                // Flash wrong keypad
+                const wrongPad = document.getElementById(`pad-${selectedNum}`);
+                if (wrongPad) {
+                    wrongPad.classList.add('wrong-flash');
+                    setTimeout(() => wrongPad.classList.remove('wrong-flash'), 500);
+                }
+
+                // Arena border flash red warning
+                const arena = document.getElementById('arena-screen');
+                arena.classList.add('danger-flash-border');
+                setTimeout(() => arena.classList.remove('danger-flash-border'), 400);
+
+                updateComboMeter();
+            }
+        }
+
+        // Briefly flash "+3.0s" red warning on scoreboard
+        function showPenaltyTimeToast() {
+            const el = document.getElementById('penalty-display');
+            el.style.display = 'inline-flex';
+            setTimeout(() => {
+                el.style.display = 'none';
+            }, 1000);
+        }
+
+        // Show popup multiplier badge next to the target nameBox
+        function showComboPopupEffect(currentCombo) {
+            updateComboMeter();
+            if (currentCombo < 2) return;
+
+            const pBadge = document.getElementById('combo-popup-badge');
+            const count = document.getElementById('combo-popup-count');
+            
+            count.innerText = currentCombo;
+            const targetPos = coordinates[quizTarget] ? coordinates[quizTarget].nameBox : null;
+            if (targetPos && pBadge) {
+                pBadge.style.left = `${targetPos.left + 5}%`;
+                pBadge.style.top = `${targetPos.top - 6}%`;
+                pBadge.classList.add('show');
+                setTimeout(() => {
+                    pBadge.classList.remove('show');
+                }, 600);
+            }
+        }
+
+        function updateComboMeter() {
+            const meter = document.getElementById('combo-meter');
+            const span = meter.querySelector('span');
+
+            if (combo >= 2) {
+                meter.style.opacity = '1';
+                span.innerHTML = `<strong>${combo}</strong> COMBO`;
+            } else {
+                meter.style.opacity = '0';
+            }
+        }
+
+        function showGlowHint() {
+            if (!isRaceActive || !quizTarget) return;
+            const targetBadge = document.getElementById(`mask-badge-${quizTarget}`);
+            if (targetBadge) {
+                targetBadge.classList.add('hint-glow');
+                setTimeout(() => {
+                    targetBadge.classList.remove('hint-glow');
+                }, 1500);
+            }
+        }
+
+        // End race & aggregate stats
+        function endQuizRace() {
+            isRaceActive = false;
+            if (gameTimer) cancelAnimationFrame(gameTimer);
+
+            playCompleteSound();
+            startConfetti();
+
+            // Calculate final records
+            const rawTime = rawElapsedTime.toFixed(2);
+            const penaltySec = (penaltyCount * 3).toFixed(1);
+            const finalTimeVal = (rawElapsedTime + (penaltyCount * 3)).toFixed(2);
+
+            // Determine Rank Seal (S/A/B/C)
+            let rank = 'C';
+            if (finalTimeVal <= 18.0) rank = 'S';
+            else if (finalTimeVal <= 28.0) rank = 'A';
+            else if (finalTimeVal <= 40.0) rank = 'B';
+
+            let congrats = "완주 성공! 골인! 🏁";
+            let evalText = "아주 훌륭한 속도입니다! 눈의 해부학적 마스터에 도달했습니다.";
+            if (rank === 'S') congrats = "👑 신의 영역 랩타임 달성!";
+            else if (rank === 'A') congrats = "⚡ 스피드왕 레이서 등극!";
+            else if (rank === 'B') congrats = "👍 완주 성공! 안정적인 페이스!";
+            else {
+                congrats = "🏁 완주 성공! 조금만 더 빠르게!";
+                evalText = "오답을 최소화하고 핀패드를 더 빠르게 눌러 랩타임을 줄여보세요.";
+            }
+
+            // Fill Modal
+            document.getElementById('modal-rank-seal').innerText = rank;
+            document.getElementById('modal-title-congrat').innerText = congrats;
+            document.getElementById('modal-subtitle-eval').innerText = evalText;
+            document.getElementById('modal-racer-name').innerText = racerName;
+            document.getElementById('modal-raw-time').innerText = `${rawTime}초`;
+            document.getElementById('modal-penalty-time').innerText = `${penaltySec}초 (${penaltyCount}회)`;
+            document.getElementById('modal-final-time').innerText = `${finalTimeVal}초`;
+            document.getElementById('modal-max-combo').innerText = `${maxCombo} Combo`;
+
+            // Open Modal
+            document.getElementById('result-modal-overlay').classList.add('show');
+        }
+
+        function restartRaceLobby() {
+            document.getElementById('result-modal-overlay').classList.remove('show');
+            document.getElementById('arena-screen').style.display = 'none';
+            document.getElementById('lobby-screen').style.display = 'block';
+            
+            // Re-render lobby diagram and chips to ensure proper sync
+            renderLobbyDiagramBadges();
+            renderLobbySelectionChips();
+            
+            // Clean overlays
+            const container = document.getElementById('image-container');
+            const badges = container.querySelectorAll('.mask-badge');
+            badges.forEach(b => {
+                if (b.id !== 'combo-popup-badge') b.remove();
+            });
+        }
+
+
+        // --- CANVAS CONFETTI SYSTEM ---
+        let confettiInterval = null;
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            canvas.style.display = 'block';
+            const ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            window.addEventListener('resize', () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            });
+
+            const colors = ['#f43f5e', '#ec4899', '#d946ef', '#a855f7', '#8b5cf6', '#6366f1', '#3b82f6', '#0ea5e9', '#06b6d4', '#14b8a6', '#10b981', '#22c55e', '#84cc16', '#eab308', '#f97316'];
+            const particles = [];
+
+            for (let i = 0; i < 150; i++) {
+                particles.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height - canvas.height,
+                    r: Math.random() * 6 + 4,
+                    d: Math.random() * canvas.height,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    tilt: Math.random() * 10 - 5,
+                    tiltAngleIncremental: Math.random() * 0.07 + 0.02,
+                    tiltAngle: 0
+                });
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                particles.forEach((p, idx) => {
+                    p.tiltAngle += p.tiltAngleIncremental;
+                    p.y += (Math.cos(p.d) + 3 + p.r / 2) / 2;
+                    p.x += Math.sin(p.tiltAngle);
+                    p.tilt = Math.sin(p.tiltAngle - idx / 3) * 15;
+
+                    ctx.beginPath();
+                    ctx.lineWidth = p.r;
+                    ctx.strokeStyle = p.color;
+                    ctx.moveTo(p.x + p.tilt + p.r / 2, p.y);
+                    ctx.lineTo(p.x + p.tilt, p.y + p.tilt + p.r / 2);
+                    ctx.stroke();
+
+                    // If particle reaches bottom, reset it to top
+                    if (p.y > canvas.height) {
+                        particles[idx] = {
+                            x: Math.random() * canvas.width,
+                            y: -20,
+                            r: p.r,
+                            d: p.d,
+                            color: p.color,
+                            tilt: p.tilt,
+                            tiltAngleIncremental: p.tiltAngleIncremental,
+                            tiltAngle: p.tiltAngle
+                        };
+                    }
+                });
+            }
+
+            if (confettiInterval) clearInterval(confettiInterval);
+            confettiInterval = setInterval(draw, 20);
+
+            // Stop confetti after 5 seconds
+            setTimeout(() => {
+                clearInterval(confettiInterval);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
