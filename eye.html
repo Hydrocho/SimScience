@@ -1106,7 +1106,7 @@
                 <div>
                     <div style="padding:1rem; border:1px solid var(--slate-200); border-radius:12px; margin-bottom:1rem;">
                         <strong>실험실 PIN: <span style="color:var(--primary);">584731</span></strong>
-                        <p style="font-size:0.78rem; color:var(--slate-600); margin-top:0.35rem;">문제당 제한 시간: 5초</p>
+                        <p style="font-size:0.78rem; color:var(--slate-600); margin-top:0.35rem;">문제당 제한 시간: 10초</p>
                     </div>
                     <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
                     <button class="start-btn" style="margin-top:1rem;" onclick="launchQuizForStudents()">실시간 퀴즈 시작</button>
@@ -1964,7 +1964,7 @@
         const SUPABASE_URL = "https://vdyvpsteofvhbvvrilxe.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU";
         const QUIZ_SESSION_PIN = '584731';
-        const QUESTION_SECONDS = 5;
+        const QUESTION_SECONDS = 10;
         const coordinates = window.eyeQuizCoordinates;
         const applyMaskBadgeBounds = window.applyEyeMaskBadgeBounds;
 
@@ -2212,7 +2212,7 @@
             document.getElementById('modal-raw-time').textContent = `${result.elapsedSeconds.toFixed(2)}초`;
             document.getElementById('modal-penalty-time').textContent = `미응답 ${result.unansweredCount}문제`;
             document.getElementById('modal-final-time').textContent = `${result.correctCount} / ${result.totalQuestions}`;
-            document.getElementById('modal-max-combo').textContent = '문제당 제한 시간 5초';
+            document.getElementById('modal-max-combo').textContent = '문제당 제한 시간 10초';
             document.getElementById('result-modal-overlay').classList.add('show');
         }
 
