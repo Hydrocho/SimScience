@@ -1467,8 +1467,11 @@
                                 <p style="font-size: 0.78rem; color: var(--slate-400);">모든 학생들의 사진 촬영 제출이 취합되었습니다.</p>
                             </div>
                             <div class="action-buttons-vertical" style="display: flex; flex-direction: column; gap: 8px;">
-                                <button class="start-btn" style="width: 100%; margin: 0;" onclick="resetForNextRoundDetail()">
-                                    🔄 다음 라운드 준비 (대기실 리셋)
+                                <button id="btn-teacher-finish-detail" class="start-btn" style="width: 100%; margin: 0;" onclick="finishRoundDetail()">
+                                    종료 (랭킹 보기)
+                                </button>
+                                <button id="btn-teacher-next-round-detail" class="start-btn" style="display: none; width: 100%; margin: 0;" onclick="resetForNextRoundDetail()">
+                                    🔄 다음 라운드 준비
                                 </button>
                             </div>
                         </div>
@@ -2562,6 +2565,15 @@
                     animate();
                 });
 
+                classroomNetwork.on('onRoundReset', () => {
+                    if (gameTimerInterval) clearInterval(gameTimerInterval);
+                    resultModal.classList.remove('show');
+                    document.getElementById('student-waiting-overlay').style.display = 'flex';
+                    nextRoundBtn.disabled = false;
+                    nextRoundBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> 다음 라운드';
+                    gameMode = 'lobby';
+                });
+
                 classroomNetwork.on('onRankingUpdate', (payload) => {
                     const rankings = payload.rankings || [];
                     const myRankIndex = rankings.findIndex(r => r.studentId === classroomNetwork.id);
@@ -2755,7 +2767,18 @@
             document.getElementById('teacher-sidebar-leaderboard').style.display = 'flex';
             document.getElementById('teacher-lobby-view').style.display = 'none';
             document.getElementById('teacher-active-view').style.display = 'flex';
+            document.getElementById('btn-teacher-finish-detail').style.display = 'block';
+            document.getElementById('btn-teacher-next-round-detail').style.display = 'none';
             teacherTriggerLaunch();
+        }
+
+        function finishRoundDetail() {
+            if (!isMultiplayer || userRole !== 'teacher' || !classroomNetwork) return;
+
+            classroomNetwork.broadcastRoundReset();
+            document.getElementById('btn-teacher-finish-detail').style.display = 'none';
+            document.getElementById('btn-teacher-next-round-detail').style.display = 'block';
+            showToast("학생 화면을 다음 라운드 대기 상태로 전환했습니다. 랭킹을 확인하세요.");
         }
 
         function resetForNextRoundDetail() {
@@ -2766,6 +2789,8 @@
             document.getElementById('teacher-sidebar-leaderboard').style.display = 'none';
             document.getElementById('teacher-lobby-view').style.display = 'flex';
             document.getElementById('teacher-active-view').style.display = 'none';
+            document.getElementById('btn-teacher-finish-detail').style.display = 'block';
+            document.getElementById('btn-teacher-next-round-detail').style.display = 'none';
             studentResults = [];
             renderTeacherRankingsTableDetail();
             teacherSyncSettingsDetail();
@@ -2928,6 +2953,7 @@
         window.lockSessionSettingsDetail = lockSessionSettingsDetail;
         window.unlockSessionSettingsDetail = unlockSessionSettingsDetail;
         window.triggerLaunchAllDetail = triggerLaunchAllDetail;
+        window.finishRoundDetail = finishRoundDetail;
         window.resetForNextRoundDetail = resetForNextRoundDetail;
         window.teacherTriggerLaunch = teacherTriggerLaunch;
         window.capturePhoto = capturePhoto;

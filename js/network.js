@@ -20,6 +20,7 @@ export class ClassroomNetwork {
       onStudentSync: () => {},     // Occurs when the student list changes (presence sync)
       onReceiveSettings: () => {}, // Occurs when student receives settings from teacher
       onGameStart: () => {},       // Occurs when student receives start trigger from teacher
+      onRoundReset: () => {},      // Occurs when students should return to the waiting room
       onResultReported: () => {},  // Occurs when teacher receives result from student
       onRankingUpdate: () => {},   // Occurs when student receives leaderboard from teacher
       onKick: () => {},            // Occurs if kicked (e.g. duplicate nickname)
@@ -108,6 +109,11 @@ export class ClassroomNetwork {
           this.callbacks.onGameStart();
         }
       })
+      .on('broadcast', { event: 'round-reset' }, () => {
+        if (this.role === 'student') {
+          this.callbacks.onRoundReset();
+        }
+      })
       .on('broadcast', { event: 'report-result' }, ({ payload }) => {
         if (this.role === 'teacher') {
           this.callbacks.onResultReported(payload);
@@ -169,6 +175,18 @@ export class ClassroomNetwork {
     this.channel.send({
       type: 'broadcast',
       event: 'start-game',
+      payload: {}
+    });
+  }
+
+  /**
+   * [Teacher] Return student screens to the waiting room after a round
+   */
+  broadcastRoundReset() {
+    if (this.role !== 'teacher' || !this.channel) return;
+    this.channel.send({
+      type: 'broadcast',
+      event: 'round-reset',
       payload: {}
     });
   }
