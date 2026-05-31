@@ -1325,26 +1325,7 @@
                 </div>
 
                 <div class="focus-control-panel">
-                    <div class="panel-heading"><i class="fa-solid fa-ruler"></i><span>원반별 초점 거리 오차</span></div>
-                    <div>01: <span id="dist-val-2">0.0m</span></div>
-                    <div>02: <span id="dist-val-1">0.0m</span></div>
-                    <div>03: <span id="dist-val-0">0.0m</span></div>
-                    <div class="focus-gauge-wrapper" id="gauge-wrapper">
-                        <div class="gauge-bar-container">
-                            <div id="focal-plane-marker"></div>
-                            <div id="target-dist-marker"></div>
-                        </div>
-                        <div class="gauge-ticks"><span>가까움</span><span>멂</span></div>
-                    </div>
-                    <div class="input-group">
-                        <label>오브젝트 선명 구간 <span id="sharp-range-val">0.1m</span></label>
-                        <input type="range" id="sharp-range-slider" min="0.0" max="20.0" step="0.1" value="0.1" oninput="updateSharpRange()">
-                    </div>
-                    <div class="input-group">
-                        <label>그리드 선명 구간 <span id="grid-sharp-range-val">0.1m</span></label>
-                        <input type="range" id="grid-sharp-range-slider" min="0.0" max="20.0" step="0.1" value="0.1" oninput="updateGridSharpRange()">
-                    </div>
-                    <label><input type="checkbox" id="show-focal-guide-checkbox" onchange="toggleFocalGuide()"> 노란색 초점 가이드 표시</label>
+                    <div class="panel-heading"><i class="fa-solid fa-compress"></i><span>초점 조절</span></div>
                     <div class="control-button-area">
                         <button class="hold-btn" id="hold-action-btn">
                             <span>섬모체 수축</span>
@@ -1786,8 +1767,10 @@
         }
 
         function updateSharpRange() {
-            const sharpRange = parseFloat(document.getElementById('sharp-range-slider').value);
-            document.getElementById('sharp-range-val').textContent = `${sharpRange.toFixed(1)}m`;
+            const slider = document.getElementById('sharp-range-slider');
+            const sharpRange = slider ? parseFloat(slider.value) : 0.1;
+            const valSpan = document.getElementById('sharp-range-val');
+            if (valSpan) valSpan.textContent = `${sharpRange.toFixed(1)}m`;
 
             if (isThreeInitialized && bokehPass && bokehPass.uniforms[ 'sharpRange' ]) {
                 bokehPass.uniforms[ 'sharpRange' ].value = sharpRange;
@@ -1795,13 +1778,16 @@
         }
 
         function updateGridSharpRange() {
-            const gridSharpRange = parseFloat(document.getElementById('grid-sharp-range-slider').value);
-            document.getElementById('grid-sharp-range-val').textContent = `${gridSharpRange.toFixed(1)}m`;
+            const slider = document.getElementById('grid-sharp-range-slider');
+            const gridSharpRange = slider ? parseFloat(slider.value) : 0.1;
+            const valSpan = document.getElementById('grid-sharp-range-val');
+            if (valSpan) valSpan.textContent = `${gridSharpRange.toFixed(1)}m`;
             updateGridFocusColors();
         }
 
         function toggleFocalGuide() {
-            const isVisible = document.getElementById('show-focal-guide-checkbox').checked;
+            const checkbox = document.getElementById('show-focal-guide-checkbox');
+            const isVisible = checkbox ? checkbox.checked : false;
             if (focalFrameMesh) focalFrameMesh.visible = isVisible;
             if (focalShadowMesh) focalShadowMesh.visible = isVisible;
         }
@@ -1809,7 +1795,8 @@
         function updateGridFocusColors() {
             if (!tunnelGridGroup) return;
 
-            const gridSharpRange = parseFloat(document.getElementById('grid-sharp-range-slider').value);
+            const slider = document.getElementById('grid-sharp-range-slider');
+            const gridSharpRange = slider ? parseFloat(slider.value) : 0.1;
             const fadeDistance = 12.0;
             const focusedColor = new THREE.Color(0x334155);
             const blurredColor = new THREE.Color(0xffffff);
@@ -2229,7 +2216,8 @@
                 width: w,
                 height: h
             });
-            bokehPass.uniforms[ 'sharpRange' ].value = parseFloat(document.getElementById('sharp-range-slider').value);
+            const sharpSlider = document.getElementById('sharp-range-slider');
+            bokehPass.uniforms[ 'sharpRange' ].value = sharpSlider ? parseFloat(sharpSlider.value) : 0.1;
 
             composer = new THREE.EffectComposer(renderer);
             composer.addPass(renderPass);
