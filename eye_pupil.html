@@ -1388,7 +1388,7 @@
                 <div id="pane-teacher" class="tab-content">
                     <div class="lobby-title">
                         <h2>실시간 교사 대시보드</h2>
-                        <p>구글 승인 계정으로 로그인하여 멀티플레이어 세션을 생성하고 수업용 조도를 조절합니다.</p>
+                        <p>구글 승인 계정으로 로그인하여 멀티플레이어 세션을 생성하고 수업용 밝기를 조절합니다.</p>
                     </div>
                     
                     <div id="teacher-login-block" style="padding: 1.5rem; text-align: center;">
@@ -1426,13 +1426,13 @@
 
                                 <div class="control-group">
                                     <div class="control-header">
-                                        <label for="teacher-lux-slider"><i class="fa-solid fa-lightbulb"></i> 주변 조도 제어 (Lux)</label>
-                                        <span class="val" id="teacher-lux-val">300 Lux</span>
+                                        <label for="teacher-lux-slider"><i class="fa-solid fa-lightbulb"></i> 주변 밝기 제어</label>
+                                        <span class="val" id="teacher-lux-val">300</span>
                                     </div>
                                     <input type="range" id="teacher-lux-slider" min="50" max="2500" step="10" value="300" style="width:100%; accent-color:var(--primary)" oninput="teacherSyncSettings()">
                                     <div class="slider-ticks">
-                                        <span>50 Lux (어두움)</span>
-                                        <span>2,500 Lux (밝음)</span>
+                                        <span>50 (어두움)</span>
+                                        <span>2,500 (밝음)</span>
                                     </div>
                                 </div>
 
@@ -1445,7 +1445,7 @@
                                         <option value="AUTO">자동 반사 모드 (정상 대광반사 작동)</option>
                                     </select>
                                     <p style="font-size:0.75rem; color:var(--slate-400); margin-top:2px;">
-                                        * 자동 반사 모드 시 조도 변화에 따라 동공이 자동으로 최적화되어 수동 조작이 불필요합니다.
+                                        * 자동 반사 모드 시 주변 밝기 변화에 따라 동공이 자동으로 최적화되어 수동 조작이 불필요합니다.
                                     </p>
                                 </div>
 
@@ -1488,7 +1488,6 @@
                                                 <th>순위</th>
                                                 <th>학생 닉네임</th>
                                                 <th>점수</th>
-                                                <th>촬영 조도</th>
                                                 <th>촬영 동공 크기</th>
                                                 <th>정확도</th>
                                             </tr>
@@ -1544,11 +1543,6 @@
                             <!-- Time limit count overlay -->
                             <div id="countdown-hud" class="countdown-overlay">15</div>
 
-                            <!-- Indicator text at top left -->
-                            <div class="exposure-indicator-overlay">
-                                <i class="fa-solid fa-sun" style="color: var(--neon-yellow)"></i>
-                                <span id="focal-indicator-txt">조도: 100 Lux | 동공: 5.0mm</span>
-                            </div>
 
                             <!-- Target display info banner at bottom -->
                             <div style="position: absolute; bottom: 15px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); border-radius: 20px; padding: 6px 14px; border: 1.5px solid var(--neon-yellow); z-index: 10; color: white; font-weight: 800; font-size: 0.8rem; text-align: center; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(217, 119, 6, 0.3); white-space: nowrap;">
@@ -1586,8 +1580,8 @@
                         <div style="font-size: 0.85rem; color: #334155; line-height: 1.5; padding: 0.5rem 0; font-weight: 500;">
                             <p style="margin-bottom: 8px;"><strong>동공 반사(Pupillary Reflex)</strong>는 외부 빛의 밝기에 따라 동공의 크기를 조절하는 자율 반응입니다.</p>
                             <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">
-                                <li><strong>어두운 곳 (저조도)</strong>: 빛을 많이 모으기 위해 홍채가 수축하며 동공이 커집니다. (버튼 탭하기)</li>
-                                <li><strong>밝은 곳 (고조도)</strong>: 과도한 빛을 차단하려 홍채가 이완하며 동공이 작아집니다. (누르기 중단)</li>
+                                <li><strong>어두운 환경</strong>: 빛을 많이 모으기 위해 홍채가 수축하며 동공이 커집니다. (버튼 탭하기)</li>
+                                <li><strong>밝은 환경</strong>: 과도한 빛을 차단하려 홍채가 이완하며 동공이 작아집니다. (누르기 중단)</li>
                             </ul>
                             <p style="color: var(--neon-yellow); font-weight: 700; font-size: 0.8rem; border-top: 1px dashed rgba(0,0,0,0.08); padding-top: 6px;">💡 화면 중앙 오버레이의 초록 점선(목표) 크기와 현재 내 동공이 일치하도록 조작해 보세요!</p>
                         </div>
@@ -1660,10 +1654,6 @@
                     <span class="lbl">현재 실험 모드</span>
                     <span class="val" id="wait-mode-display">수동 제어 모드</span>
                 </div>
-                <div class="wait-settings-row" style="margin-top: 4px;">
-                    <span class="lbl">주변 조도 레벨</span>
-                    <span class="val" id="wait-lux-display">100 Lux</span>
-                </div>
             </div>
         </div>
     </div>
@@ -1678,7 +1668,7 @@
                     <canvas id="polaroid-canvas" width="280" height="280"></canvas>
                 </div>
                 <div class="polaroid-caption">
-                    <span id="snap-caption-text">미술실 석고상 사진 촬영</span>
+                    <span id="snap-caption-text">동공 반사 실험 사진 촬영</span>
                     <span id="snap-date" class="date">2026.05.31 16:40</span>
                 </div>
             </div>
@@ -1692,14 +1682,10 @@
                     </div>
 
                     <div class="eval-feedback-box" id="eval-feedback-txt">
-                        조도가 아주 낮아 석고상이 전혀 보이지 않습니다. 스페이스바를 다다닥 빠르게 눌러 동공을 확장해 보세요!
+                        주변이 너무 어두워 화면이 깜깜합니다. 스페이스바를 다다닥 빠르게 눌러 동공을 확장해 보세요!
                     </div>
 
                     <div class="result-metrics">
-                        <div class="metric-row">
-                            <span class="lbl">주변 조도 (Lux)</span>
-                            <span class="val" id="res-lux-level">100 Lux</span>
-                        </div>
                         <div class="metric-row">
                             <span class="lbl">동공 지름 (mm)</span>
                             <span class="val" id="res-pupil-size">5.0 mm</span>
@@ -1910,7 +1896,6 @@
         const polaroidCtx = polaroidCanvas ? polaroidCanvas.getContext('2d') : null;
         const resultRankBadge = document.getElementById('result-rank-badge');
         const evalFeedbackTxt = document.getElementById('eval-feedback-txt');
-        const resLuxLevel = document.getElementById('res-lux-level');
         const resPupilSize = document.getElementById('res-pupil-size');
         const resExposureError = document.getElementById('res-exposure-error');
         const resEarnedScore = document.getElementById('res-earned-score');
@@ -2143,7 +2128,6 @@
             drawMiniEye(eyeCanvasMini, irisContraction, targetContraction);
 
             // Update text readouts
-            document.getElementById('focal-indicator-txt').textContent = `조도: ${Math.round(currentLux)} Lux | 동공: ${pupilDiameter.toFixed(1)}mm`;
             if (document.getElementById('mini-target-size-lbl')) {
                 document.getElementById('mini-target-size-lbl').textContent = `목표: ${targetDiameter.toFixed(1)}mm`;
             }
@@ -2367,7 +2351,7 @@
                 rank = 'PERFECT';
                 earned = 100 + combo * 10;
                 combo++;
-                feedback = `🎉 대단합니다! 조도 ${Math.round(currentLux)} Lux에 알맞은 동공 크기(${pupilDiameter.toFixed(1)}mm)를 정확히 맞추었습니다! 원본 사진과 밝기가 완전히 일치합니다.`;
+                feedback = `🎉 대단합니다! 원본 이미지와 밝기가 일치하도록 동공 크기(${pupilDiameter.toFixed(1)}mm)를 정확히 맞추었습니다!`;
                 gameAudio.playSuccess();
             } else if (errOffset < 0.35) {
                 rank = 'GREAT';
@@ -2390,7 +2374,7 @@
                 combo = 0;
                 const isTooBright = logExposure > optimalLog;
                 feedback = isTooBright
-                    ? `❌ 실명 경고! 너무 눈부셔 망막이 피로해졌습니다! 조도가 밝은 곳에서는 홍채가 완전히 이완(버튼 놓기)되도록 조작해야 합니다.`
+                    ? `❌ 실명 경고! 너무 눈부셔 망막이 피로해졌습니다! 주변이 밝은 곳에서는 홍채가 완전히 이완(버튼 놓기)되도록 조작해야 합니다.`
                     : `❌ 암막 수준! 빛이 하나도 통과하지 못해 완전히 깜깜합니다. 어두운 방에서는 홍채를 완전히 수축(빠르게 연속 클릭)하여 동공을 넓히세요!`;
                 gameAudio.playFail();
             }
@@ -2403,7 +2387,6 @@
             resultRankBadge.className = `result-rank ${rank.toLowerCase()}`;
             evalFeedbackTxt.textContent = feedback;
             
-            resLuxLevel.textContent = `${Math.round(currentLux)} Lux`;
             resPupilSize.textContent = `${pupilDiameter.toFixed(1)} mm`;
             resExposureError.textContent = `${errOffset.toFixed(2)} (편차)`;
             resEarnedScore.textContent = `${earned}점 ${combo > 1 ? `(${combo - 1} Combo 보너스 포함)` : ''}`;
@@ -2456,9 +2439,8 @@
 
             resultRankBadge.textContent = 'MISS';
             resultRankBadge.className = 'result-rank miss';
-            evalFeedbackTxt.textContent = '⏱️ 시간 제한 초과! 최적 노출 시점을 맞추지 못했습니다. 주변 조도를 관찰하며 신속하게 동공을 맞추어야 합니다.';
+            evalFeedbackTxt.textContent = '⏱️ 시간 제한 초과! 최적 노출 시점을 맞추지 못했습니다. 주변 밝기를 관찰하며 신속하게 동공을 맞추어야 합니다.';
             
-            resLuxLevel.textContent = `${Math.round(currentLux)} Lux`;
             resPupilSize.textContent = `${pupilDiameter.toFixed(1)} mm`;
             resExposureError.textContent = 'Time Out';
             resEarnedScore.textContent = '0점';
@@ -2585,7 +2567,6 @@
                     
                     // Update waiting HUD details
                     document.getElementById('wait-mode-display').textContent = controlMode === 'AUTO' ? '대광반사 자동 모드' : '수동 조작 모드';
-                    document.getElementById('wait-lux-display').textContent = `${Math.round(currentLux)} Lux`;
                 });
 
                 classroomNetwork.on('onGameStart', () => {
@@ -2729,7 +2710,7 @@
             const luxValue = parseFloat(document.getElementById('teacher-lux-slider').value);
             const refMode = document.getElementById('teacher-reflex-mode').value;
 
-            document.getElementById('teacher-lux-val').textContent = `${luxValue} Lux`;
+            document.getElementById('teacher-lux-val').textContent = luxValue;
 
             classroomNetwork.broadcastSettings({
                 currentLux: luxValue,
@@ -2783,7 +2764,6 @@
                     <td class="rank-cell">${index + 1}</td>
                     <td style="font-weight: 800; color: var(--slate-50);">${res.nickname}</td>
                     <td style="color: var(--primary); font-weight: 800;">${res.score}점</td>
-                    <td>${Math.round(res.currentLux)} Lux</td>
                     <td>${res.pupilDiameter.toFixed(1)} mm</td>
                     <td><span style="background:rgba(5, 150, 105, 0.08); padding:4px 8px; border-radius:6px; font-size:0.75rem; color:var(--neon-green)">${res.rank}</span></td>
                 </tr>
