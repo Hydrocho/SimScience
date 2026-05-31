@@ -2968,8 +2968,8 @@
             ctx.fillText('수정체', rightCx, 30);
 
             // 수정체 크기: ratio=0(이완)→얇고 납작, ratio=1(수축)→두껍고 볼록
-            const lensHalfW = 14 + ratio * 40;   // 볼록도: 14~54px
-            const lensHalfH = 90 - ratio * 28;   // 높이: 62~90px
+            const lensHalfW = 10 + ratio * 28;   // 볼록도: 10~38px
+            const lensHalfH = 62 - ratio * 18;   // 높이: 44~62px
 
             // 수정체 렌즈 그리기
             ctx.beginPath();
@@ -2992,17 +2992,17 @@
 
             // 광택 하이라이트
             ctx.beginPath();
-            ctx.moveTo(rightCx, rightCy - lensHalfH + 8);
+            ctx.moveTo(rightCx, rightCy - lensHalfH + 6);
             ctx.quadraticCurveTo(rightCx - lensHalfW * 0.45, rightCy - lensHalfH * 0.3,
                                  rightCx, rightCy - lensHalfH * 0.1);
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 3;
+            ctx.lineWidth = 2.5;
             ctx.stroke();
 
             // 수축력 화살표
-            const arrowLength = 16 + ratio * 46;
-            const headSize    =  8 + ratio * 16;
-            const lineW       = 2.5 + ratio * 4;
+            const arrowLength = 12 + ratio * 42;  // 12px(이완) ~ 54px(최대)
+            const headSize    =  6 + ratio * 14;  // 화살표 머리 크기: 6~20px
+            const lineW       = 1.5 + ratio * 2.5; // 선 두께: 1.5~4px
             const alpha       = 0.35 + ratio * 0.65;
             const arrowColor  = `rgba(251, 146, 60, ${alpha})`;
 
