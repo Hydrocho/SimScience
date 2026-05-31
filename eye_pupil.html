@@ -1970,15 +1970,9 @@
 
             // Draw Iris Body (Amber/Orange)
             const irisGrad = ctx.createRadialGradient(cx, cy, pupilR, cx, cy, irisOuterR);
-            if (contraction > 0.6) {
-                irisGrad.addColorStop(0, '#f43f5e'); // Neon pink when heavily contracted
-                irisGrad.addColorStop(0.5, '#db2777');
-                irisGrad.addColorStop(1, '#9d174d');
-            } else {
-                irisGrad.addColorStop(0, '#d97706'); // Natural amber tones
-                irisGrad.addColorStop(0.6, '#b45309');
-                irisGrad.addColorStop(1, '#78350f');
-            }
+            irisGrad.addColorStop(0, '#d97706'); // Natural amber tones
+            irisGrad.addColorStop(0.6, '#b45309');
+            irisGrad.addColorStop(1, '#78350f');
             ctx.beginPath();
             ctx.arc(cx, cy, irisOuterR, 0, Math.PI * 2);
             ctx.fillStyle = irisGrad;
