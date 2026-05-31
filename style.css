@@ -1,4 +1,7 @@
-/* Reset & Core Setup */
+/* 
+ * [디자인 원칙] 새로 페이지를 생성할 때 항상 밝은색을 테마로 제작한다. (밝은 테마 유지)
+ * Reset & Core Setup 
+ */
 * {
   box-sizing: border-box;
   margin: 0;
