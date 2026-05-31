@@ -1169,7 +1169,7 @@
         /* 교사용 상세 대시보드 레이아웃 */
         .teacher-dashboard-layout {
             display: grid;
-            grid-template-columns: 360px 1fr;
+            grid-template-columns: minmax(400px, 0.42fr) minmax(0, 1fr);
             gap: 1.5rem;
             width: 100%;
             height: auto;
@@ -1183,6 +1183,7 @@
             gap: 1.25rem;
             max-height: calc(100vh - 160px);
             overflow-y: auto;
+            min-width: 0;
         }
 
         .teacher-main-panel {
@@ -1190,6 +1191,55 @@
             flex-direction: column;
             max-height: calc(100vh - 160px);
             overflow-y: auto;
+            min-width: 0;
+        }
+
+        .teacher-control-sidebar .monitor-section {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .teacher-settings-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+
+        .teacher-settings-grid .control-group {
+            min-width: 0;
+            padding: 0.85rem 0.95rem;
+            background: rgba(79, 70, 229, 0.035);
+            border: 1px solid rgba(79, 70, 229, 0.12);
+            border-radius: 12px;
+        }
+
+        .teacher-settings-grid .control-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.35rem;
+        }
+
+        @media (max-width: 1100px) {
+            .teacher-dashboard-layout {
+                grid-template-columns: minmax(0, 1fr);
+            }
+
+            .teacher-control-sidebar,
+            .teacher-main-panel {
+                max-height: none;
+            }
+
+            .teacher-settings-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+            }
+        }
+
+        @media (max-width: 720px) {
+            .teacher-settings-grid {
+                grid-template-columns: minmax(0, 1fr);
+            }
         }
 
         .pin-display-card {
@@ -1436,41 +1486,43 @@
                         <span id="teacher-pin-value-detail" class="pin-value">------</span>
                     </div>
 
-                    <div class="control-group">
-                        <div class="control-header">
-                            <label for="teacher-target-slider-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">목표 거리 설정</label>
-                        </div>
-                        <div class="slider-wrapper">
-                            <input type="range" id="teacher-target-slider-detail" min="19" max="49" step="0.5" value="35" oninput="teacherSyncSettingsDetail('target', this.value)">
-                            <div class="slider-ticks" style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--slate-400); margin-top: 4px;">
-                                <span>19.0m</span>
-                                <span id="teacher-target-val-detail" class="highlight" style="color: var(--primary); font-weight: 700;">35.0m</span>
-                                <span>49.0m</span>
+                    <div class="teacher-settings-grid">
+                        <div class="control-group">
+                            <div class="control-header">
+                                <label for="teacher-target-slider-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">목표 거리 설정</label>
+                            </div>
+                            <div class="slider-wrapper">
+                                <input type="range" id="teacher-target-slider-detail" min="19" max="49" step="0.5" value="35" oninput="teacherSyncSettingsDetail('target', this.value)">
+                                <div class="slider-ticks" style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--slate-400); margin-top: 4px;">
+                                    <span>19.0m</span>
+                                    <span id="teacher-target-val-detail" class="highlight" style="color: var(--primary); font-weight: 700;">35.0m</span>
+                                    <span>49.0m</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="control-group">
-                        <div class="control-header">
-                            <label for="teacher-wait-slider-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">제한 시간 설정</label>
-                        </div>
-                        <div class="slider-wrapper">
-                            <input type="range" id="teacher-wait-slider-detail" min="5" max="60" step="1" value="15" oninput="teacherSyncSettingsDetail('wait', this.value)">
-                            <div class="slider-ticks" style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--slate-400); margin-top: 4px;">
-                                <span>5초</span>
-                                <span id="teacher-wait-val-detail" class="highlight" style="color: var(--primary); font-weight: 700;">15초</span>
-                                <span>60초</span>
+                        <div class="control-group">
+                            <div class="control-header">
+                                <label for="teacher-wait-slider-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">제한 시간 설정</label>
+                            </div>
+                            <div class="slider-wrapper">
+                                <input type="range" id="teacher-wait-slider-detail" min="5" max="60" step="1" value="15" oninput="teacherSyncSettingsDetail('wait', this.value)">
+                                <div class="slider-ticks" style="display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--slate-400); margin-top: 4px;">
+                                    <span>5초</span>
+                                    <span id="teacher-wait-val-detail" class="highlight" style="color: var(--primary); font-weight: 700;">15초</span>
+                                    <span>60초</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="control-group">
-                        <label for="teacher-diff-select-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">난이도 설정</label>
-                        <select id="teacher-diff-select-detail" onchange="teacherSyncSettingsDetail('diff', this.value)" style="width: 100%; padding: 10px; background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 8px; font-weight: 600; outline: none;">
-                            <option value="easy">쉬움</option>
-                            <option value="medium">보통</option>
-                            <option value="hard">어려움</option>
-                        </select>
+                        <div class="control-group">
+                            <label for="teacher-diff-select-detail" style="font-weight: 700; font-size: 0.85rem; color: var(--slate-300);">난이도 설정</label>
+                            <select id="teacher-diff-select-detail" onchange="teacherSyncSettingsDetail('diff', this.value)" style="width: 100%; padding: 10px; margin-top: 0.55rem; background: rgba(0, 0, 0, 0.02); border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 8px; font-weight: 600; outline: none;">
+                                <option value="easy">쉬움</option>
+                                <option value="medium">보통</option>
+                                <option value="hard">어려움</option>
+                            </select>
+                        </div>
                     </div>
 
                     <button class="start-btn" style="width: 100%; margin: 10px 0 0 0;" onclick="lockSessionSettingsDetail()">🔒 실험 조건 고정 및 준비 시작</button>
