@@ -1120,6 +1120,7 @@
                         <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-bullhorn"></i> 현재 출제된 문제</h4>
                         <div id="teacher-question-type-badge" style="display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: var(--primary-light); color: var(--primary); margin-bottom: 0.5rem;">유형</div>
                         <p id="teacher-question-text" style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">질문 내용</p>
+                        <p id="teacher-question-progress" style="font-size:0.86rem; font-weight:800; color:var(--slate-600); margin-bottom:0.4rem;"></p>
                         <button class="preset-btn" style="margin-top:0.35rem;" onclick="openQuizTeacherQuestionPreview()">
                             <i class="fa-solid fa-magnifying-glass"></i> 자세히 보기
                         </button>
@@ -1293,9 +1294,10 @@
     </div>
 
     <div class="modal-overlay" id="quiz-teacher-ranking-popup">
-        <div class="modal-card" style="max-width:860px; width:92vw;">
+        <div class="modal-card" style="position:relative; max-width:860px; width:92vw;">
+            <button type="button" onclick="closeQuizTeacherRankingPopup()" aria-label="닫기" style="position:absolute; top:0.85rem; right:0.95rem; width:2.4rem; height:2.4rem; border:none; border-radius:50%; background:var(--slate-100); color:var(--slate-700); font-size:1.35rem; font-weight:900; cursor:pointer;">&times;</button>
             <h2>퀴즈 최종 랭킹</h2>
-            <p class="subtitle">정답 개수가 같으면 풀이 시간이 짧은 학생이 우선입니다.</p>
+            <p class="subtitle">누적 정답 개수가 같으면 누적 풀이 시간이 짧은 학생이 우선입니다.</p>
             <div id="quiz-teacher-ranking-popup-body"></div>
             <button class="restart-btn" onclick="closeQuizTeacherRankingPopup()">확인</button>
         </div>
@@ -2032,6 +2034,10 @@
         let quizTeacherRoundFinalized = false;
         let teacherTimerInterval = null;
         let teacherTimerStartedAt = 0;
+        let quizTeacherQuestionQueue = [];
+        let quizTeacherQuestionCursor = 0;
+        let quizTeacherSessionCompleted = false;
+        let quizTeacherCumulativeResults = new Map();
 
         function shuffled(values) {
             const copy = [...values];
@@ -2316,6 +2322,10 @@
         }
 
         function toggleQuizTeacherScope(id) {
+            if (quizTeacherQuestionQueue.length && !quizTeacherSessionCompleted) {
+                showToast('진행 중인 퀴즈가 끝난 뒤 출제 범위를 변경할 수 있습니다.');
+                return;
+            }
             if (quizTeacherScope.includes(id)) {
                 if (quizTeacherScope.length <= 2) return;
                 quizTeacherScope = quizTeacherScope.filter(value => value !== id);
@@ -2494,47 +2504,45 @@
                 alert('접속한 학생이 없습니다.');
                 return;
             }
-            
-            // 1. Pick a random structure ID from quizTeacherScope
-            const randomId = quizTeacherScope[Math.floor(Math.random() * quizTeacherScope.length)];
-            
-            // 2. Pick a random type ('description-to-number' or 'number-to-name')
-            const type = Math.random() < 0.5 ? 'description-to-number' : 'number-to-name';
-            
-            // 3. Build a single question object
-            const names = Object.keys(coordinates).map(Number).map(id => coordinates[id].name);
-            const question = {
-                type: type,
-                id: randomId,
-                options: type === 'number-to-name' ? shuffled(names) : []
-            };
+            if (quizQuestions.length && !quizTeacherRoundFinalized) {
+                showToast('현재 문제의 제출을 마친 뒤 다음 문제를 출제해 주세요.');
+                return;
+            }
 
-            // 4. Initialize states
+            if (!quizTeacherQuestionQueue.length || quizTeacherSessionCompleted) {
+                quizTeacherQuestionQueue = buildQuestions(quizTeacherScope);
+                quizTeacherQuestionCursor = 0;
+                quizTeacherSessionCompleted = false;
+                quizTeacherCumulativeResults = new Map();
+            }
+
+            const question = quizTeacherQuestionQueue[quizTeacherQuestionCursor];
+            quizTeacherQuestionCursor += 1;
+
             quizQuestions = [question];
             quizIndex = 0;
             quizStudentResults = [];
             quizTeacherRoundFinalized = false;
+            teacherTimerStartedAt = performance.now();
             
-            // 5. Update teacher dashboard UI to show active question details
             const activeQuestionPanel = document.getElementById('quiz-teacher-active-question');
             if (activeQuestionPanel) {
                 activeQuestionPanel.style.display = 'block';
-                document.getElementById('teacher-question-type-badge').textContent = type === 'description-to-number' ? '설명 → 번호 매칭' : '번호 → 이름 객관식';
+                document.getElementById('teacher-question-type-badge').textContent = question.type === 'description-to-number' ? '설명 → 번호 매칭' : '번호 → 이름 객관식';
                 
-                if (type === 'description-to-number') {
-                    document.getElementById('teacher-question-text').textContent = `[설명] ${coordinates[randomId].description}`;
+                if (question.type === 'description-to-number') {
+                    document.getElementById('teacher-question-text').textContent = `[설명] ${coordinates[question.id].description}`;
                 } else {
-                    document.getElementById('teacher-question-text').textContent = `[위치] ${randomId}번 구조의 이름은?`;
+                    document.getElementById('teacher-question-text').textContent = `[위치] ${question.id}번 구조의 이름은?`;
                 }
+                document.getElementById('teacher-question-progress').textContent = `전체 진행도: ${quizTeacherQuestionCursor} / ${quizTeacherQuestionQueue.length}`;
             }
 
-            // Show active buttons
-            document.getElementById('teacher-btn-launch').textContent = '다음 랜덤 문제 출제 🎲';
+            document.getElementById('teacher-btn-launch').textContent = '다음 문제 출제 🎲';
             document.getElementById('teacher-btn-finish').style.display = 'block';
 
             renderQuizRankings();
 
-            // 6. Broadcast the question settings & start command
             quizNetwork.broadcastSettings({ quizQuestions: [question] });
             setTimeout(() => quizNetwork.broadcastStart({ quizQuestions: [question] }), 120);
 
@@ -2558,6 +2566,7 @@
             
             // Sort student results
             sortQuizResults();
+            accumulateQuizRoundResults();
             
             // Render the final rankings on the teacher dashboard
             renderQuizRankings();
@@ -2580,6 +2589,12 @@
                 finished: true,
                 correctValue: correctText
             });
+
+            if (quizTeacherQuestionCursor >= quizTeacherQuestionQueue.length) {
+                quizTeacherSessionCompleted = true;
+                document.getElementById('teacher-btn-launch').textContent = '새 퀴즈 세션 시작';
+                setTimeout(openQuizTeacherRankingPopup, 180);
+            }
         }
 
         function resetClassroomSession() {
@@ -2602,7 +2617,12 @@
                 quizQuestions = [];
                 quizStudentResults = [];
                 quizTeacherRoundFinalized = false;
+                quizTeacherQuestionQueue = [];
+                quizTeacherQuestionCursor = 0;
+                quizTeacherSessionCompleted = false;
+                quizTeacherCumulativeResults = new Map();
                 if (teacherTimerInterval) clearInterval(teacherTimerInterval);
+                closeQuizTeacherRankingPopup();
                 renderQuizRankings();
             }
         }
@@ -2612,6 +2632,49 @@
                 if (a.correct !== b.correct) {
                     return a.correct ? -1 : 1;
                 }
+                return a.elapsedSeconds - b.elapsedSeconds;
+            });
+        }
+
+        function accumulateQuizRoundResults() {
+            const submittedIds = new Set(quizStudentResults.map(result => result.studentId));
+            const fallbackElapsed = Math.max(0, (performance.now() - teacherTimerStartedAt) / 1000);
+
+            quizActiveStudents.forEach(student => {
+                if (!submittedIds.has(student.id)) {
+                    quizStudentResults.push({
+                        studentId: student.id,
+                        nickname: student.nickname,
+                        correct: false,
+                        unanswered: true,
+                        elapsedSeconds: fallbackElapsed
+                    });
+                }
+            });
+
+            quizStudentResults.forEach(result => {
+                const current = quizTeacherCumulativeResults.get(result.studentId) || {
+                    studentId: result.studentId,
+                    nickname: result.nickname,
+                    correctCount: 0,
+                    elapsedSeconds: 0,
+                    answeredQuestions: 0,
+                    unansweredCount: 0
+                };
+                current.nickname = result.nickname || current.nickname;
+                current.correctCount += result.correct ? 1 : 0;
+                current.elapsedSeconds += Number(result.elapsedSeconds) || 0;
+                current.answeredQuestions += 1;
+                current.unansweredCount += result.unanswered ? 1 : 0;
+                quizTeacherCumulativeResults.set(result.studentId, current);
+            });
+
+            sortQuizResults();
+        }
+
+        function sortedQuizCumulativeResults() {
+            return [...quizTeacherCumulativeResults.values()].sort((a, b) => {
+                if (a.correctCount !== b.correctCount) return b.correctCount - a.correctCount;
                 return a.elapsedSeconds - b.elapsedSeconds;
             });
         }
@@ -2683,7 +2746,43 @@
         }
 
         function openQuizTeacherRankingPopup() {
-            document.getElementById('quiz-teacher-ranking-popup-body').innerHTML = quizRankingTable();
+            const results = sortedQuizCumulativeResults();
+            const podiumColors = [
+                'linear-gradient(135deg, #f59e0b, #facc15)',
+                'linear-gradient(135deg, #94a3b8, #e2e8f0)',
+                'linear-gradient(135deg, #c2410c, #fb923c)'
+            ];
+            const podium = results.slice(0, 3).map((result, index) => `
+                <div style="flex:1 1 170px; padding:1rem; border-radius:16px; color:${index === 1 ? 'var(--slate-800)' : 'white'}; background:${podiumColors[index]}; box-shadow:var(--shadow-md);">
+                    <div style="font-size:1.65rem; font-weight:900;">${index + 1}위</div>
+                    <div style="font-size:1.15rem; font-weight:900; margin:0.25rem 0;">${result.nickname}</div>
+                    <div style="font-size:0.9rem; font-weight:800;">정답 ${result.correctCount}개 · ${result.elapsedSeconds.toFixed(2)}초</div>
+                </div>
+            `).join('');
+            const table = results.length ? `
+                <table class="result-table" style="width:100%; margin-top:1rem;">
+                    <thead>
+                        <tr><th>순위</th><th>학생</th><th>누적 정답</th><th>누적 풀이 시간</th><th>미응답</th></tr>
+                    </thead>
+                    <tbody>
+                        ${results.map((result, index) => `
+                            <tr>
+                                <td><strong>${index + 1}위</strong></td>
+                                <td>${result.nickname}</td>
+                                <td><strong>${result.correctCount} / ${result.answeredQuestions}</strong></td>
+                                <td>${result.elapsedSeconds.toFixed(2)}초</td>
+                                <td>${result.unansweredCount}문제</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            ` : '<p style="padding:1rem; color:var(--slate-600);">누적 결과가 없습니다.</p>';
+            document.getElementById('quiz-teacher-ranking-popup-body').innerHTML = `
+                <div style="padding:0.85rem; border-radius:16px; background:linear-gradient(135deg, #eef2ff, #fdf2f8);">
+                    <div style="display:flex; flex-wrap:wrap; gap:0.75rem; justify-content:center;">${podium}</div>
+                </div>
+                ${table}
+            `;
             document.getElementById('quiz-teacher-ranking-popup').classList.add('show');
         }
 
