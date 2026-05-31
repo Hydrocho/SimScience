@@ -1966,7 +1966,6 @@
             const irisOuterR = w * 0.38;
             // Pupil Radius (changes based on contraction: 0 -> w*0.08, 1 -> w*0.28)
             const pupilR = (w * 0.08) + contraction * (w * 0.2);
-            const targetPupilR = (w * 0.08) + targetContraction * (w * 0.2);
 
             // Draw Iris Body (Amber/Orange)
             const irisGrad = ctx.createRadialGradient(cx, cy, pupilR, cx, cy, irisOuterR);
@@ -2005,14 +2004,7 @@
             ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
             ctx.fill();
 
-            // Draw Target Pupil Size Dashed Guide (Green)
-            ctx.strokeStyle = '#10b981'; // Green dashed circle
-            ctx.lineWidth = 1.5;
-            ctx.setLineDash([3, 2]);
-            ctx.beginPath();
-            ctx.arc(cx, cy, targetPupilR, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.setLineDash([]); // Reset dashed line style
+
 
             // Sclera glare highlight
             ctx.beginPath();
