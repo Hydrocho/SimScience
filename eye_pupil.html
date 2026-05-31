@@ -1291,17 +1291,17 @@
                 <div id="pane-single" class="tab-content active">
                     <div class="lobby-title">
                         <h2>동공 반사 작용 탐구</h2>
-                        <p>Space바나 마우스를 탭하여 홍채를 수축시키고, 어둠과 빛 속에서 피사체를 적절한 노출로 캡처하십시오.</p>
+                        <p>Space바나 마우스를 탭하여 홍채 면적을 감소(동공 확대)시키고, 어둠과 빛 속에서 피사체를 적절한 노출로 캡처하십시오.</p>
                     </div>
 
                     <div class="science-box">
                         <div class="science-item">
-                            <h3><i class="fa-solid fa-circle-chevron-down"></i> 홍채의 이완 (동공 축소)</h3>
-                            <p>주변이 <strong>밝을 때</strong>는 홍채가 이완하여(커튼을 펼침) 동공 크기가 작아집니다. 이를 통해 과도한 빛의 유입을 막아 망막을 보호합니다. (조작하지 않을 때 서서히 동공이 축소됨)</p>
+                            <h3><i class="fa-solid fa-circle-chevron-down"></i> 홍채 면적 증가 (동공 축소)</h3>
+                            <p>주변이 <strong>밝을 때</strong>는 홍채의 면적이 증가하여(커튼을 펼침) 동공 크기가 작아집니다. 이를 통해 과도한 빛의 유입을 막아 망막을 보호합니다. (조작하지 않을 때 서서히 동공이 축소됨)</p>
                         </div>
                         <div class="science-item dark">
-                            <h3><i class="fa-solid fa-circle-chevron-up"></i> 홍채의 수축 (동공 확대)</h3>
-                            <p>주변이 <strong>어두울 때</strong>는 홍채가 수축하여(커튼을 젖힘) 동공 크기가 커집니다. 더 많은 빛을 받아들여 어둠 속 물체를 식별하게 돕습니다. (Space/마우스 연속 클릭 시 동공 확대)</p>
+                            <h3><i class="fa-solid fa-circle-chevron-up"></i> 홍채 면적 감소 (동공 확대)</h3>
+                            <p>주변이 <strong>어두울 때</strong>는 홍채의 면적이 감소하여(커튼을 젖힘) 동공 크기가 커집니다. 더 많은 빛을 받아들여 어둠 속 물체를 식별하게 돕습니다. (Space/마우스 연속 클릭 시 동공 확대)</p>
                         </div>
                     </div>
 
@@ -1391,7 +1391,7 @@
                                         <label for="teacher-reflex-mode"><i class="fa-solid fa-gears"></i> 학생 조작 모드</label>
                                     </div>
                                     <select id="teacher-reflex-mode" onchange="teacherSyncSettings()" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid rgba(0,0,0,0.12); font-weight:700; outline:none;">
-                                        <option value="MANUAL">수동 제어 모드 (학생이 직접 홍채 조절)</option>
+                                        <option value="MANUAL">수동 제어 모드 (학생이 직접 동공 크기 조절)</option>
                                         <option value="AUTO">자동 반사 모드 (정상 대광반사 작동)</option>
                                     </select>
                                     <p style="font-size:0.75rem; color:var(--slate-400); margin-top:2px;">
@@ -1526,8 +1526,8 @@
                         <div style="font-size: 0.85rem; color: #334155; line-height: 1.5; padding: 0.5rem 0; font-weight: 500;">
                             <p style="margin-bottom: 8px;"><strong>동공 반사(Pupillary Reflex)</strong>는 외부 빛의 밝기에 따라 동공의 크기를 조절하는 자율 반응입니다.</p>
                             <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">
-                                <li><strong>어두운 환경</strong>: 빛을 많이 모으기 위해 홍채가 수축하며 동공이 커집니다. (버튼 탭하기)</li>
-                                <li><strong>밝은 환경</strong>: 과도한 빛을 차단하려 홍채가 이완하며 동공이 작아집니다. (누르기 중단)</li>
+                                <li><strong>어두운 환경</strong>: 빛을 많이 모으기 위해 홍채 면적이 감소하며 동공이 커집니다. (버튼 탭하기)</li>
+                                <li><strong>밝은 환경</strong>: 과도한 빛을 차단하려 홍채 면적이 증가하며 동공이 작아집니다. (누르기 중단)</li>
                             </ul>
                         </div>
                     </div>
@@ -1535,7 +1535,7 @@
                     <!-- Muscle control board -->
                     <div class="focus-control-panel">
                         <div class="panel-heading" style="color: var(--neon-yellow)">
-                            <i class="fa-solid fa-expand"></i> 홍채 조절 게이지 (노출 매칭)
+                            <i class="fa-solid fa-expand"></i> 동공 조절 게이지 (노출 매칭)
                         </div>
                         
                         <div class="focus-gauge-wrapper">
@@ -1559,11 +1559,11 @@
 
                         <div class="control-button-area" style="margin-top:0.5rem">
                             <button id="hold-action-btn" class="hold-btn">
-                                <span>홍채 수축 (동공 확대)</span>
+                                <span>동공 확대 (홍채 면적 감소)</span>
                                 <span class="btn-subtext">Space 키 또는 마우스 연속 탭</span>
                             </button>
                             <p class="keyboard-hint">
-                                연속해서 누르면 <strong>홍채가 수축(동공 확대)</strong>하고,<br>누르지 않으면 서서히 <strong>홍채가 이완(동공 축소)</strong>합니다.
+                                연속해서 누르면 <strong>홍채 면적이 감소(동공 확대)</strong>하고,<br>누르지 않으면 서서히 <strong>홍채 면적이 증가(동공 축소)</strong>합니다.
                             </p>
                         </div>
 
@@ -2292,8 +2292,8 @@
                 combo = 0;
                 const isTooBright = logExposure > optimalLog;
                 feedback = isTooBright 
-                    ? `⚠️ 밝기에 비해 동공이 너무 큽니다. 화면 노출이 과도해 밝기가 하얗게 바랬습니다. 홍채를 이완(조작을 잠시 중단)해 동공을 줄이십시오.`
-                    : `⚠️ 어둠에 비해 동공이 너무 작습니다. 광량이 부족해 화면이 너무 어둡습니다. 홍채를 더 수축(연속 클릭)해 보십시오.`;
+                    ? `⚠️ 밝기에 비해 동공이 너무 큽니다. 화면 노출이 과도해 밝기가 하얗게 바랬습니다. 조작을 잠시 중단하여 홍채 면적을 증가(동공 축소)시키십시오.`
+                    : `⚠️ 어둠에 비해 동공이 너무 작습니다. 광량이 부족해 화면이 너무 어둡습니다. 버튼을 연속 클릭하여 홍채 면적을 감소(동공 확대)시키십시오.`;
                 gameAudio.playFail();
             } else {
                 rank = 'MISS';
@@ -2301,8 +2301,8 @@
                 combo = 0;
                 const isTooBright = logExposure > optimalLog;
                 feedback = isTooBright
-                    ? `❌ 실명 경고! 너무 눈부셔 망막이 피로해졌습니다! 주변이 밝은 곳에서는 홍채가 완전히 이완(버튼 놓기)되도록 조작해야 합니다.`
-                    : `❌ 암막 수준! 빛이 하나도 통과하지 못해 완전히 깜깜합니다. 어두운 방에서는 홍채를 완전히 수축(빠르게 연속 클릭)하여 동공을 넓히세요!`;
+                    ? `❌ 실명 경고! 너무 눈부셔 망막이 피로해졌습니다! 주변이 밝은 곳에서는 홍채 면적이 완전히 증가(버튼 놓기)하여 동공이 축소되도록 조작해야 합니다.`
+                    : `❌ 암막 수준! 빛이 하나도 통과하지 못해 완전히 깜깜합니다. 어두운 방에서는 홍채 면적을 완전히 감소(빠르게 연속 클릭)시켜 동공을 넓히세요!`;
                 gameAudio.playFail();
             }
 
@@ -2420,7 +2420,7 @@
                 gameMode = 'lobby';
             } else {
                 if (currentRound >= maxRounds) {
-                    alert(`축하합니다! 홍채 조절 게임을 완료했습니다.\n최종 총 점수: ${score}점`);
+                    alert(`축하합니다! 동공 크기 조절 게임을 완료했습니다.\n최종 총 점수: ${score}점`);
                     exitToLobby();
                 } else {
                     currentRound++;
