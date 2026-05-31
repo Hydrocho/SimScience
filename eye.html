@@ -490,7 +490,8 @@
 
         /* Covered state: Solid bright glass cover to hide image text labels */
         .mask-badge.covered {
-            background: #ffffff; /* Solid white background to hide labels */
+            background-color: #ffffff !important; /* Solid white background to hide labels */
+            opacity: 1.0 !important;
             border: 2.5px solid var(--primary);
             border-radius: 8px;
             cursor: pointer;
@@ -555,7 +556,8 @@
 
         /* Setup states for teacher lobby setting */
         .mask-badge.setup-active {
-            background: #ffffff;
+            background-color: #ffffff !important;
+            opacity: 1.0 !important;
             border: 2.5px solid var(--primary);
             border-radius: 8px;
             cursor: pointer;
@@ -575,7 +577,8 @@
             font-size: 1rem;
         }
         .mask-badge.setup-inactive {
-            background: rgba(241, 245, 249, 0.85);
+            background-color: #f1f5f9 !important;
+            opacity: 1.0 !important;
             border: 2.5px dashed var(--slate-300);
             border-radius: 8px;
             cursor: pointer;
@@ -1294,57 +1297,57 @@
         const coordinates = {
             1: {
                 name: "공막",
-                nameBox: { left: 26.5, top: 10.5, width: 17.5, height: 7.5 },
+                nameBox: { left: 22.5, top: 6.5, width: 21.0, height: 10.5 },
                 description: "눈의 가장 바깥을 싸고 있는 막으로, 흰자위에 해당한다."
             },
             2: {
                 name: "각막",
-                nameBox: { left: 6.5, top: 31.5, width: 18.0, height: 8.5 },
+                nameBox: { left: 4.0, top: 29.5, width: 21.5, height: 11.5 },
                 description: "홍채의 바깥을 싸는 투명한 막이다."
             },
             3: {
                 name: "홍채",
-                nameBox: { left: 6.5, top: 54.0, width: 18.0, height: 8.5 },
+                nameBox: { left: 4.0, top: 51.5, width: 21.5, height: 11.5 },
                 description: "눈으로 들어오는 빛의 양을 조절한다."
             },
             4: {
                 name: "동공",
-                nameBox: { left: 6.5, top: 70.0, width: 18.0, height: 8.5 },
+                nameBox: { left: 4.0, top: 68.0, width: 21.5, height: 11.5 },
                 description: "눈 안쪽으로 빛이 들어가는 구멍이다."
             },
             5: {
                 name: "수정체",
-                nameBox: { left: 6.5, top: 82.5, width: 18.0, height: 12.0 },
+                nameBox: { left: 4.0, top: 82.5, width: 21.5, height: 14.5 },
                 description: "볼록 렌즈와 같이 빛을 굴절시켜 망막에 상이 맺히게 한다."
             },
             6: {
                 name: "맥락막",
-                nameBox: { left: 47.0, top: 6.5, width: 22.0, height: 8.5 },
+                nameBox: { left: 48.0, top: 0.5, width: 24.0, height: 11.5 },
                 description: "검은색 색소가 있어 눈 속을 어둡게 한다."
             },
             7: {
                 name: "유리체",
-                nameBox: { left: 77.0, top: 18.0, width: 18.0, height: 12.0 },
+                nameBox: { left: 77.0, top: 15.5, width: 21.0, height: 15.5 },
                 description: "눈 속을 채우고 있는 투명한 물질로 눈의 형태를 유지한다."
             },
             8: {
                 name: "시각 신경",
-                nameBox: { left: 77.0, top: 34.0, width: 18.0, height: 8.5 },
+                nameBox: { left: 77.0, top: 31.5, width: 21.0, height: 11.5 },
                 description: "시각 세포의 자극을 뇌로 전달한다."
             },
             9: {
                 name: "망막",
-                nameBox: { left: 77.0, top: 54.0, width: 18.0, height: 8.5 },
+                nameBox: { left: 77.0, top: 51.5, width: 21.0, height: 11.5 },
                 description: "상이 맺히는 곳으로, 시각 세포가 있다."
             },
             10: {
                 name: "맹점",
-                nameBox: { left: 77.0, top: 65.0, width: 18.0, height: 14.0 },
+                nameBox: { left: 77.0, top: 64.5, width: 21.0, height: 17.5 },
                 description: "시각 신경이 모여 나가는 부분으로, 시각 세포가 없어 상이 맺히더라도 볼 수 없다."
             },
             11: {
                 name: "섬모체",
-                nameBox: { left: 77.0, top: 82.5, width: 18.0, height: 8.5 },
+                nameBox: { left: 77.0, top: 82.5, width: 21.0, height: 11.5 },
                 description: "수정체의 두께를 조절한다."
             }
         };
