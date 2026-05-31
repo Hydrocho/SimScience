@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>과학실험실 퀴즈 좌표 조율 에디터</title>
+    <link rel="icon" href="data:,">
+    <!-- Google Fonts Outfit & Noto Sans KR -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Outfit:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #e0e7ff;
+            --neon-blue: #06b6d4;
+            --neon-pink: #ec4899;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-600: #475569;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            
+            --glass-bg: rgba(255, 255, 255, 0.9);
+            --glass-border: rgba(255, 255, 255, 0.7);
+            --shadow-md: 0 8px 30px rgba(149, 157, 165, 0.12);
+            --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08);
+            
+            --radius-md: 12px;
+            --radius-lg: 20px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 60%, #f5f3ff 100%);
+            color: var(--slate-800);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            line-height: 1.5;
+        }
+
+        header {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--slate-200);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+            z-index: 100;
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 900;
+            color: var(--slate-900);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .header-title p {
+            font-size: 0.8rem;
+            color: var(--slate-600);
+            font-weight: 500;
+        }
+
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 0.85rem;
+            background: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--slate-200);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .btn-back:hover {
+            color: var(--primary-hover);
+            transform: translateX(-3px);
+            border-color: var(--slate-300);
+        }
+
+        /* Main Workspace Layout */
+        .workspace-container {
+            display: grid;
+            grid-template-columns: 1fr 480px;
+            flex: 1;
+            overflow: hidden;
+            height: calc(100vh - 70px);
+        }
+
+        @media (max-width: 1024px) {
+            .workspace-container {
+                grid-template-columns: 1fr;
+                height: auto;
+                overflow: visible;
+            }
+        }
+
+        /* Left side: Canvas viewport board */
+        .canvas-viewport {
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-y: auto;
+            position: relative;
+            background: rgba(255, 255, 255, 0.4);
+        }
+
+        .image-editor-board {
+            position: relative;
+            background: white;
+            border: 2px dashed var(--slate-300);
+            border-radius: var(--radius-md);
+            padding: 4px;
+            box-shadow: var(--shadow-md);
+            max-width: 100%;
+            display: inline-block;
+            user-select: none;
+        }
+
+        .image-editor-board img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        /* Overlay Draggable / Resizable Box */
+        .draggable-box {
+            position: absolute;
+            background: rgba(79, 70, 229, 0.15);
+            border: 2px solid var(--primary);
+            border-radius: 6px;
+            box-sizing: border-box;
+            cursor: move;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+
+        .draggable-box:hover, .draggable-box.active {
+            background: rgba(236, 72, 153, 0.2);
+            border-color: var(--neon-pink);
+            z-index: 20;
+        }
+
+        .draggable-box .box-number {
+            background: var(--primary);
+            color: white;
+            width: 1.6rem;
+            height: 1.6rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 800;
+            font-size: 0.85rem;
+            pointer-events: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+        }
+
+        .draggable-box:hover .box-number, .draggable-box.active .box-number {
+            background: var(--neon-pink);
+        }
+
+        /* Resize Handle inside box */
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 50%;
+            right: -6px;
+            bottom: -6px;
+            cursor: se-resize;
+            z-index: 30;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+        }
+
+        .draggable-box:hover .resize-handle, .draggable-box.active .resize-handle {
+            border-color: var(--neon-pink);
+            background: white;
+        }
+
+        /* Right side: Control panel board */
+        .control-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            border-left: 1px solid var(--slate-200);
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            box-shadow: -4px 0 15px rgba(0, 0, 0, 0.02);
+        }
+
+        .panel-section {
+            background: white;
+            border-radius: var(--radius-md);
+            padding: 1rem;
+            border: 1px solid var(--slate-200);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 800;
+            color: var(--slate-900);
+            border-bottom: 2px solid var(--slate-100);
+            padding-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .preset-btn {
+            flex: 1;
+            min-width: 80px;
+            background: var(--slate-50);
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            padding: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--slate-600);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.25rem;
+        }
+
+        .preset-btn:hover, .preset-btn.active {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .preset-btn:active {
+            transform: scale(0.96);
+        }
+
+        /* Table list of boxes */
+        .boxes-table-container {
+            max-height: 260px;
+            overflow-y: auto;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+        }
+
+        .boxes-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+
+        .boxes-table th, .boxes-table td {
+            padding: 0.4rem 0.5rem;
+            text-align: left;
+            border-bottom: 1px solid var(--slate-100);
+        }
+
+        .boxes-table th {
+            background: var(--slate-50);
+            color: var(--slate-600);
+            font-weight: 800;
+            position: sticky;
+            top: 0;
+            z-index: 1;
+        }
+
+        .boxes-table tr.active {
+            background: var(--primary-light);
+        }
+
+        .boxes-table td input {
+            width: 100%;
+            border: 1px solid var(--slate-200);
+            border-radius: 4px;
+            padding: 0.25rem 0.4rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .boxes-table td input:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+
+        .coord-input {
+            width: 45px !important;
+            text-align: center;
+        }
+
+        /* Code Generation Textarea */
+        .code-textarea {
+            width: 100%;
+            height: 180px;
+            font-family: 'Outfit', monospace;
+            font-size: 0.75rem;
+            padding: 0.75rem;
+            border: 1px solid var(--slate-200);
+            border-radius: 6px;
+            background: var(--slate-50);
+            color: var(--slate-800);
+            resize: none;
+            outline: none;
+        }
+
+        .code-textarea:focus {
+            border-color: var(--primary);
+            background: white;
+        }
+
+        .btn-action {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            color: white;
+            font-weight: 800;
+            font-size: 0.9rem;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(79, 70, 229, 0.2);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 15px rgba(79, 70, 229, 0.3);
+        }
+
+        /* File Upload */
+        .file-upload-input {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-title">
+            <h1><i class="fa-solid fa-crop-simple" style="color: var(--primary);"></i> 과학 퀴즈 이미지 좌표 조율 에디터</h1>
+            <p>마우스 드래그 & 리사이즈로 coordinates의 상자 위치와 크기를 손쉽게 조정하세요.</p>
+        </div>
+        <div>
+            <a href="index.html" class="btn-back">
+                <i class="fa-solid fa-arrow-left"></i> 홈으로 가기
+            </a>
+        </div>
+    </header>
+
+    <div class="workspace-container">
+        
+        <!-- Left: Image Canvas Viewport -->
+        <div class="canvas-viewport" id="canvas-viewport">
+            <div class="image-editor-board" id="editor-board">
+                <img id="source-image" src="ear.png" alt="조율 대상 이미지">
+                <!-- Draggable boxes rendered here -->
+            </div>
+        </div>
+
+        <!-- Right: Control Panel Panel -->
+        <div class="control-panel">
+            
+            <!-- Section 1: Image & Mode Select -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <span>🖼️ 조율 이미지 선택</span>
+                </div>
+                <div class="btn-group">
+                    <button class="preset-btn active" id="btn-img-ear" onclick="selectImage('ear')">
+                        <i class="fa-solid fa-ear-listen"></i> 귀 구조 (ear.png)
+                    </button>
+                    <button class="preset-btn" id="btn-img-eye" onclick="selectImage('eye')">
+                        <i class="fa-solid fa-eye"></i> 눈 구조 (eye.png)
+                    </button>
+                </div>
+                <div>
+                    <label class="preset-btn" style="width: 100%; border-style: dashed; cursor: pointer;">
+                        <input type="file" class="file-upload-input" accept="image/*" onchange="uploadImage(event)">
+                        <i class="fa-solid fa-upload"></i> 컴퓨터에서 새 이미지 불러오기
+                    </label>
+                </div>
+            </div>
+
+            <!-- Section 2: Items Configuration -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <span>📍 퀴즈 출제 영역 리스트</span>
+                    <div style="display: flex; gap: 0.25rem;">
+                        <button class="preset-btn" style="padding: 0.15rem 0.4rem; min-width: auto;" onclick="addNewBox()" title="상자 추가">+</button>
+                        <button class="preset-btn" style="padding: 0.15rem 0.4rem; min-width: auto;" onclick="removeLastBox()" title="마지막 상자 삭제">-</button>
+                    </div>
+                </div>
+                
+                <div class="boxes-table-container">
+                    <table class="boxes-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 40px;">번호</th>
+                                <th>부위명</th>
+                                <th style="width: 50px;">Left</th>
+                                <th style="width: 50px;">Top</th>
+                                <th style="width: 50px;">Width</th>
+                                <th style="width: 50px;">Height</th>
+                            </tr>
+                        </thead>
+                        <tbody id="boxes-table-body">
+                            <!-- Table rows rendered dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Section 3: Generated Output Code -->
+            <div class="panel-section">
+                <div class="section-title">
+                    <span>💻 coordinates 소스코드 실시간 갱신</span>
+                </div>
+                <textarea class="code-textarea" id="generated-code" readonly onclick="this.select()"></textarea>
+                <div class="btn-group" style="margin-top: 0.25rem;">
+                    <button class="btn-action" style="flex: 1;" onclick="copyCodeToClipboard()">
+                        <i class="fa-solid fa-copy"></i> 자바스크립트 코드 복사
+                    </button>
+                    <button class="btn-action" style="flex: 1; background: linear-gradient(135deg, var(--neon-blue) 0%, var(--neon-blue) 100%);" onclick="downloadJSON()">
+                        <i class="fa-solid fa-download"></i> JSON 다운로드
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast-notification" style="position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(100px); background: var(--slate-900); color: white; padding: 0.75rem 1.5rem; border-radius: 9999px; font-size: 0.85rem; font-weight: 700; box-shadow: var(--shadow-lg); z-index: 2000; display: flex; align-items: center; gap: 0.5rem; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.3s; opacity: 0; pointer-events: none;">
+        <i class="fa-solid fa-check-circle" style="color: var(--success);"></i>
+        <span id="toast-text">복사되었습니다!</span>
+    </div>
+
+    <script>
+        // Preset default ear quiz coordinates
+        const earPresets = {
+            1: { name: "귓바퀴", nameBox: { left: 2.0, top: 7.0, width: 25.0, height: 8.0 }, description: "소리를 모은다." },
+            2: { name: "외이도", nameBox: { left: 1.5, top: 50.0, width: 32.0, height: 8.0 }, description: "귓바퀴와 고막 사이의 통로이다." },
+            3: { name: "고막", nameBox: { left: 1.5, top: 64.0, width: 32.0, height: 8.0 }, description: "소리에 의해 진동하는 얇은 막이다." },
+            4: { name: "귓속뼈", nameBox: { left: 45.0, top: 0.0, width: 21.0, height: 12.0 }, description: "고막의 진동을 증폭하여 달팽이관으로 전달한다." },
+            5: { name: "반고리관", nameBox: { left: 64.0, top: 0.0, width: 34.0, height: 8.0 }, description: "몸의 회전을 감지한다." },
+            6: { name: "전정 기관", nameBox: { left: 62.0, top: 12.0, width: 36.0, height: 8.0 }, description: "몸의 기울어짐을 감지한다." },
+            7: { name: "달팽이관", nameBox: { left: 47.0, top: 78.5, width: 25.0, height: 12.0 }, description: "청각 세포가 있어 소리를 자극으로 받아들인다." },
+            8: { name: "평형 감각 신경", nameBox: { left: 80.0, top: 25.0, width: 19.0, height: 14.0 }, description: "반고리관과 전정 기관에서 받아들인 자극을 뇌로 전달한다." },
+            9: { name: "청각 신경", nameBox: { left: 80.0, top: 39.0, width: 19.0, height: 12.0 }, description: "청각 세포에서 받아들인 자극을 뇌로 전달한다." },
+            10: { name: "귀인두관", nameBox: { left: 80.0, top: 78.5, width: 19.0, height: 12.0 }, description: "고막 안쪽과 바깥쪽의 압력을 같게 조절한다." }
+        };
+
+        // Preset default eye quiz coordinates
+        const eyePresets = {
+            1: { name: "공막", nameBox: { left: 22.5, top: 6.5, width: 21.0, height: 10.5 }, description: "눈의 가장 바깥을 싸고 있는 막으로, 흰자위에 해당한다." },
+            2: { name: "각막", nameBox: { left: 4.0, top: 29.5, width: 21.5, height: 11.5 }, description: "홍채의 바깥을 싸는 투명한 막이다." },
+            3: { name: "홍채", nameBox: { left: 4.0, top: 51.5, width: 21.5, height: 11.5 }, description: "눈으로 들어오는 빛의 양을 조절한다." },
+            4: { name: "동공", nameBox: { left: 4.0, top: 68.0, width: 21.5, height: 11.5 }, description: "눈 안쪽으로 빛이 들어가는 구멍이다." },
+            5: { name: "수정체", nameBox: { left: 4.0, top: 82.5, width: 21.5, height: 14.5 }, description: "볼록 렌즈와 같이 빛을 굴절시켜 망막에 상이 맺히게 한다." },
+            6: { name: "맥락막", nameBox: { left: 48.0, top: 0.5, width: 24.0, height: 11.5 }, description: "검은색 색소가 있어 눈 속을 어둡게 한다." },
+            7: { name: "유리체", nameBox: { left: 77.0, top: 15.5, width: 21.0, height: 15.5 }, description: "눈 속을 채우고 있는 투명한 물질로 눈의 형태를 유지한다." },
+            8: { name: "시각 신경", nameBox: { left: 77.0, top: 31.5, width: 21.0, height: 11.5 }, description: "시각 세포의 자극을 뇌로 전달한다." },
+            9: { name: "망막", nameBox: { left: 77.0, top: 51.5, width: 21.0, height: 11.5 }, description: "상이 맺히는 곳으로, 시각 세포가 있다." },
+            10: { name: "맹점", nameBox: { left: 77.0, top: 64.5, width: 21.0, height: 17.5 }, description: "시각 신경이 모여 나가는 부분으로, 시각 세포가 없어 상이 맺히더라도 볼 수 없다." },
+            11: { name: "섬모체", nameBox: { left: 77.0, top: 82.5, width: 21.0, height: 11.5 }, description: "수정체의 두께를 조절한다." }
+        };
+
+        // Active State Coordinates
+        let coordinates = JSON.parse(JSON.stringify(earPresets));
+        let activeImage = 'ear';
+        let currentActiveBoxId = null;
+
+        // Load / Init App
+        window.addEventListener('DOMContentLoaded', () => {
+            initApp();
+            
+            // Re-render when window resize because clientWidth changes
+            window.addEventListener('resize', () => {
+                renderOverlayBoxes();
+            });
+        });
+
+        function initApp() {
+            renderOverlayBoxes();
+            renderControlTable();
+            generateSourceCode();
+        }
+
+        // Switch ear/eye image
+        function selectImage(type) {
+            activeImage = type;
+            document.getElementById('btn-img-ear').classList.toggle('active', type === 'ear');
+            document.getElementById('btn-img-eye').classList.toggle('active', type === 'eye');
+            
+            const img = document.getElementById('source-image');
+            img.src = type === 'ear' ? 'ear.png' : 'eye.png';
+            
+            coordinates = type === 'ear' 
+                ? JSON.parse(JSON.stringify(earPresets)) 
+                : JSON.parse(JSON.stringify(eyePresets));
+            
+            // Wait for image loading just in case
+            img.onload = () => {
+                initApp();
+            };
+            
+            initApp();
+        }
+
+        // Upload custom image
+        function uploadImage(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = document.getElementById('source-image');
+                img.src = e.target.result;
+                
+                // Clear active presets styling
+                document.getElementById('btn-img-ear').classList.remove('active');
+                document.getElementById('btn-img-eye').classList.remove('active');
+                
+                img.onload = () => {
+                    initApp();
+                };
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Render draggable elements on image
+        function renderOverlayBoxes() {
+            const board = document.getElementById('editor-board');
+            const img = document.getElementById('source-image');
+            
+            // Remove previous boxes
+            board.querySelectorAll('.draggable-box').forEach(el => el.remove());
+            
+            const imgWidth = img.clientWidth;
+            const imgHeight = img.clientHeight;
+
+            if (imgWidth === 0 || imgHeight === 0) {
+                // Image not yet fully layouted, defer slightly
+                setTimeout(renderOverlayBoxes, 100);
+                return;
+            }
+
+            for (let id in coordinates) {
+                const item = coordinates[id];
+                const box = document.createElement('div');
+                box.className = 'draggable-box';
+                box.id = `box-overlay-${id}`;
+                if (currentActiveBoxId == id) {
+                    box.classList.add('active');
+                }
+
+                // Apply percent coordinates
+                box.style.left = `${item.nameBox.left}%`;
+                box.style.top = `${item.nameBox.top}%`;
+                box.style.width = `${item.nameBox.width}%`;
+                box.style.height = `${item.nameBox.height}%`;
+
+                box.innerHTML = `
+                    <span class="box-number">${id}</span>
+                    <div class="resize-handle" id="handle-${id}"></div>
+                `;
+
+                // Bind mouse drag and resize events
+                bindDragAndResizeEvents(box, parseInt(id));
+
+                board.appendChild(box);
+            }
+        }
+
+        // Render side panel control board table
+        function renderControlTable() {
+            const tbody = document.getElementById('boxes-table-body');
+            tbody.innerHTML = '';
+
+            for (let id in coordinates) {
+                const item = coordinates[id];
+                const tr = document.createElement('tr');
+                tr.id = `tr-box-${id}`;
+                if (currentActiveBoxId == id) {
+                    tr.className = 'active';
+                }
+
+                tr.innerHTML = `
+                    <td style="font-weight:900; text-align:center; color:var(--primary);">${id}</td>
+                    <td>
+                        <input type="text" value="${item.name}" oninput="updateItemName(${id}, this.value)" title="${item.description}">
+                    </td>
+                    <td>
+                        <input type="number" class="coord-input" step="0.5" value="${item.nameBox.left}" oninput="updateCoord(${id}, 'left', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="coord-input" step="0.5" value="${item.nameBox.top}" oninput="updateCoord(${id}, 'top', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="coord-input" step="0.5" value="${item.nameBox.width}" oninput="updateCoord(${id}, 'width', this.value)">
+                    </td>
+                    <td>
+                        <input type="number" class="coord-input" step="0.5" value="${item.nameBox.height}" oninput="updateCoord(${id}, 'height', this.value)">
+                    </td>
+                `;
+
+                tr.onclick = () => selectActiveBox(id);
+                tbody.appendChild(tr);
+            }
+        }
+
+        function selectActiveBox(id) {
+            currentActiveBoxId = id;
+            
+            // Remove active classes
+            document.querySelectorAll('.draggable-box').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.boxes-table tr').forEach(el => el.classList.remove('active'));
+            
+            // Add active class
+            const box = document.getElementById(`box-overlay-${id}`);
+            if (box) box.classList.add('active');
+            
+            const tr = document.getElementById(`tr-box-${id}`);
+            if (tr) tr.classList.add('active');
+        }
+
+        // Update nameBox coordinate from side inputs
+        function updateCoord(id, key, val) {
+            const numericVal = parseFloat(val);
+            if (isNaN(numericVal)) return;
+
+            // Clamp 0 to 100
+            const clamped = Math.max(0, Math.min(100, numericVal));
+            coordinates[id].nameBox[key] = clamped;
+
+            // Sync visual box
+            const box = document.getElementById(`box-overlay-${id}`);
+            if (box) {
+                box.style[key] = `${clamped}%`;
+            }
+            generateSourceCode();
+        }
+
+        // Update name
+        function updateItemName(id, val) {
+            coordinates[id].name = val.trim();
+            generateSourceCode();
+        }
+
+        // Add box
+        function addNewBox() {
+            const nextId = Object.keys(coordinates).length + 1;
+            coordinates[nextId] = {
+                name: `새부위${nextId}`,
+                nameBox: { left: 10.0, top: 10.0, width: 20.0, height: 8.0 },
+                description: "기능 설명을 입력해 주세요."
+            };
+            initApp();
+            selectActiveBox(nextId);
+            showToastMessage(`상자 ${nextId}번이 생성되었습니다.`);
+        }
+
+        // Remove last box
+        function removeLastBox() {
+            const keys = Object.keys(coordinates);
+            if (keys.length <= 2) {
+                alert("퀴즈가 작동하려면 최소 2개 이상의 출제 영역이 필요합니다.");
+                return;
+            }
+            const lastId = keys[keys.length - 1];
+            delete coordinates[lastId];
+            initApp();
+            showToastMessage(`마지막 상자 ${lastId}번이 제거되었습니다.`);
+        }
+
+        // Drag & Resize Mouse Handlers
+        function bindDragAndResizeEvents(box, id) {
+            const handle = box.querySelector('.resize-handle');
+            const img = document.getElementById('source-image');
+
+            // Drag variables
+            let isDragging = false;
+            let isResizing = false;
+            
+            let startMouseX = 0;
+            let startMouseY = 0;
+            
+            let startBoxLeftPx = 0;
+            let startBoxTopPx = 0;
+            let startBoxWidthPx = 0;
+            let startBoxHeightPx = 0;
+
+            box.addEventListener('mousedown', (e) => {
+                if (e.target === handle) return; // Resize handles this
+                e.preventDefault();
+                selectActiveBox(id);
+
+                isDragging = true;
+                startMouseX = e.clientX;
+                startMouseY = e.clientY;
+                
+                const rect = box.getBoundingClientRect();
+                const parentRect = img.getBoundingClientRect();
+                
+                startBoxLeftPx = rect.left - parentRect.left;
+                startBoxTopPx = rect.top - parentRect.top;
+                
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            handle.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                selectActiveBox(id);
+
+                isResizing = true;
+                startMouseX = e.clientX;
+                startMouseY = e.clientY;
+                
+                const rect = box.getBoundingClientRect();
+                startBoxWidthPx = rect.width;
+                startBoxHeightPx = rect.height;
+
+                const parentRect = img.getBoundingClientRect();
+                startBoxLeftPx = rect.left - parentRect.left;
+                startBoxTopPx = rect.top - parentRect.top;
+
+                document.addEventListener('mousemove', onMouseMove);
+                document.addEventListener('mouseup', onMouseUp);
+            });
+
+            function onMouseMove(e) {
+                const imgWidth = img.clientWidth;
+                const imgHeight = img.clientHeight;
+                
+                const deltaX = e.clientX - startMouseX;
+                const deltaY = e.clientY - startMouseY;
+
+                if (isDragging) {
+                    let newLeftPx = startBoxLeftPx + deltaX;
+                    let newTopPx = startBoxTopPx + deltaY;
+
+                    // Bound clamping
+                    const boxRect = box.getBoundingClientRect();
+                    newLeftPx = Math.max(0, Math.min(imgWidth - boxRect.width, newLeftPx));
+                    newTopPx = Math.max(0, Math.min(imgHeight - boxRect.height, newTopPx));
+
+                    const leftPercent = parseFloat(((newLeftPx / imgWidth) * 100).toFixed(1));
+                    const topPercent = parseFloat(((newTopPx / imgHeight) * 100).toFixed(1));
+
+                    coordinates[id].nameBox.left = leftPercent;
+                    coordinates[id].nameBox.top = topPercent;
+
+                    box.style.left = `${leftPercent}%`;
+                    box.style.top = `${topPercent}%`;
+
+                    // Update values in side panel
+                    syncRowInputs(id);
+                }
+
+                if (isResizing) {
+                    let newWidthPx = startBoxWidthPx + deltaX;
+                    let newHeightPx = startBoxHeightPx + deltaY;
+
+                    // Min size limit
+                    newWidthPx = Math.max(20, Math.min(imgWidth - startBoxLeftPx, newWidthPx));
+                    newHeightPx = Math.max(15, Math.min(imgHeight - startBoxTopPx, newHeightPx));
+
+                    const widthPercent = parseFloat(((newWidthPx / imgWidth) * 100).toFixed(1));
+                    const heightPercent = parseFloat(((newHeightPx / imgHeight) * 100).toFixed(1));
+
+                    coordinates[id].nameBox.width = widthPercent;
+                    coordinates[id].nameBox.height = heightPercent;
+
+                    box.style.width = `${widthPercent}%`;
+                    box.style.height = `${heightPercent}%`;
+
+                    // Update values in side panel
+                    syncRowInputs(id);
+                }
+            }
+
+            function onMouseUp() {
+                isDragging = false;
+                isResizing = false;
+                document.removeEventListener('mousemove', onMouseMove);
+                document.removeEventListener('mouseup', onMouseUp);
+                
+                generateSourceCode();
+            }
+        }
+
+        // Sync numeric values in row fields
+        function syncRowInputs(id) {
+            const tr = document.getElementById(`tr-box-${id}`);
+            if (!tr) return;
+            const item = coordinates[id];
+            
+            const inputs = tr.querySelectorAll('.coord-input');
+            inputs[0].value = item.nameBox.left;
+            inputs[1].value = item.nameBox.top;
+            inputs[2].value = item.nameBox.width;
+            inputs[3].value = item.nameBox.height;
+        }
+
+        // Generate JavaScript Code block output
+        function generateSourceCode() {
+            let code = `const coordinates = {\n`;
+            for (let id in coordinates) {
+                const item = coordinates[id];
+                code += `    ${id}: {\n`;
+                code += `        name: "${item.name}",\n`;
+                code += `        nameBox: { left: ${item.nameBox.left.toFixed(1)}, top: ${item.nameBox.top.toFixed(1)}, width: ${item.nameBox.width.toFixed(1)}, height: ${item.nameBox.height.toFixed(1)} },\n`;
+                code += `        description: "${item.description || ''}"\n`;
+                code += `    },\n`;
+            }
+            // Remove last comma and close
+            code = code.slice(0, -2) + `\n};`;
+            
+            document.getElementById('generated-code').value = code;
+        }
+
+        // Copy source code to Clipboard
+        function copyCodeToClipboard() {
+            const textarea = document.getElementById('generated-code');
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                showToastMessage('자바스크립트 코드가 복사되었습니다!');
+            } catch (err) {
+                alert('복사에 실패했습니다. 수동으로 복사해주세요.');
+            }
+        }
+
+        // Download JSON format file
+        function downloadJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(coordinates, null, 4));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `coordinates_${activeImage}_quiz.json`);
+            dlAnchorElem.click();
+            showToastMessage('JSON 파일이 저장되었습니다.');
+        }
+
+        // Show Toast Notification Info
+        function showToastMessage(msg) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-text').innerText = msg;
+            toast.style.opacity = '1';
+            toast.style.transform = 'translateX(-50%) translateY(0)';
+
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateX(-50%) translateY(100px)';
+            }, 2500);
+        }
+    </script>
+</body>
+</html>
