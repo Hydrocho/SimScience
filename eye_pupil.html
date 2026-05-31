@@ -1291,17 +1291,17 @@
                 <div id="pane-single" class="tab-content active">
                     <div class="lobby-title">
                         <h2>동공 반사 작용 탐구</h2>
-                        <p>Space바나 마우스를 탭하여 홍채 면적을 감소(동공 확대)시키고, 어둠과 빛 속에서 피사체를 적절한 노출로 캡처하십시오.</p>
+                        <p>두 조작 버튼이나 방향키를 반복해서 눌러 홍채 면적과 동공 크기를 조절하고, 피사체를 적절한 노출로 캡처하십시오.</p>
                     </div>
 
                     <div class="science-box">
                         <div class="science-item">
                             <h3><i class="fa-solid fa-circle-chevron-down"></i> 홍채 면적 증가 (동공 축소)</h3>
-                            <p>주변이 <strong>밝을 때</strong>는 홍채의 면적이 증가하여(커튼을 펼침) 동공 크기가 작아집니다. 이를 통해 과도한 빛의 유입을 막아 망막을 보호합니다. (조작하지 않을 때 서서히 동공이 축소됨)</p>
+                            <p>주변이 <strong>밝을 때</strong>는 홍채 면적 증가 버튼을 반복해서 눌러 동공 크기를 줄입니다. 이를 통해 과도한 빛의 유입을 막아 망막을 보호합니다.</p>
                         </div>
                         <div class="science-item dark">
                             <h3><i class="fa-solid fa-circle-chevron-up"></i> 홍채 면적 감소 (동공 확대)</h3>
-                            <p>주변이 <strong>어두울 때</strong>는 홍채의 면적이 감소하여(커튼을 젖힘) 동공 크기가 커집니다. 더 많은 빛을 받아들여 어둠 속 물체를 식별하게 돕습니다. (Space/마우스 연속 클릭 시 동공 확대)</p>
+                            <p>주변이 <strong>어두울 때</strong>는 홍채 면적 감소 버튼을 반복해서 눌러 동공 크기를 키웁니다. 더 많은 빛을 받아들여 어둠 속 물체를 식별하게 돕습니다.</p>
                         </div>
                     </div>
 
@@ -1384,19 +1384,6 @@
                                         <span>50 (어두움)</span>
                                         <span>2,500 (밝음)</span>
                                     </div>
-                                </div>
-
-                                <div class="control-group">
-                                    <div class="control-header">
-                                        <label for="teacher-reflex-mode"><i class="fa-solid fa-gears"></i> 학생 조작 모드</label>
-                                    </div>
-                                    <select id="teacher-reflex-mode" onchange="teacherSyncSettings()" style="width:100%; padding:0.5rem; border-radius:8px; border:1px solid rgba(0,0,0,0.12); font-weight:700; outline:none;">
-                                        <option value="MANUAL">수동 제어 모드 (학생이 직접 동공 크기 조절)</option>
-                                        <option value="AUTO">자동 반사 모드 (정상 대광반사 작동)</option>
-                                    </select>
-                                    <p style="font-size:0.75rem; color:var(--slate-400); margin-top:2px;">
-                                        * 자동 반사 모드 시 주변 밝기 변화에 따라 동공이 자동으로 최적화되어 수동 조작이 불필요합니다.
-                                    </p>
                                 </div>
 
                                 <button class="start-btn" onclick="teacherTriggerLaunch()" style="margin-top: 0.5rem; background: linear-gradient(135deg, var(--neon-green) 0%, var(--primary) 100%); box-shadow: 0 4px 15px rgba(5,150,105,0.25);">
@@ -1526,8 +1513,8 @@
                         <div style="font-size: 0.85rem; color: #334155; line-height: 1.5; padding: 0.5rem 0; font-weight: 500;">
                             <p style="margin-bottom: 8px;"><strong>동공 반사(Pupillary Reflex)</strong>는 외부 빛의 밝기에 따라 동공의 크기를 조절하는 자율 반응입니다.</p>
                             <ul style="padding-left: 1.25rem; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px;">
-                                <li><strong>어두운 환경</strong>: 빛을 많이 모으기 위해 홍채 면적이 감소하며 동공이 커집니다. (버튼 탭하기)</li>
-                                <li><strong>밝은 환경</strong>: 과도한 빛을 차단하려 홍채 면적이 증가하며 동공이 작아집니다. (누르기 중단)</li>
+                                <li><strong>어두운 환경</strong>: 홍채 면적 감소 버튼을 반복해서 눌러 동공을 키웁니다.</li>
+                                <li><strong>밝은 환경</strong>: 홍채 면적 증가 버튼을 반복해서 눌러 동공을 줄입니다.</li>
                             </ul>
                         </div>
                     </div>
@@ -1557,13 +1544,17 @@
                             </div>
                         </div>
 
-                        <div class="control-button-area" style="margin-top:0.5rem">
-                            <button id="hold-action-btn" class="hold-btn">
-                                <span>동공 확대 (홍채 면적 감소)</span>
-                                <span class="btn-subtext">Space 키 또는 마우스 연속 탭</span>
+                        <div class="control-button-area" style="margin-top:0.5rem; display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
+                            <button id="iris-area-decrease-btn" class="hold-btn">
+                                <span>홍채 면적 감소</span>
+                                <span class="btn-subtext">동공 크기 증가 | ↓ 또는 ←</span>
                             </button>
-                            <p class="keyboard-hint">
-                                연속해서 누르면 <strong>홍채 면적이 감소(동공 확대)</strong>하고,<br>누르지 않으면 서서히 <strong>홍채 면적이 증가(동공 축소)</strong>합니다.
+                            <button id="iris-area-increase-btn" class="hold-btn">
+                                <span>홍채 면적 증가</span>
+                                <span class="btn-subtext">동공 크기 감소 | ↑ 또는 →</span>
+                            </button>
+                            <p class="keyboard-hint" style="grid-column:1 / -1;">
+                                버튼이나 방향키를 한 번 누를 때마다 동공 크기가 <strong>1%</strong>씩 변합니다. 누르지 않으면 현재 크기를 유지합니다.
                             </p>
                         </div>
 
@@ -1597,12 +1588,6 @@
                 </div>
             </div>
 
-            <div class="wait-settings-box">
-                <div class="wait-settings-row">
-                    <span class="lbl">현재 실험 모드</span>
-                    <span class="val" id="wait-mode-display">수동 제어 모드</span>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -1814,8 +1799,7 @@
         
         // Iris & Pupil variables
         let irisContraction = 0.0; // 0.0 (fully relaxed, pupil 2mm) to 1.0 (fully contracted, pupil 8mm)
-        const irisContractionPerPress = 0.0675;
-        let controlMode = 'MANUAL'; // MANUAL | AUTO (synced from teacher)
+        const irisContractionPerPress = 0.01;
         let currentLux = 100.0;    // Environmental Lux level
         let pupilDiameter = 5.0;  // mm, calculated from contraction: 2.0 + irisContraction * 6.0
         
@@ -1830,7 +1814,8 @@
         // DOM elements
         const lobbyScreen = document.getElementById('lobby-screen');
         const arenaScreen = document.getElementById('arena-screen');
-        const holdBtn = document.getElementById('hold-action-btn');
+        const irisAreaDecreaseBtn = document.getElementById('iris-area-decrease-btn');
+        const irisAreaIncreaseBtn = document.getElementById('iris-area-increase-btn');
         const countdownHud = document.getElementById('countdown-hud');
         const shutterFlash = document.getElementById('shutter-flash');
         const exposureFilter = document.getElementById('exposure-filter');
@@ -1971,21 +1956,11 @@
 
         // --- Realtime Exposure Physics & Visual Updates ---
         function updateExposureLogic(deltaTime) {
-            const relaxationSpeed = 0.18; // Easy difficulty relaxation rate
-            
             const logLux = Math.log10(currentLux);
             const optimalLog = 3.75;
             const optimalDia = Math.pow(10, (optimalLog - logLux) / 2.0);
             const targetDiameter = Math.min(8.0, Math.max(2.0, optimalDia));
             const targetContraction = (targetDiameter - 2.0) / 6.0;
-
-            if (controlMode === 'AUTO') {
-                // Pupillary reflex equation (automatic sigmoid adaptation)
-                irisContraction = irisContraction + (targetContraction - irisContraction) * 0.08;
-            } else {
-                // MANUAL mode: drift down to fully relaxed state
-                irisContraction = Math.max(0.0, irisContraction - relaxationSpeed * deltaTime);
-            }
 
             // Calculate pupil diameter (mm)
             pupilDiameter = 2.0 + irisContraction * 6.0;
@@ -2062,15 +2037,41 @@
 
         }
 
-        // --- Muscle Contraction Command (Space / click) ---
-        function contractIrisOnce() {
-            if (gameMode !== 'active' || controlMode === 'AUTO') return;
+        // --- Iris Area Adjustment Commands (direction keys / click) ---
+        function decreaseIrisAreaOnce() {
+            if (gameMode !== 'active') return;
             
-            // Incremental step per click
             irisContraction = Math.min(1.0, irisContraction + irisContractionPerPress);
-            
-            // Synthesizer muscle contraction sound
             gameAudio.playTick(200 + irisContraction * 180, 0.035);
+        }
+
+        function increaseIrisAreaOnce() {
+            if (gameMode !== 'active') return;
+
+            irisContraction = Math.max(0.0, irisContraction - irisContractionPerPress);
+            gameAudio.playTick(200 + irisContraction * 180, 0.035);
+        }
+
+        function getTargetContraction(lux) {
+            const logLux = Math.log10(lux);
+            const optimalLog = 3.75;
+            const optimalDia = Math.pow(10, (optimalLog - logLux) / 2.0);
+            const targetDiameter = Math.min(8.0, Math.max(2.0, optimalDia));
+            return (targetDiameter - 2.0) / 6.0;
+        }
+
+        function getRandomStartingContraction(targetContraction) {
+            const candidates = [];
+
+            // Use 1% steps so the starting value matches the player's tap increments.
+            for (let percent = 1; percent <= 100; percent++) {
+                const contraction = percent / 100;
+                if (Math.abs(contraction - targetContraction) >= 0.2) {
+                    candidates.push(contraction);
+                }
+            }
+
+            return candidates[Math.floor(Math.random() * candidates.length)];
         }
 
         // --- Single Game Start ---
@@ -2094,8 +2095,8 @@
             const targetDiameter = 2.0 + randomTargetContraction * 6.0;
             currentLux = 5623.413 / (targetDiameter * targetDiameter);
 
-            // Reset pupil variables to relaxed (underexposed) state
-            irisContraction = 0.0;
+            // Start away from the target so each round requires deliberate adjustment.
+            irisContraction = getRandomStartingContraction(randomTargetContraction);
             
             updateHud();
 
@@ -2292,8 +2293,8 @@
                 combo = 0;
                 const isTooBright = logExposure > optimalLog;
                 feedback = isTooBright 
-                    ? `⚠️ 밝기에 비해 동공이 너무 큽니다. 화면 노출이 과도해 밝기가 하얗게 바랬습니다. 조작을 잠시 중단하여 홍채 면적을 증가(동공 축소)시키십시오.`
-                    : `⚠️ 어둠에 비해 동공이 너무 작습니다. 광량이 부족해 화면이 너무 어둡습니다. 버튼을 연속 클릭하여 홍채 면적을 감소(동공 확대)시키십시오.`;
+                    ? `⚠️ 밝기에 비해 동공이 너무 큽니다. 화면 노출이 과도해 밝기가 하얗게 바랬습니다. 홍채 면적 증가 버튼을 반복해서 눌러 동공을 축소시키십시오.`
+                    : `⚠️ 어둠에 비해 동공이 너무 작습니다. 광량이 부족해 화면이 너무 어둡습니다. 홍채 면적 감소 버튼을 반복해서 눌러 동공을 확대시키십시오.`;
                 gameAudio.playFail();
             } else {
                 rank = 'MISS';
@@ -2301,8 +2302,8 @@
                 combo = 0;
                 const isTooBright = logExposure > optimalLog;
                 feedback = isTooBright
-                    ? `❌ 실명 경고! 너무 눈부셔 망막이 피로해졌습니다! 주변이 밝은 곳에서는 홍채 면적이 완전히 증가(버튼 놓기)하여 동공이 축소되도록 조작해야 합니다.`
-                    : `❌ 암막 수준! 빛이 하나도 통과하지 못해 완전히 깜깜합니다. 어두운 방에서는 홍채 면적을 완전히 감소(빠르게 연속 클릭)시켜 동공을 넓히세요!`;
+                    ? `❌ 실명 경고! 너무 눈부셔 망막이 피로해졌습니다! 주변이 밝은 곳에서는 홍채 면적 증가 버튼을 반복해서 눌러 동공을 충분히 축소해야 합니다.`
+                    : `❌ 암막 수준! 빛이 하나도 통과하지 못해 완전히 깜깜합니다. 홍채 면적 감소 버튼을 반복해서 눌러 동공을 충분히 확대하세요!`;
                 gameAudio.playFail();
             }
 
@@ -2490,10 +2491,6 @@
                 // Listen for settings and start signals
                 classroomNetwork.on('onReceiveSettings', (payload) => {
                     currentLux = payload.currentLux || 100.0;
-                    controlMode = payload.controlMode || 'MANUAL';
-                    
-                    // Update waiting HUD details
-                    document.getElementById('wait-mode-display').textContent = controlMode === 'AUTO' ? '대광반사 자동 모드' : '수동 조작 모드';
                 });
 
                 classroomNetwork.on('onGameStart', () => {
@@ -2635,13 +2632,11 @@
             if (!isMultiplayer || userRole !== 'teacher' || !classroomNetwork) return;
 
             const luxValue = parseFloat(document.getElementById('teacher-lux-slider').value);
-            const refMode = document.getElementById('teacher-reflex-mode').value;
 
             document.getElementById('teacher-lux-val').textContent = luxValue;
 
             classroomNetwork.broadcastSettings({
-                currentLux: luxValue,
-                controlMode: refMode
+                currentLux: luxValue
             });
         }
 
@@ -2699,8 +2694,8 @@
 
         // --- Start round during multiplayer ---
         function startNewRoundMultiplayer() {
-            // Reset pupil variables to relaxed (underexposed) state
-            irisContraction = 0.0;
+            const targetContraction = getTargetContraction(currentLux);
+            irisContraction = getRandomStartingContraction(targetContraction);
             updateHud();
 
             const countdownEl = document.getElementById('countdown-hud');
@@ -2726,35 +2721,47 @@
 
             // Handle keyboard control bindings
             window.addEventListener('keydown', (e) => {
-                if (e.code === 'Space') {
+                if (['ArrowDown', 'ArrowLeft', 'ArrowUp', 'ArrowRight'].includes(e.code)) {
                     e.preventDefault();
                     if (e.repeat) return;
-                    contractIrisOnce();
-                    holdBtn.classList.add('pressed');
+                    if (e.code === 'ArrowDown' || e.code === 'ArrowLeft') {
+                        decreaseIrisAreaOnce();
+                        irisAreaDecreaseBtn.classList.add('pressed');
+                    } else {
+                        increaseIrisAreaOnce();
+                        irisAreaIncreaseBtn.classList.add('pressed');
+                    }
                 }
             });
 
             window.addEventListener('keyup', (e) => {
-                if (e.code === 'Space') {
-                    holdBtn.classList.remove('pressed');
+                if (e.code === 'ArrowDown' || e.code === 'ArrowLeft') {
+                    irisAreaDecreaseBtn.classList.remove('pressed');
+                } else if (e.code === 'ArrowUp' || e.code === 'ArrowRight') {
+                    irisAreaIncreaseBtn.classList.remove('pressed');
                 }
             });
 
-            // Bind button click inputs
-            holdBtn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                contractIrisOnce();
-                holdBtn.classList.add('pressed');
-            });
-            holdBtn.addEventListener('mouseup', () => holdBtn.classList.remove('pressed'));
-            holdBtn.addEventListener('mouseleave', () => holdBtn.classList.remove('pressed'));
+            function bindTapButton(button, action) {
+                button.addEventListener('mousedown', (e) => {
+                    e.preventDefault();
+                    action();
+                    button.classList.add('pressed');
+                });
+                button.addEventListener('mouseup', () => button.classList.remove('pressed'));
+                button.addEventListener('mouseleave', () => button.classList.remove('pressed'));
 
-            holdBtn.addEventListener('touchstart', (e) => {
-                e.preventDefault();
-                contractIrisOnce();
-                holdBtn.classList.add('pressed');
-            });
-            holdBtn.addEventListener('touchend', () => holdBtn.classList.remove('pressed'));
+                button.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    action();
+                    button.classList.add('pressed');
+                });
+                button.addEventListener('touchend', () => button.classList.remove('pressed'));
+                button.addEventListener('touchcancel', () => button.classList.remove('pressed'));
+            }
+
+            bindTapButton(irisAreaDecreaseBtn, decreaseIrisAreaOnce);
+            bindTapButton(irisAreaIncreaseBtn, increaseIrisAreaOnce);
 
             // Check query param for redirecting back to teacher tab
             const urlParams = new URLSearchParams(window.location.search);
