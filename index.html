@@ -197,6 +197,9 @@
     .portal-card.eye-quiz::before {
       background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
     }
+    .portal-card.ear-quiz::before {
+      background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
+    }
 
     .portal-card:hover {
       transform: translateY(-8px);
@@ -214,6 +217,9 @@
     }
     .portal-card.eye-quiz:hover {
       box-shadow: 0 15px 40px rgba(16, 185, 129, 0.12);
+    }
+    .portal-card.ear-quiz:hover {
+      box-shadow: 0 15px 40px rgba(124, 58, 237, 0.12);
     }
 
     /* Icon badge design */
@@ -244,6 +250,10 @@
     .eye-quiz .icon-badge {
       background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-blue) 100%);
       box-shadow: 0 6px 15px rgba(16, 185, 129, 0.2);
+    }
+    .ear-quiz .icon-badge {
+      background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%);
+      box-shadow: 0 6px 15px rgba(124, 58, 237, 0.2);
     }
 
     /* Card text details */
@@ -492,7 +502,28 @@
     <!-- Content cards grid -->
     <main class="portal-grid">
 
-      <!-- Card 1: Eye Quiz Racing -->
+      <!-- Card 1: Ear Quiz Racing -->
+      <a href="ear.html" class="portal-card ear-quiz">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-ear-listen"></i>
+          </div>
+          <h2 class="card-title">
+            귀의 구조 스피드 퀴즈
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            귓바퀴, 외이도, 고막, 귓속뼈, 달팽이관, 반고리관 등 귀를 구성하는 주요 청각 및 평형 감각 기관의 명칭과 과학적 세부 기능을 제한 시간 내에 매치하는 스피드 런 퀴즈 레이싱입니다. 실시간 콤보 시스템으로 신속한 복습을 돕습니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">생명과학 (해부도)</span>
+          <span class="tag-item">귀 구조 암기</span>
+          <span class="tag-item">스피드 타임어택</span>
+        </div>
+      </a>
+
+      <!-- Card 2: Eye Quiz Racing -->
       <a href="eye.html" class="portal-card eye-quiz">
         <div>
           <div class="icon-badge">
