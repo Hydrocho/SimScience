@@ -19,6 +19,7 @@
       --neon-pink: #db2777;
       --neon-green: #059669;
       --neon-purple: #7c3aed;
+      --neon-yellow: #d97706;
       --dark-bg: #f8fafc;
       --glass-bg: rgba(255, 255, 255, 0.7);
       --glass-border: rgba(0, 0, 0, 0.06);
@@ -190,6 +191,9 @@
     .portal-card.eye-focus::before {
       background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple));
     }
+    .portal-card.eye-pupil::before {
+      background: linear-gradient(90deg, var(--neon-yellow), var(--neon-pink));
+    }
     .portal-card.eye-quiz::before {
       background: linear-gradient(90deg, var(--neon-green), var(--neon-blue));
     }
@@ -204,6 +208,9 @@
     }
     .portal-card.eye-focus:hover {
       box-shadow: 0 15px 40px rgba(236, 72, 153, 0.12);
+    }
+    .portal-card.eye-pupil:hover {
+      box-shadow: 0 15px 40px rgba(217, 119, 6, 0.12);
     }
     .portal-card.eye-quiz:hover {
       box-shadow: 0 15px 40px rgba(16, 185, 129, 0.12);
@@ -229,6 +236,10 @@
     .eye-focus .icon-badge {
       background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-purple) 100%);
       box-shadow: 0 6px 15px rgba(236, 72, 153, 0.2);
+    }
+    .eye-pupil .icon-badge {
+      background: linear-gradient(135deg, var(--neon-yellow) 0%, var(--neon-pink) 100%);
+      box-shadow: 0 6px 15px rgba(217, 119, 6, 0.2);
     }
     .eye-quiz .icon-badge {
       background: linear-gradient(135deg, var(--neon-green) 0%, var(--neon-blue) 100%);
@@ -541,6 +552,27 @@
           <span class="tag-item">생명과학 (해부도)</span>
           <span class="tag-item">안구 구조 암기</span>
           <span class="tag-item">스피드 타임어택</span>
+        </div>
+      </a>
+
+      <!-- Card 4: Eye Pupil Regulation Game -->
+      <a href="eye_pupil.html" class="portal-card eye-pupil">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-circle-dot"></i>
+          </div>
+          <h2 class="card-title">
+            동공 크기 조절 게임
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            주변 밝기(Lux) 변화에 따라 홍채를 수축 및 이완하여 동공으로 들어오는 빛의 양을 맞추는 게임입니다. 미술실 암실 속에 숨겨진 석고상을 선명한 명암 대비로 또렷하게 촬영해 보세요!
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">생명과학 (홍채와 동공)</span>
+          <span class="tag-item">대광반사 작용</span>
+          <span class="tag-item">명암 및 노출 밸런싱</span>
         </div>
       </a>
 
