@@ -3022,7 +3022,7 @@
 
                 // 수축 퍼센트 레이블
                 const forceLabel = ratio < 0.05 ? '이완' : `${Math.round(ratio * 100)}%`;
-                hudCtx.font = `bold ${11 + ratio * 4}px 'Noto Sans KR', sans-serif`;
+                hudCtx.font = `bold 15px 'Noto Sans KR', sans-serif`;
                 hudCtx.fillStyle = `rgba(251, 146, 60, ${Math.max(0.5, alpha)})`;
                 hudCtx.textAlign = 'center';
                 hudCtx.textBaseline = 'alphabetic';
