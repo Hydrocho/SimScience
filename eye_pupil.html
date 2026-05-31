@@ -306,50 +306,7 @@
             box-shadow: 0 0 8px rgba(99, 102, 241, 0.5);
         }
 
-        .difficulty-selector {
-            display: flex;
-            gap: 0.5rem;
-            width: 100%;
-        }
 
-        .diff-btn {
-            flex: 1;
-            background: #ffffff;
-            border: 1.5px solid rgba(0, 0, 0, 0.1);
-            border-radius: 10px;
-            padding: 0.75rem;
-            color: var(--slate-300);
-            font-weight: 700;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .diff-btn:hover {
-            background: rgba(0, 0, 0, 0.02);
-            border-color: var(--slate-400);
-        }
-
-        .diff-btn.active[data-diff="easy"] {
-            border-color: var(--neon-green);
-            color: var(--neon-green);
-            background: rgba(5, 150, 105, 0.08);
-            box-shadow: 0 0 10px rgba(5, 150, 105, 0.15);
-        }
-
-        .diff-btn.active[data-diff="medium"] {
-            border-color: var(--neon-yellow);
-            color: var(--neon-yellow);
-            background: rgba(217, 119, 6, 0.08);
-            box-shadow: 0 0 10px rgba(217, 119, 6, 0.15);
-        }
-
-        .diff-btn.active[data-diff="hard"] {
-            border-color: var(--neon-pink);
-            color: var(--neon-pink);
-            background: rgba(219, 39, 119, 0.08);
-            box-shadow: 0 0 10px rgba(219, 39, 119, 0.15);
-        }
 
         .start-btn {
             width: 100%;
@@ -1349,14 +1306,7 @@
                     </div>
 
                     <div class="setup-controls">
-                        <div class="input-group">
-                            <label><i class="fa-solid fa-gauge-high"></i> 게임 난이도</label>
-                            <div class="difficulty-selector">
-                                <button type="button" class="diff-btn active" data-diff="easy" onclick="setDifficulty('easy')">쉬움</button>
-                                <button type="button" class="diff-btn" data-diff="medium" onclick="setDifficulty('medium')">보통</button>
-                                <button type="button" class="diff-btn" data-diff="hard" onclick="setDifficulty('hard')">어려움</button>
-                            </div>
-                        </div>
+
                         <button class="start-btn" onclick="startGame()">
                             <i class="fa-solid fa-play"></i> 싱글 플레이 시작
                         </button>
@@ -1855,7 +1805,7 @@
         let isMultiplayer = false;
         let sessionPin = '';
 
-        let difficulty = 'easy'; // easy, medium, hard
+        const difficulty = 'easy';
         let playerName = '';
         let currentRound = 1;
         const maxRounds = 3;
@@ -1899,12 +1849,7 @@
         const resEarnedScore = document.getElementById('res-earned-score');
         const nextRoundBtn = document.getElementById('next-round-btn');
 
-        // Round light presets (Lux)
-        const roundLuxPresets = {
-            easy: [80, 1500, 300],
-            medium: [60, 2000, 500],
-            hard: [50, 2500, 800]
-        };
+
 
         // --- Lobby Tab Switching ---
         function switchLobbyTab(tabName) {
@@ -1924,14 +1869,7 @@
             }
         }
 
-        // --- Difficulty Setup ---
-        function setDifficulty(diff) {
-            difficulty = diff;
-            document.querySelectorAll('.diff-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`.diff-btn[data-diff="${diff}"]`).classList.add('active');
-        }
+
 
         // --- Toast notification ---
         function showToast(msg) {
@@ -2033,8 +1971,7 @@
 
         // --- Realtime Exposure Physics & Visual Updates ---
         function updateExposureLogic(deltaTime) {
-            // Decelerate/relax muscle contraction when not tapping
-            const relaxationSpeed = difficulty === 'hard' ? 0.36 : (difficulty === 'medium' ? 0.26 : 0.18);
+            const relaxationSpeed = 0.18; // Easy difficulty relaxation rate
             
             const logLux = Math.log10(currentLux);
             const optimalLog = 3.75;
@@ -2828,7 +2765,7 @@
 
         // Expose functions globally for layout triggers
         window.switchLobbyTab = switchLobbyTab;
-        window.setDifficulty = setDifficulty;
+
         window.startGame = startGame;
         window.joinAsStudent = joinAsStudent;
         window.handleTeacherLogin = handleTeacherLogin;
