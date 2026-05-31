@@ -1295,9 +1295,9 @@
                 <div class="viewport-frame">
                     <div id="canvas-container"></div>
                     <div class="shutter-flash" id="shutter-flash"></div>
-                    <div class="focus-indicator-overlay">
-                        <i class="fa-solid fa-crosshairs"></i>
-                        <span>초점 거리: <span id="focal-indicator-txt">37.5m</span></span>
+                    <div class="focus-indicator-overlay" style="padding: 10px 8px 8px 8px; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; gap: 0;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: rgba(148, 163, 184, 0.9); margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; width: 100%; text-align: center;">수정체</span>
+                        <canvas id="hud-lens-canvas" width="150" height="220" style="display: block; width: 100px; height: 147px;"></canvas>
                     </div>
                     <div class="countdown-overlay" id="countdown-hud">150</div>
                     <div class="target-prompt-overlay" id="target-prompt">
@@ -2847,7 +2847,7 @@
                 }
             }
 
-            focalIndicatorTxt.textContent = `${focalDistance.toFixed(1)}m`;
+            if (focalIndicatorTxt) focalIndicatorTxt.textContent = `${focalDistance.toFixed(1)}m`;
             updateGridFocusColors();
 
             if (difficulty !== 'hard' && focalPlaneMarker && targetDistMarker) {
@@ -2885,24 +2885,9 @@
             ctx.clearRect(0, 0, w, h);
 
             // ──────────────────────────────────────────
-            // 분할선 (캔버스 정중앙)
+            // 남은 시간 (중앙에 원형 타이머 그리기)
             // ──────────────────────────────────────────
-            const divX = w / 2;  // 300
-
-            // 좌우 구분선
-            ctx.beginPath();
-            ctx.moveTo(divX, 10);
-            ctx.lineTo(divX, h - 10);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-            ctx.lineWidth = 1;
-            ctx.setLineDash([4, 6]);
-            ctx.stroke();
-            ctx.setLineDash([]);
-
-            // ──────────────────────────────────────────
-            // 왼쪽 패널: 남은 시간
-            // ──────────────────────────────────────────
-            const leftCx = divX / 2;   // 150
+            const leftCx = w / 2;      // 300 (Center of canvas)
             const leftCy = h / 2;      // 150
 
             // 섹션 제목
@@ -2957,92 +2942,93 @@
             ctx.fillStyle = 'rgba(148,163,184,0.7)';
             ctx.fillText('초', leftCx, leftCy + timerR + 20);
 
-            // 오른쪽 패널: 수정체 + 모식도
-            const rightCx = divX + divX / 2;  // 450
-            const rightCy = h / 2;             // 150
+            // ──────────────────────────────────────────
+            // HUD 수정체 캔버스 그리기
+            // ──────────────────────────────────────────
+            const hudCanvas = document.getElementById('hud-lens-canvas');
+            if (hudCanvas) {
+                const hudCtx = hudCanvas.getContext('2d');
+                const hudW = hudCanvas.width;   // 150
+                const hudH = hudCanvas.height;  // 220
+                hudCtx.clearRect(0, 0, hudW, hudH);
 
-            // 섹션 제목
-            ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
-            ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic';
-            ctx.fillText('수정체', rightCx, 30);
+                const cx = hudW / 2;  // 75
+                const cy = hudH / 2;  // 110
 
-            // 수정체 크기: ratio=0(이완)→얇고 납작, ratio=1(수축)→두껍고 볼록
-            const lensHalfW = 10 + ratio * 28;   // 볼록도: 10~38px
-            const lensHalfH = 62 - ratio * 18;   // 높이: 44~62px
+                // 수정체 크기: ratio=0(이완)→얇고 납작, ratio=1(수축)→두껍고 볼록
+                const lensHalfW = 10 + ratio * 28;   // 볼록도: 10~38px
+                const lensHalfH = 62 - ratio * 18;   // 높이: 44~62px
 
-            // 수정체 렌즈 그리기
-            ctx.beginPath();
-            ctx.moveTo(rightCx, rightCy - lensHalfH);
-            ctx.quadraticCurveTo(rightCx - lensHalfW, rightCy, rightCx, rightCy + lensHalfH);
-            ctx.quadraticCurveTo(rightCx + lensHalfW, rightCy, rightCx, rightCy - lensHalfH);
-            ctx.closePath();
+                // 수정체 렌즈 그리기
+                hudCtx.beginPath();
+                hudCtx.moveTo(cx, cy - lensHalfH);
+                hudCtx.quadraticCurveTo(cx - lensHalfW, cy, cx, cy + lensHalfH);
+                hudCtx.quadraticCurveTo(cx + lensHalfW, cy, cx, cy - lensHalfH);
+                hudCtx.closePath();
 
-            const grad = ctx.createRadialGradient(
-                rightCx - lensHalfW * 0.3, rightCy - lensHalfH * 0.3, 2,
-                rightCx, rightCy, lensHalfH);
-            grad.addColorStop(0, 'rgba(186, 230, 253, 0.95)');
-            grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.75)');
-            grad.addColorStop(1, 'rgba(14, 165, 233, 0.55)');
-            ctx.fillStyle = grad;
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+                const grad = hudCtx.createRadialGradient(
+                    cx - lensHalfW * 0.3, cy - lensHalfH * 0.3, 2,
+                    cx, cy, lensHalfH);
+                grad.addColorStop(0, 'rgba(186, 230, 253, 0.95)');
+                grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.75)');
+                grad.addColorStop(1, 'rgba(14, 165, 233, 0.55)');
+                hudCtx.fillStyle = grad;
+                hudCtx.fill();
+                hudCtx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+                hudCtx.lineWidth = 2;
+                hudCtx.stroke();
 
-            // 광택 하이라이트
-            ctx.beginPath();
-            ctx.moveTo(rightCx, rightCy - lensHalfH + 6);
-            ctx.quadraticCurveTo(rightCx - lensHalfW * 0.45, rightCy - lensHalfH * 0.3,
-                                 rightCx, rightCy - lensHalfH * 0.1);
-            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
+                // 광택 하이라이트
+                hudCtx.beginPath();
+                hudCtx.moveTo(cx, cy - lensHalfH + 6);
+                hudCtx.quadraticCurveTo(cx - lensHalfW * 0.45, cy - lensHalfH * 0.3,
+                                     cx, cy - lensHalfH * 0.1);
+                hudCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+                hudCtx.lineWidth = 2.5;
+                hudCtx.stroke();
 
-            // 수축력 화살표
-            const arrowLength = 12 + ratio * 42;  // 12px(이완) ~ 54px(최대)
-            const headSize    =  6 + ratio * 14;  // 화살표 머리 크기: 6~20px
-            const lineW       = 1.5 + ratio * 2.5; // 선 두께: 1.5~4px
-            const alpha       = 0.35 + ratio * 0.65;
-            const arrowColor  = `rgba(251, 146, 60, ${alpha})`;
+                // 수축력 화살표
+                const arrowLength = 12 + ratio * 42;  // 12px(이완) ~ 54px(최대)
+                const headSize    =  6 + ratio * 14;  // 화살표 머리 크기: 6~20px
+                const lineW       = 1.5 + ratio * 2.5; // 선 두께: 1.5~4px
+                const alpha       = 0.35 + ratio * 0.65;
+                const arrowColor  = `rgba(251, 146, 60, ${alpha})`;
 
-            function drawArrow(tipX, tipY, tailX, tailY, hs) {
-                ctx.beginPath();
-                ctx.moveTo(tailX, tailY);
-                ctx.lineTo(tipX, tipY);
-                ctx.strokeStyle = arrowColor;
-                ctx.lineWidth = lineW;
-                ctx.lineCap = 'round';
-                ctx.stroke();
-                ctx.lineCap = 'butt';
-                const angle = Math.atan2(tipY - tailY, tipX - tailX);
-                ctx.beginPath();
-                ctx.moveTo(tipX, tipY);
-                ctx.lineTo(tipX - hs * Math.cos(angle - Math.PI / 6),
-                           tipY - hs * Math.sin(angle - Math.PI / 6));
-                ctx.lineTo(tipX - hs * Math.cos(angle + Math.PI / 6),
-                           tipY - hs * Math.sin(angle + Math.PI / 6));
-                ctx.closePath();
-                ctx.fillStyle = arrowColor;
-                ctx.fill();
+                function drawArrow(tipX, tipY, tailX, tailY, hs) {
+                    hudCtx.beginPath();
+                    hudCtx.moveTo(tailX, tailY);
+                    hudCtx.lineTo(tipX, tipY);
+                    hudCtx.strokeStyle = arrowColor;
+                    hudCtx.lineWidth = lineW;
+                    hudCtx.lineCap = 'round';
+                    hudCtx.stroke();
+                    hudCtx.lineCap = 'butt';
+                    const angle = Math.atan2(tipY - tailY, tipX - tailX);
+                    hudCtx.beginPath();
+                    hudCtx.moveTo(tipX, tipY);
+                    hudCtx.lineTo(tipX - hs * Math.cos(angle - Math.PI / 6),
+                               tipY - hs * Math.sin(angle - Math.PI / 6));
+                    hudCtx.lineTo(tipX - hs * Math.cos(angle + Math.PI / 6),
+                               tipY - hs * Math.sin(angle + Math.PI / 6));
+                    hudCtx.closePath();
+                    hudCtx.fillStyle = arrowColor;
+                    hudCtx.fill();
+                }
+
+                // 위 화살표
+                drawArrow(cx, cy - lensHalfH, cx, cy - lensHalfH - arrowLength, headSize);
+                // 아래 화살표
+                drawArrow(cx, cy + lensHalfH, cx, cy + lensHalfH + arrowLength, headSize);
+
+                // 수축 퍼센트 레이블
+                const forceLabel = ratio < 0.05 ? '이완' : `${Math.round(ratio * 100)}%`;
+                hudCtx.font = `bold ${11 + ratio * 4}px 'Noto Sans KR', sans-serif`;
+                hudCtx.fillStyle = `rgba(251, 146, 60, ${Math.max(0.5, alpha)})`;
+                hudCtx.textAlign = 'center';
+                hudCtx.textBaseline = 'alphabetic';
+                hudCtx.fillText(forceLabel, cx, cy - lensHalfH - arrowLength - 8);
+                hudCtx.fillText(forceLabel, cx, cy + lensHalfH + arrowLength + 18);
             }
-
-            // 위 화살표 (위에서 수정체 위 테두리로)
-            drawArrow(rightCx, rightCy - lensHalfH, rightCx, rightCy - lensHalfH - arrowLength, headSize);
-            // 아래 화살표 (아래에서 수정체 아래 테두리로)
-            drawArrow(rightCx, rightCy + lensHalfH, rightCx, rightCy + lensHalfH + arrowLength, headSize);
-
-            // 수축 퍼센트 레이블
-            const forceLabel = ratio < 0.05 ? '이완' : `${Math.round(ratio * 100)}%`;
-            ctx.font = `bold ${11 + ratio * 4}px 'Noto Sans KR', sans-serif`;
-            ctx.fillStyle = `rgba(251, 146, 60, ${Math.max(0.5, alpha)})`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'alphabetic';
-            ctx.fillText(forceLabel, rightCx, rightCy - lensHalfH - arrowLength - 8);
-            ctx.fillText(forceLabel, rightCx, rightCy + lensHalfH + arrowLength + 18);
-
-            ctx.textAlign = 'left';
 
             // ──────────────────────────────────────────
             // 하단 레이블 DOM 업데이트
