@@ -69,7 +69,8 @@ function init() {
           console.log("[Debug] 기존 로그인 세션 감지. 화이트리스트 검사 중...");
           const isAllowed = await checkIsTeacherAllowed(session.user.email);
           if (isAllowed) {
-            console.log("[Debug] 승인된 교사 계정 확인. 교사 모드로 자동 전환합니다.");
+            console.log("[Debug] 승인된 교사 계정 확인. 교사 탭으로 자동 전환합니다.");
+            if (typeof carSwitchTab === 'function') carSwitchTab('teacher');
             selectRole('teacher').catch(err => {
               console.error("[Debug] 자동 로그인 진입 실패:", err);
             });
@@ -568,19 +569,20 @@ async function selectRole(role) {
         return;
       }
 
-      console.log("[Debug] 구글 세션 검증 성공. 교사용 UI 레이아웃 활성화 시작");
+      console.log("[Debug] 구글 세션 검증 성공. 교사용 PIN 표시 시작");
       State.isMultiplayer = true;
-      safeSetStyleDisplay('role-overlay', 'none');
-      safeSetStyleDisplay('main-ui', 'grid');
-      safeSetStyleDisplay('teacher-panel', 'flex');
-      safeSetStyleDisplay('student-panel', 'none');
-      if (State.truckGroup) State.truckGroup.visible = false;
 
-      initTeacherSession();
-      toggleCameraPanel(false);
-      resetTeacherCamera();
-      safeSetStyleDisplay('teacher-large-lobby-panel', 'flex');
-      
+      // 교사 세션 초기화 (PIN 생성 포함)
+      await initTeacherSession();
+
+      // 로비 화면에서 PIN 표시 블록으로 전환
+      const loginBlock = document.getElementById('car-teacher-login-block');
+      const readyBlock = document.getElementById('car-teacher-ready-block');
+      const pinDisplay = document.getElementById('car-teacher-pin-display');
+      if (loginBlock) loginBlock.style.display = 'none';
+      if (readyBlock) readyBlock.style.display = 'block';
+      if (pinDisplay) pinDisplay.textContent = State.sessionPin;
+
       // 로그인 및 승인 확인 시 교사 관리 버튼 활성화
       safeSetStyleDisplay('btn-open-teacher-admin', 'block');
     } catch (err) {
@@ -590,11 +592,12 @@ async function selectRole(role) {
   } else {
     console.log("[Debug] 학생 모드로 진입합니다.");
     State.isMultiplayer = true;
+    safeSetStyleDisplay('lobby-overlay', 'none');
     safeSetStyleDisplay('role-overlay', 'none');
     safeSetStyleDisplay('main-ui', 'grid');
     safeSetStyleDisplay('teacher-panel', 'none');
     safeSetStyleDisplay('student-panel', 'flex');
-    safeSetStyleDisplay('student-login-overlay', 'flex');
+    safeSetStyleDisplay('student-login-overlay', 'none'); // 로비에서 직접 입력하므로 별도 overlay 불필요
   }
 }
 
@@ -1063,11 +1066,15 @@ function setupStudentRealtime() {
         });
 
         if (isDuplicate) {
-          // 채널 정리 후 로그인 화면으로 복귀
+          // 채널 정리 후 로비 학생 탭으로 복귀
           await realtimeChannel.untrack();
           supabaseClient.removeChannel(realtimeChannel);
           realtimeChannel = null;
           showNicknameDuplicateError(State.myNickname);
+          // 로비로 복귀
+          safeSetStyleDisplay('main-ui', 'none');
+          safeSetStyleDisplay('lobby-overlay', 'flex');
+          if (typeof carSwitchTab === 'function') carSwitchTab('student');
           return;
         }
         // --- 중복 없음: 정상 접속 ---
@@ -1079,8 +1086,12 @@ function setupStudentRealtime() {
           nickname: State.myNickname
         });
 
-        // 접속 성공: 로그인 화면 숨기기
+        // 접속 성공: 로비 숨기고 게임 화면으로 전환
+        safeSetStyleDisplay('lobby-overlay', 'none');
         safeSetStyleDisplay('student-login-overlay', 'none');
+        safeSetStyleDisplay('main-ui', 'grid');
+        safeSetStyleDisplay('teacher-panel', 'none');
+        safeSetStyleDisplay('student-panel', 'flex');
         showStudentLobbyWait();
       } else if (status === 'CHANNEL_ERROR') {
         // 연결 오류: 버튼 복구
@@ -1156,11 +1167,13 @@ function returnToLogin() {
   const joinBtn = document.getElementById('btn-student-join');
   if (joinBtn) {
     joinBtn.disabled = false;
-    joinBtn.textContent = '참가하기';
+    joinBtn.textContent = '👥 참가하기';
   }
   
-  // 로그인 화면 재노출
-  safeSetStyleDisplay('student-login-overlay', 'flex');
+  // 게임 UI 숨기고 로비 학생 탭으로 복귀
+  safeSetStyleDisplay('main-ui', 'none');
+  safeSetStyleDisplay('lobby-overlay', 'flex');
+  if (typeof carSwitchTab === 'function') carSwitchTab('student');
 }
 
 // --- 교사: 결과 오버레이 제어 ---
@@ -1814,6 +1827,72 @@ window.closeTeacherAdminModal = closeTeacherAdminModal;
 window.handleAddTeacher = handleAddTeacher;
 window.handleTeacherLogout = handleTeacherLogout;
 
+// --- 로비 탭 전환 ---
+function carSwitchTab(tab) {
+  const panes = ['solo', 'student', 'teacher'];
+  const colors = { solo: '#6366f1', student: '#10b981', teacher: '#f59e0b' };
+  panes.forEach(p => {
+    const btn = document.getElementById(`car-tab-${p}`);
+    const pane = document.getElementById(`car-pane-${p}`);
+    const isActive = p === tab;
+    if (pane) pane.style.display = isActive ? 'block' : 'none';
+    if (btn) {
+      btn.style.background = isActive ? `rgba(${p==='solo'?'99,102,241':p==='student'?'16,185,129':'245,158,11'},0.15)` : 'transparent';
+      btn.style.color = isActive ? (p==='solo'?'#a5b4fc':p==='student'?'#6ee7b7':'#fcd34d') : '#64748b';
+      btn.style.borderBottom = isActive ? `3px solid ${colors[p]}` : '3px solid transparent';
+    }
+  });
+}
+
+// --- 혼자 하기 모드 시작 ---
+function startCarSoloMode() {
+  const nickname = (document.getElementById('car-solo-nickname')?.value || '').trim();
+  if (!nickname || nickname.length < 2) {
+    alert('닉네임을 2자 이상 입력하세요.');
+    return;
+  }
+  State.myNickname = nickname;
+  State.isMultiplayer = false;
+  safeSetStyleDisplay('lobby-overlay', 'none');
+  safeSetStyleDisplay('main-ui', 'grid');
+  safeSetStyleDisplay('teacher-panel', 'none');
+  safeSetStyleDisplay('student-panel', 'flex');
+  // 솔로 모드: 학생 대시보드 바로 표시
+  safeSetStyleDisplay('student-wait-message', 'none');
+  safeSetStyleDisplay('student-dashboard', 'flex');
+  // 솔로에서는 질량/속력 모두 제어 가능
+  const massGrp = document.getElementById('student-mass-group');
+  const speedGrp = document.getElementById('student-speed-group');
+  if (massGrp) massGrp.style.display = 'block';
+  if (speedGrp) speedGrp.style.display = 'block';
+  // 목표 거리 기본값 표시
+  const targetEl = document.getElementById('student-target-display');
+  if (targetEl) targetEl.textContent = `${State.targetDistance.toFixed(1)}m`;
+  const hintEl = document.getElementById('student-hint-display');
+  if (hintEl) hintEl.textContent = '직접 질량과 속도를 조절하여 실험하세요!';
+  // Ready 버튼 -> 솔로 모드 출발 버튼으로 변환
+  const readyBtn = document.getElementById('btn-student-ready');
+  if (readyBtn) {
+    readyBtn.textContent = '🚗 출발!';
+    readyBtn.onclick = () => startSimulation();
+  }
+}
+
+// --- 교사 대시보드 입장 (로비에서 PIN 확인 후) ---
+function enterCarTeacherMode() {
+  safeSetStyleDisplay('lobby-overlay', 'none');
+  safeSetStyleDisplay('main-ui', 'grid');
+  safeSetStyleDisplay('teacher-panel', 'flex');
+  safeSetStyleDisplay('student-panel', 'none');
+  if (State.truckGroup) State.truckGroup.visible = false;
+  toggleCameraPanel(false);
+  resetTeacherCamera();
+  safeSetStyleDisplay('teacher-large-lobby-panel', 'flex');
+}
+
+window.carSwitchTab = carSwitchTab;
+window.startCarSoloMode = startCarSoloMode;
+window.enterCarTeacherMode = enterCarTeacherMode;
 // --- 앱 로드 시작 ---
 window.onload = () => {
   // nameTagsContainer 전역 바인딩

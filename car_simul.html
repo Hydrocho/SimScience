@@ -23,31 +23,123 @@
   <!-- 교사용 학생 이름표 2D 오버레이 컨테이너 -->
   <div id="student-names-container" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; overflow: hidden; z-index: 10;"></div>
 
-  <!-- 역할 선택 오버레이 -->
-  <div id="role-overlay" class="modal-overlay role-overlay">
-    <!-- 오른쪽 상단에 작게 배치한 교사 로그인 버튼 -->
-    <button class="teacher-login-link-btn" onclick="selectRole('teacher')">
-      <svg viewBox="0 0 24 24" style="width: 12px; height: 12px; fill: currentColor; margin-right: 4px;"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19.4c-.39.39-.39 1.02 0 1.41.39.39 1.02.39 1.41 0l1.9-1.9C9.07 19.58 10.48 20 12 20c4.97 0 9-4.03 9-9s-4.03-9-9-9zm0 15c-3.31 0-6-2.69-6-6s2.69-6 6-6 6 2.69 6 6-2.69 6-6 6z"/></svg>
-      교사 로그인
-    </button>
+  <!-- ===== 로비 오버레이 (혼자하기 / 학생참가 / 교사 대시보드) ===== -->
+  <div id="lobby-overlay" style="
+    position: fixed; inset: 0; z-index: 200;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-family: 'Noto Sans KR', 'Outfit', sans-serif;
+    overflow-y: auto; padding: 20px;
+  ">
+    <!-- 상단 헤더 -->
+    <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; max-width: 680px; margin-bottom: 28px;">
+      <div style="display: flex; align-items: center; gap: 14px;">
+        <div style="width: 48px; height: 48px; border-radius: 14px; background: linear-gradient(135deg, #3b82f6, #6366f1); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; box-shadow: 0 4px 18px rgba(99,102,241,0.4);">🚗</div>
+        <div>
+          <h1 style="margin: 0; font-size: 1.35rem; font-weight: 900; color: #f8fafc; line-height: 1.2;">3D 자동차 제동 시뮬레이터</h1>
+          <p style="margin: 0; font-size: 0.8rem; color: #94a3b8; margin-top: 2px;">속도와 질량이 제동 거리에 미치는 영향을 탐구하세요</p>
+        </div>
+      </div>
+      <a href="index.html" style="display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 10px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #94a3b8; text-decoration: none; font-size: 0.78rem; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.12)';this.style.color='#f8fafc';" onmouseout="this.style.background='rgba(255,255,255,0.06)';this.style.color='#94a3b8';">
+        ← 홈으로
+      </a>
+    </div>
 
-    <div class="modal-content role-card" style="position: relative;">
-      <h1>명인중학교 VR 과학실험</h1>
-      <p class="subtitle">자동차 제동거리 실시간 멀티플레이어 레이싱</p>
-      <div class="role-buttons" style="margin-top: 10px;">
-        <button class="btn btn-primary" style="width: 100%;" onclick="selectRole('student')">
-          <svg class="icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
-          학생으로 참가하기
+    <!-- 탭 카드 -->
+    <div style="width: 100%; max-width: 680px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; overflow: hidden; backdrop-filter: blur(12px);">
+
+      <!-- 탭 버튼 -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; border-bottom: 1px solid rgba(255,255,255,0.08);">
+        <button id="car-tab-solo" onclick="carSwitchTab('solo')" style="padding: 16px 10px; background: rgba(99,102,241,0.15); border: none; color: #a5b4fc; font-weight: 800; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid #6366f1; font-family: inherit;">
+          <span style="font-size: 1.1rem; display: block; margin-bottom: 4px;">👤</span>혼자 하기
+        </button>
+        <button id="car-tab-student" onclick="carSwitchTab('student')" style="padding: 16px 10px; background: transparent; border: none; color: #64748b; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; font-family: inherit;">
+          <span style="font-size: 1.1rem; display: block; margin-bottom: 4px;">👥</span>학생 참가
+        </button>
+        <button id="car-tab-teacher" onclick="carSwitchTab('teacher')" style="padding: 16px 10px; background: transparent; border: none; color: #64748b; font-weight: 700; font-size: 0.88rem; cursor: pointer; transition: all 0.2s; border-bottom: 3px solid transparent; font-family: inherit;">
+          <span style="font-size: 1.1rem; display: block; margin-bottom: 4px;">🧑‍🏫</span>교사 대시보드
         </button>
       </div>
 
-      <!-- 과학 실험실 메인 홈 바로가기 배너 -->
-      <a href="index.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 14px; padding: 12px 14px; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; border-radius: 12px; font-weight: 800; font-size: 0.85rem; text-decoration: none; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 255, 255, 0.15)';" onmouseout="this.style.background='rgba(255, 255, 255, 0.08)';">
-        <svg viewBox="0 0 24 24" style="width: 14px; height: 14px; fill: currentColor; margin-right: 4px;"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-        과학 실험실 홈으로 돌아가기
-      </a>
-    </div>
-  </div>
+      <!-- TAB 1: 혼자 하기 -->
+      <div id="car-pane-solo" style="display: block; padding: 30px 28px;">
+        <div style="margin-bottom: 22px;">
+          <h2 style="margin: 0 0 8px 0; font-size: 1.2rem; font-weight: 800; color: #f8fafc;">혼자 탐구하기</h2>
+          <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">속도와 질량을 직접 조절하며 제동 거리의 변화를 실험해보세요.</p>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 24px;">
+          <div style="padding: 16px; background: rgba(59,130,246,0.08); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px;">
+            <div style="font-size: 1.3rem; margin-bottom: 8px;">⚡</div>
+            <h3 style="margin: 0 0 4px 0; font-size: 0.88rem; font-weight: 700; color: #93c5fd;">운동에너지</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: #64748b;">속도가 2배면 제동 거리는 4배 증가합니다.</p>
+          </div>
+          <div style="padding: 16px; background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 12px;">
+            <div style="font-size: 1.3rem; margin-bottom: 8px;">⚖️</div>
+            <h3 style="margin: 0 0 4px 0; font-size: 0.88rem; font-weight: 700; color: #6ee7b7;">질량 효과</h3>
+            <p style="margin: 0; font-size: 0.78rem; color: #64748b;">질량이 클수록 운동에너지가 커져 더 멀리 밀립니다.</p>
+          </div>
+        </div>
+        <div style="margin-bottom: 18px;">
+          <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">닉네임</label>
+          <input id="car-solo-nickname" type="text" placeholder="닉네임 입력 (2~10자)" value="제동마스터" maxlength="10" style="width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #f8fafc; font-size: 0.9rem; font-family: inherit; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#6366f1';" onblur="this.style.borderColor='rgba(255,255,255,0.12)';">
+        </div>
+        <button onclick="startCarSoloMode()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; letter-spacing: 0.3px; transition: all 0.2s; box-shadow: 0 4px 18px rgba(99,102,241,0.35);" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 6px 24px rgba(99,102,241,0.5)';" onmouseout="this.style.transform='';this.style.boxShadow='0 4px 18px rgba(99,102,241,0.35)';">
+          ▶ 게임 시작
+        </button>
+      </div>
+
+      <!-- TAB 2: 학생 참가 -->
+      <div id="car-pane-student" style="display: none; padding: 30px 28px;">
+        <div style="margin-bottom: 22px;">
+          <h2 style="margin: 0 0 8px 0; font-size: 1.2rem; font-weight: 800; color: #f8fafc;">학생 참가</h2>
+          <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">교사가 안내한 PIN 번호와 닉네임을 입력하여 함께 실험에 참여하세요.</p>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 14px; margin-bottom: 22px;">
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">PIN 번호</label>
+            <input id="student-pin" type="text" placeholder="6자리 숫자 입력" value="802935" maxlength="6" pattern="\d*" style="width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #f8fafc; font-size: 1rem; font-family: inherit; outline: none; box-sizing: border-box; letter-spacing: 2px; text-align: center;" onfocus="this.style.borderColor='#6366f1';" onblur="this.style.borderColor='rgba(255,255,255,0.12)';">
+          </div>
+          <div>
+            <label style="display: block; font-size: 0.82rem; font-weight: 700; color: #94a3b8; margin-bottom: 8px;">이름 (닉네임)</label>
+            <input id="student-nickname" type="text" placeholder="이름을 입력하세요" maxlength="10" style="width: 100%; padding: 12px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; color: #f8fafc; font-size: 0.9rem; font-family: inherit; outline: none; box-sizing: border-box;" onfocus="this.style.borderColor='#6366f1';" onblur="this.style.borderColor='rgba(255,255,255,0.12)';">
+            <div id="nickname-duplicate-error" class="nickname-error-msg" style="display: none; color: #f87171; font-size: 0.78rem; margin-top: 6px;"></div>
+          </div>
+        </div>
+        <button id="btn-student-join" onclick="joinSession()" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #10b981, #059669); border: none; border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; transition: all 0.2s; box-shadow: 0 4px 18px rgba(16,185,129,0.35);" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+          👥 참가하기
+        </button>
+      </div>
+
+      <!-- TAB 3: 교사 대시보드 -->
+      <div id="car-pane-teacher" style="display: none; padding: 30px 28px;">
+        <!-- 로그인 전 -->
+        <div id="car-teacher-login-block">
+          <div style="margin-bottom: 22px;">
+            <h2 style="margin: 0 0 8px 0; font-size: 1.2rem; font-weight: 800; color: #f8fafc;">교사 대시보드</h2>
+            <p style="margin: 0; font-size: 0.85rem; color: #94a3b8;">Google 계정으로 로그인하여 수업 세션을 개설하세요.</p>
+          </div>
+          <div style="padding: 20px; background: rgba(251,191,36,0.06); border: 1px solid rgba(251,191,36,0.2); border-radius: 14px; margin-bottom: 22px;">
+            <div style="font-size: 1.5rem; margin-bottom: 10px;">🔑</div>
+            <p style="margin: 0; font-size: 0.82rem; color: #fbbf24; font-weight: 600; line-height: 1.6;">승인된 구글 계정으로만 로그인 가능합니다.<br>로그인 후 PIN 번호가 생성되며 학생들에게 공유하세요.</p>
+          </div>
+          <button onclick="selectRole('teacher')" style="width: 100%; padding: 14px; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; transition: all 0.2s; box-shadow: 0 4px 18px rgba(245,158,11,0.35);" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+            🧑‍🏫 교사 로그인 (Google)
+          </button>
+        </div>
+        <!-- 로그인 후 PIN 표시 -->
+        <div id="car-teacher-ready-block" style="display: none;">
+          <div style="text-align: center; padding: 20px 0;">
+            <p style="font-size: 0.9rem; color: #94a3b8; margin: 0 0 10px 0; font-weight: 600;">세션 PIN 번호</p>
+            <div id="car-teacher-pin-display" style="font-size: 3rem; font-weight: 900; color: #6366f1; letter-spacing: 6px; margin-bottom: 20px;">------</div>
+            <button onclick="enterCarTeacherMode()" style="width: 100%; max-width: 280px; padding: 14px; background: linear-gradient(135deg, #3b82f6, #6366f1); border: none; border-radius: 12px; color: #fff; font-size: 1rem; font-weight: 800; cursor: pointer; font-family: inherit; transition: all 0.2s; box-shadow: 0 4px 18px rgba(99,102,241,0.35);" onmouseover="this.style.transform='translateY(-2px)';" onmouseout="this.style.transform='';">
+              🏫 대시보드 입장하기
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /탭 카드 -->
+  </div><!-- /lobby-overlay -->
 
   <!-- 학생 PIN 로그인 오버레이 -->
   <div id="student-login-overlay" class="modal-overlay" style="display: none;">
