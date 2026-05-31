@@ -1350,6 +1350,16 @@
         };
         window.eyeQuizCoordinates = coordinates;
 
+        function applyMaskBadgeBounds(badge, nameBox) {
+            const horizontalPadding = 0.8;
+            const verticalPadding = 0.45;
+            badge.style.left = `${Math.max(0, nameBox.left - horizontalPadding)}%`;
+            badge.style.top = `${Math.max(0, nameBox.top - verticalPadding)}%`;
+            badge.style.width = `${Math.min(100 - nameBox.left + horizontalPadding, nameBox.width + horizontalPadding * 2)}%`;
+            badge.style.height = `${Math.min(100 - nameBox.top + verticalPadding, nameBox.height + verticalPadding * 2)}%`;
+        }
+        window.applyEyeMaskBadgeBounds = applyMaskBadgeBounds;
+
         // App States
         let racerName = "초고속레이서";
         let activeQuestionsPool = [1,2,3,4,5,6,7,8,9,10,11]; // User customized questions subset
@@ -1445,10 +1455,7 @@
             for (let id in coordinates) {
                 const item = coordinates[id];
                 const badge = document.createElement('div');
-                badge.style.left = `${item.nameBox.left}%`;
-                badge.style.top = `${item.nameBox.top}%`;
-                badge.style.width = `${item.nameBox.width}%`;
-                badge.style.height = `${item.nameBox.height}%`;
+                applyMaskBadgeBounds(badge, item.nameBox);
                 
                 const numId = parseInt(id);
                 const isActive = activeQuestionsPool.includes(numId);
@@ -1637,10 +1644,7 @@
             for (let id in coordinates) {
                 const item = coordinates[id];
                 const badge = document.createElement('div');
-                badge.style.left = `${item.nameBox.left}%`;
-                badge.style.top = `${item.nameBox.top}%`;
-                badge.style.width = `${item.nameBox.width}%`;
-                badge.style.height = `${item.nameBox.height}%`;
+                applyMaskBadgeBounds(badge, item.nameBox);
                 
                 const numId = parseInt(id);
                 if (activeQuestionsPool.includes(numId)) {
@@ -1992,6 +1996,7 @@
         const QUIZ_SESSION_PIN = '584731';
         const QUESTION_SECONDS = 5;
         const coordinates = window.eyeQuizCoordinates;
+        const applyMaskBadgeBounds = window.applyEyeMaskBadgeBounds;
 
         let quizMode = 'single';
         let quizQuestions = [];
@@ -2079,10 +2084,7 @@
                 const item = coordinates[id];
                 const badge = document.createElement('div');
                 badge.className = 'mask-badge covered';
-                badge.style.left = `${item.nameBox.left}%`;
-                badge.style.top = `${item.nameBox.top}%`;
-                badge.style.width = `${item.nameBox.width}%`;
-                badge.style.height = `${item.nameBox.height}%`;
+                applyMaskBadgeBounds(badge, item.nameBox);
                 badge.innerHTML = `<span class="badge-num">${id}</span>`;
                 badge.onclick = () => submitQuizAnswer(id);
                 container.appendChild(badge);
