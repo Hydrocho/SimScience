@@ -2211,7 +2211,7 @@
                 labelCtx.font = '900 270px Outfit, sans-serif';
                 labelCtx.textAlign = 'center';
                 labelCtx.textBaseline = 'middle';
-                labelCtx.fillText(String(3 - index).padStart(2, '0'), 256, 280);
+                labelCtx.fillText(String(index + 1).padStart(2, '0'), 256, 280);
 
                 const labelTexture = new THREE.CanvasTexture(labelCanvas);
                 const labelMaterial = new THREE.MeshBasicMaterial({
@@ -3652,11 +3652,9 @@
                 let nextY = mesh.position.y + ud.speedY * deltaTime;
                 let nextZ = mesh.position.z + ud.speedZ * deltaTime;
 
-                // If student multiplayer, clamp mesh Z position strictly to the teacher's synced target distance
-                // and keep X/Y centered to match distance perfectly
+                // If student multiplayer, clamp only the selected disk's Z position to the teacher setting.
+                // Keep the same X/Y layout as single-player so all three disks remain visible.
                 if (isMultiplayer && userRole === 'student' && index === targetObjectIndex) {
-                    nextX = 0;
-                    nextY = ud.floorY;
                     nextZ = targetDistance;
                 } else {
                     // Objects are locked to their horizontal lanes (X fixed, Y fixed)
