@@ -1120,6 +1120,9 @@
                         <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-bullhorn"></i> 현재 출제된 문제</h4>
                         <div id="teacher-question-type-badge" style="display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: var(--primary-light); color: var(--primary); margin-bottom: 0.5rem;">유형</div>
                         <p id="teacher-question-text" style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">질문 내용</p>
+                        <button class="preset-btn" style="margin-top:0.35rem;" onclick="openQuizTeacherQuestionPreview()">
+                            <i class="fa-solid fa-magnifying-glass"></i> 자세히 보기
+                        </button>
                     </div>
 
                     <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
@@ -1295,6 +1298,27 @@
             <p class="subtitle">정답 개수가 같으면 풀이 시간이 짧은 학생이 우선입니다.</p>
             <div id="quiz-teacher-ranking-popup-body"></div>
             <button class="restart-btn" onclick="closeQuizTeacherRankingPopup()">확인</button>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="quiz-teacher-question-preview">
+        <div class="modal-card" style="position:relative; max-width:960px; width:94vw; max-height:92vh; overflow-y:auto;">
+            <button type="button" onclick="closeQuizTeacherQuestionPreview()" aria-label="미리보기 닫기" title="닫기" style="position:sticky; top:0; float:right; z-index:30; width:40px; height:40px; margin:-0.35rem -0.35rem 0.35rem 0.5rem; border:none; border-radius:50%; background:var(--slate-900); color:white; font-size:1.1rem; cursor:pointer; box-shadow:0 4px 12px rgba(15,23,42,0.22);">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <h2>현재 문제 미리보기</h2>
+            <p class="subtitle">학생 화면과 같은 문제를 읽기 전용으로 표시합니다.</p>
+            <div class="billboard-prompter" style="text-align:left; margin-bottom:1rem;">
+                <div class="billboard-lbl" id="quiz-teacher-preview-type">문제 유형</div>
+                <div class="billboard-desc" id="quiz-teacher-preview-text">현재 출제된 문제가 없습니다.</div>
+            </div>
+            <div id="quiz-teacher-preview-name-options" class="glass-panel" style="display:none; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:0.5rem; margin-bottom:1rem;"></div>
+            <div class="viewport-frame" style="padding:0.5rem; background:#f8fafc;">
+                <div class="image-container" id="quiz-teacher-preview-image">
+                    <img src="eye.png" alt="눈의 구조도">
+                </div>
+            </div>
+            <button class="restart-btn" style="margin-top:1rem;" onclick="closeQuizTeacherQuestionPreview()">닫기</button>
         </div>
     </div>
 
@@ -2667,6 +2691,50 @@
             document.getElementById('quiz-teacher-ranking-popup').classList.remove('show');
         }
 
+        function openQuizTeacherQuestionPreview() {
+            const question = quizQuestions[0];
+            if (!question) {
+                showToast('먼저 문제를 출제해 주세요.');
+                return;
+            }
+
+            const typeLabel = document.getElementById('quiz-teacher-preview-type');
+            const questionText = document.getElementById('quiz-teacher-preview-text');
+            const nameOptions = document.getElementById('quiz-teacher-preview-name-options');
+            const imageContainer = document.getElementById('quiz-teacher-preview-image');
+
+            imageContainer.querySelectorAll('.mask-badge').forEach(badge => badge.remove());
+            Object.keys(coordinates).forEach(key => {
+                const id = Number(key);
+                const badge = document.createElement('div');
+                badge.className = 'mask-badge covered';
+                badge.style.pointerEvents = 'none';
+                applyMaskBadgeBounds(badge, coordinates[id].nameBox);
+                badge.innerHTML = `<span class="badge-num">${id}</span>`;
+                imageContainer.appendChild(badge);
+            });
+
+            if (question.type === 'description-to-number') {
+                typeLabel.textContent = '설명 → 번호 매칭';
+                questionText.textContent = `${coordinates[question.id].description} 해당 위치 번호를 고르세요.`;
+                nameOptions.style.display = 'none';
+                nameOptions.innerHTML = '';
+            } else {
+                typeLabel.textContent = '번호 → 이름 객관식';
+                questionText.textContent = `그림의 ${question.id}번 위치에 해당하는 눈 구조의 이름을 고르세요.`;
+                nameOptions.style.display = 'grid';
+                nameOptions.innerHTML = question.options.map(name => `
+                    <button class="preset-btn" type="button" disabled>${name}</button>
+                `).join('');
+            }
+
+            document.getElementById('quiz-teacher-question-preview').classList.add('show');
+        }
+
+        function closeQuizTeacherQuestionPreview() {
+            document.getElementById('quiz-teacher-question-preview').classList.remove('show');
+        }
+
         window.switchQuizMode = switchQuizMode;
         window.startQuizRace = startQuizRace;
         window.restartRaceLobby = restartRaceLobby;
@@ -2680,6 +2748,8 @@
         window.launchQuizForStudents = launchQuizForStudents;
         window.finishQuizForStudents = finishQuizForStudents;
         window.closeQuizTeacherRankingPopup = closeQuizTeacherRankingPopup;
+        window.openQuizTeacherQuestionPreview = openQuizTeacherQuestionPreview;
+        window.closeQuizTeacherQuestionPreview = closeQuizTeacherQuestionPreview;
         window.resetClassroomSession = resetClassroomSession;
 
         switchQuizMode(new URLSearchParams(window.location.search).get('tab') === 'teacher' ? 'teacher' : 'single');
