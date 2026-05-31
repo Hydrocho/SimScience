@@ -2156,8 +2156,8 @@
             const presets = roundLuxPresets[difficulty];
             currentLux = presets[(currentRound - 1) % presets.length];
 
-            // Reset pupil variables
-            irisContraction = 0.5;
+            // Reset pupil variables to relaxed (underexposed) state
+            irisContraction = 0.0;
             
             updateHud();
 
@@ -2761,8 +2761,8 @@
 
         // --- Start round during multiplayer ---
         function startNewRoundMultiplayer() {
-            // Lux and controlMode are already synced via onReceiveSettings
-            irisContraction = 0.5;
+            // Reset pupil variables to relaxed (underexposed) state
+            irisContraction = 0.0;
             updateHud();
 
             const countdownEl = document.getElementById('countdown-hud');
