@@ -1295,8 +1295,8 @@
                 <div class="viewport-frame">
                     <div id="canvas-container"></div>
                     <div class="shutter-flash" id="shutter-flash"></div>
-                    <div class="focus-indicator-overlay" style="padding: 10px 8px 8px 8px; background: rgba(15, 23, 42, 0.65); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; backdrop-filter: blur(8px); display: flex; flex-direction: column; align-items: center; gap: 0;">
-                        <span style="font-size: 0.75rem; font-weight: 800; color: rgba(148, 163, 184, 0.9); margin-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 4px; width: 100%; text-align: center;">수정체</span>
+                    <div class="focus-indicator-overlay" style="padding: 10px 8px 8px 8px; background: transparent; border: none; backdrop-filter: none; display: flex; flex-direction: column; align-items: center; gap: 0; box-shadow: none;">
+                        <span style="font-size: 0.75rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; border-bottom: 1px solid rgba(15, 23, 42, 0.15); padding-bottom: 4px; width: 100%; text-align: center;">수정체</span>
                         <canvas id="hud-lens-canvas" width="150" height="220" style="display: block; width: 100px; height: 147px;"></canvas>
                     </div>
                     <div class="countdown-overlay" id="countdown-hud">150</div>
@@ -2992,7 +2992,7 @@
                 const headSize    = 13; // 50% 수축 강도일 때의 머리 크기(13px)로 고정
                 const lineW       = 1.5 + ratio * 2.5; // 선 두께: 1.5~4px (%에 따라 다름)
                 const alpha       = 0.35 + ratio * 0.65;
-                const arrowColor  = `rgba(251, 146, 60, ${alpha})`;
+                const arrowColor  = `rgba(15, 23, 42, ${alpha})`; // 가독성을 위해 어두운 슬레이트(검정 계열) 색상 적용
 
                 function drawArrow(tipX, tipY, tailX, tailY, hs) {
                     hudCtx.beginPath();
@@ -3023,7 +3023,7 @@
                 // 수축 퍼센트 레이블
                 const forceLabel = ratio < 0.05 ? '이완' : `${Math.round(ratio * 100)}%`;
                 hudCtx.font = `bold 15px 'Noto Sans KR', sans-serif`;
-                hudCtx.fillStyle = `rgba(251, 146, 60, ${Math.max(0.5, alpha)})`;
+                hudCtx.fillStyle = `rgba(15, 23, 42, ${Math.max(0.5, alpha)})`; // 가독성을 위해 어두운 슬레이트(검정 계열) 색상 적용
                 hudCtx.textAlign = 'center';
                 hudCtx.textBaseline = 'alphabetic';
                 hudCtx.fillText(forceLabel, cx, cy - lensHalfH - arrowLength - 8);
