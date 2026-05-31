@@ -1429,12 +1429,12 @@
                                 <div class="control-group">
                                     <div class="control-header">
                                         <label for="teacher-lux-slider"><i class="fa-solid fa-lightbulb"></i> 주변 조도 제어 (Lux)</label>
-                                        <span class="val" id="teacher-lux-val">100 Lux</span>
+                                        <span class="val" id="teacher-lux-val">300 Lux</span>
                                     </div>
-                                    <input type="range" id="teacher-lux-slider" min="5" max="8000" step="5" value="100" style="width:100%; accent-color:var(--primary)" oninput="teacherSyncSettings()">
+                                    <input type="range" id="teacher-lux-slider" min="50" max="2500" step="10" value="300" style="width:100%; accent-color:var(--primary)" oninput="teacherSyncSettings()">
                                     <div class="slider-ticks">
-                                        <span>5 Lux (어두움)</span>
-                                        <span>8,000 Lux (매우 밝음)</span>
+                                        <span>50 Lux (어두움)</span>
+                                        <span>2,500 Lux (밝음)</span>
                                     </div>
                                 </div>
 
@@ -1515,7 +1515,7 @@
                 
                 <!-- Left: Viewport Panel -->
                 <div class="viewport-panel">
-                    <div class="viewport-frame">
+                    <div class="viewport-frame" id="viewport-frame">
                         <div id="canvas-container"></div>
                         <!-- Exposure glare & dark filters -->
                         <div id="exposure-filter" class="exposure-filter"></div>
@@ -1859,6 +1859,7 @@
         
         // Iris & Pupil variables
         let irisContraction = 0.0; // 0.0 (fully relaxed, pupil 2mm) to 1.0 (fully contracted, pupil 8mm)
+        const irisContractionPerPress = 0.135;
         let controlMode = 'MANUAL'; // MANUAL | AUTO (synced from teacher)
         let currentLux = 100.0;    // Environmental Lux level
         let pupilDiameter = 5.0;  // mm, calculated from contraction: 2.0 + irisContraction * 6.0
@@ -1903,9 +1904,9 @@
 
         // Round light presets (Lux)
         const roundLuxPresets = {
-            easy: [15, 8000, 300],
-            medium: [10, 8000, 500],
-            hard: [5, 8000, 800]
+            easy: [80, 1500, 300],
+            medium: [60, 2000, 500],
+            hard: [50, 2500, 800]
         };
 
         const roundCodes = ["A5", "F9", "K3"]; // Secret codes on pedestal for each round
@@ -2370,17 +2371,23 @@
             }
 
             // Apply screen brightness filter based on deviation
+            const canvasEl = renderer.domElement;
+            const absDeviation = Math.abs(deviation);
+            const clarity = THREE.MathUtils.clamp(1 - absDeviation / 0.22, 0, 1);
+            const contrastAmount = 100 + clarity * 22;
+            const saturationAmount = 100 + clarity * 8;
+            const viewportFrame = document.getElementById('viewport-frame');
+
             if (deviation > 0) {
                 // Overexposed (Bright glare)
                 const alpha = Math.min(0.95, deviation / 1.4);
                 exposureFilter.style.backgroundColor = `rgba(255, 255, 255, ${alpha})`;
                 grainOverlay.style.opacity = 0;
-                
+
                 // Add blur/glow filter to Three.js canvas
-                const canvasEl = renderer.domElement;
-                const brightnessAmount = 100 + (deviation * 160);
-                const blurAmount = Math.max(0, (deviation - 0.25) * 8);
-                canvasEl.style.filter = `brightness(${brightnessAmount}%) blur(${blurAmount}px)`;
+                const brightnessAmount = 100 + (deviation * 160) + clarity * 5;
+                const blurAmount = Math.max(0, (deviation - 0.12) * 7);
+                canvasEl.style.filter = `brightness(${brightnessAmount}%) contrast(${contrastAmount}%) saturate(${saturationAmount}%) blur(${blurAmount}px)`;
             } else {
                 // Underexposed (Dark noise)
                 const alpha = Math.min(0.95, Math.abs(deviation) / 1.5);
@@ -2389,10 +2396,19 @@
                 // Show noise grain overlay when dark
                 const grainOpacity = Math.min(0.85, Math.abs(deviation) / 1.5);
                 grainOverlay.style.opacity = grainOpacity;
-                
-                const canvasEl = renderer.domElement;
-                const brightnessAmount = Math.max(0, 100 - (Math.abs(deviation) * 110));
-                canvasEl.style.filter = `brightness(${brightnessAmount}%) blur(0px)`;
+
+                const brightnessAmount = Math.max(0, 100 - (absDeviation * 110) + clarity * 5);
+                const blurAmount = Math.max(0, (absDeviation - 0.12) * 3);
+                canvasEl.style.filter = `brightness(${brightnessAmount}%) contrast(${contrastAmount}%) saturate(${saturationAmount}%) blur(${blurAmount}px)`;
+            }
+
+            if (viewportFrame) {
+                viewportFrame.style.borderColor = clarity > 0
+                    ? `rgba(5, 150, 105, ${0.2 + clarity * 0.65})`
+                    : 'rgba(255, 255, 255, 0.08)';
+                viewportFrame.style.boxShadow = clarity > 0
+                    ? `0 0 ${12 + clarity * 22}px rgba(5, 150, 105, ${clarity * 0.38})`
+                    : '';
             }
 
             // Draw Realtime 2D Canvas Diagram
@@ -2409,8 +2425,7 @@
             if (gameMode !== 'active' || controlMode === 'AUTO') return;
             
             // Incremental step per click
-            const step = 0.09;
-            irisContraction = Math.min(1.0, irisContraction + step);
+            irisContraction = Math.min(1.0, irisContraction + irisContractionPerPress);
             
             // Synthesizer muscle contraction sound
             gameAudio.playTick(200 + irisContraction * 180, 0.035);
@@ -2418,9 +2433,9 @@
 
         // --- Single Game Start ---
         function startGame() {
-            initThreeJS();
             lobbyScreen.style.display = 'none';
             arenaScreen.style.display = 'grid';
+            initThreeJS();
             gameMode = 'active';
             currentRound = 1;
             score = 0;
@@ -2787,6 +2802,11 @@
             grainOverlay.style.opacity = 0;
             if (renderer && renderer.domElement) {
                 renderer.domElement.style.filter = 'none';
+            }
+            const viewportFrame = document.getElementById('viewport-frame');
+            if (viewportFrame) {
+                viewportFrame.style.borderColor = '';
+                viewportFrame.style.boxShadow = '';
             }
 
             lobbyScreen.style.display = 'block';
