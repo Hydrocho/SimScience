@@ -488,31 +488,31 @@
     <script>
         // Preset default ear quiz coordinates
         const earPresets = {
-            1: { name: "귓바퀴", nameBox: { left: 2.0, top: 7.0, width: 25.0, height: 8.0 }, description: "소리를 모은다." },
-            2: { name: "외이도", nameBox: { left: 1.5, top: 50.0, width: 32.0, height: 8.0 }, description: "귓바퀴와 고막 사이의 통로이다." },
-            3: { name: "고막", nameBox: { left: 1.5, top: 64.0, width: 32.0, height: 8.0 }, description: "소리에 의해 진동하는 얇은 막이다." },
-            4: { name: "귓속뼈", nameBox: { left: 45.0, top: 0.0, width: 21.0, height: 12.0 }, description: "고막의 진동을 증폭하여 달팽이관으로 전달한다." },
-            5: { name: "반고리관", nameBox: { left: 64.0, top: 0.0, width: 34.0, height: 8.0 }, description: "몸의 회전을 감지한다." },
-            6: { name: "전정 기관", nameBox: { left: 62.0, top: 12.0, width: 36.0, height: 8.0 }, description: "몸의 기울어짐을 감지한다." },
-            7: { name: "달팽이관", nameBox: { left: 47.0, top: 78.5, width: 25.0, height: 12.0 }, description: "청각 세포가 있어 소리를 자극으로 받아들인다." },
-            8: { name: "평형 감각 신경", nameBox: { left: 80.0, top: 25.0, width: 19.0, height: 14.0 }, description: "반고리관과 전정 기관에서 받아들인 자극을 뇌로 전달한다." },
-            9: { name: "청각 신경", nameBox: { left: 80.0, top: 39.0, width: 19.0, height: 12.0 }, description: "청각 세포에서 받아들인 자극을 뇌로 전달한다." },
-            10: { name: "귀인두관", nameBox: { left: 80.0, top: 78.5, width: 19.0, height: 12.0 }, description: "고막 안쪽과 바깥쪽의 압력을 같게 조절한다." }
+            1: { name: "귓바퀴", nameBox: { left: 1.2, top: 7.8, width: 16.9, height: 9.6 }, description: "소리를 모은다." },
+            2: { name: "외이도", nameBox: { left: 0.7, top: 50.9, width: 17.6, height: 12.6 }, description: "귓바퀴와 고막 사이의 통로이다." },
+            3: { name: "고막", nameBox: { left: 0.7, top: 66.2, width: 17.9, height: 11.8 }, description: "소리에 의해 진동하는 얇은 막이다." },
+            4: { name: "귓속뼈", nameBox: { left: 37.2, top: 0.9, width: 20.9, height: 17.5 }, description: "고막의 진동을 증폭하여 달팽이관으로 전달한다." },
+            5: { name: "반고리관", nameBox: { left: 63.7, top: 0.2, width: 24.3, height: 8.1 }, description: "몸의 회전을 감지한다." },
+            6: { name: "전정 기관", nameBox: { left: 63.7, top: 10.7, width: 28.0, height: 7.9 }, description: "몸의 기울어짐을 감지한다." },
+            7: { name: "달팽이관", nameBox: { left: 43.9, top: 77.1, width: 18.3, height: 15.9 }, description: "청각 세포가 있어 소리를 자극으로 받아들인다." },
+            8: { name: "평형 감각 신경", nameBox: { left: 77.9, top: 23.3, width: 21.4, height: 17.9 }, description: "반고리관과 전정 기관에서 받아들인 자극을 뇌로 전달한다." },
+            9: { name: "청각 신경", nameBox: { left: 78.1, top: 46.6, width: 21.3, height: 13.1 }, description: "청각 세포에서 받아들인 자극을 뇌로 전달한다." },
+            10: { name: "귀인두관", nameBox: { left: 77.9, top: 75.9, width: 21.7, height: 10.9 }, description: "고막 안쪽과 바깥쪽의 압력을 같게 조절한다." }
         };
 
         // Preset default eye quiz coordinates
         const eyePresets = {
-            1: { name: "공막", nameBox: { left: 22.5, top: 6.5, width: 21.0, height: 10.5 }, description: "눈의 가장 바깥을 싸고 있는 막으로, 흰자위에 해당한다." },
-            2: { name: "각막", nameBox: { left: 4.0, top: 29.5, width: 21.5, height: 11.5 }, description: "홍채의 바깥을 싸는 투명한 막이다." },
-            3: { name: "홍채", nameBox: { left: 4.0, top: 51.5, width: 21.5, height: 11.5 }, description: "눈으로 들어오는 빛의 양을 조절한다." },
-            4: { name: "동공", nameBox: { left: 4.0, top: 68.0, width: 21.5, height: 11.5 }, description: "눈 안쪽으로 빛이 들어가는 구멍이다." },
-            5: { name: "수정체", nameBox: { left: 4.0, top: 82.5, width: 21.5, height: 14.5 }, description: "볼록 렌즈와 같이 빛을 굴절시켜 망막에 상이 맺히게 한다." },
-            6: { name: "맥락막", nameBox: { left: 48.0, top: 0.5, width: 24.0, height: 11.5 }, description: "검은색 색소가 있어 눈 속을 어둡게 한다." },
-            7: { name: "유리체", nameBox: { left: 77.0, top: 15.5, width: 21.0, height: 15.5 }, description: "눈 속을 채우고 있는 투명한 물질로 눈의 형태를 유지한다." },
-            8: { name: "시각 신경", nameBox: { left: 77.0, top: 31.5, width: 21.0, height: 11.5 }, description: "시각 세포의 자극을 뇌로 전달한다." },
+            1: { name: "공막", nameBox: { left: 19.7, top: 6.1, width: 21.0, height: 10.5 }, description: "눈의 가장 바깥을 싸고 있는 막으로, 흰자위에 해당한다." },
+            2: { name: "각막", nameBox: { left: 2.5, top: 29.1, width: 21.5, height: 11.5 }, description: "홍채의 바깥을 싸는 투명한 막이다." },
+            3: { name: "홍채", nameBox: { left: 2.3, top: 52.3, width: 21.5, height: 11.5 }, description: "눈으로 들어오는 빛의 양을 조절한다." },
+            4: { name: "동공", nameBox: { left: 2.5, top: 68.9, width: 21.5, height: 11.5 }, description: "눈 안쪽으로 빛이 들어가는 구멍이다." },
+            5: { name: "수정체", nameBox: { left: 2.4, top: 83.9, width: 21.5, height: 14.5 }, description: "볼록 렌즈와 같이 빛을 굴절시켜 망막에 상이 맺히게 한다." },
+            6: { name: "맥락막", nameBox: { left: 46.3, top: 0.3, width: 24.0, height: 11.5 }, description: "검은색 색소가 있어 눈 속을 어둡게 한다." },
+            7: { name: "유리체", nameBox: { left: 77.8, top: 13.8, width: 21.0, height: 15.5 }, description: "눈 속을 채우고 있는 투명한 물질로 눈의 형태를 유지한다." },
+            8: { name: "시각 신경", nameBox: { left: 78.0, top: 31.3, width: 21.0, height: 11.5 }, description: "시각 세포의 자극을 뇌로 전달한다." },
             9: { name: "망막", nameBox: { left: 77.0, top: 51.5, width: 21.0, height: 11.5 }, description: "상이 맺히는 곳으로, 시각 세포가 있다." },
-            10: { name: "맹점", nameBox: { left: 77.0, top: 64.5, width: 21.0, height: 17.5 }, description: "시각 신경이 모여 나가는 부분으로, 시각 세포가 없어 상이 맺히더라도 볼 수 없다." },
-            11: { name: "섬모체", nameBox: { left: 77.0, top: 82.5, width: 21.0, height: 11.5 }, description: "수정체의 두께를 조절한다." }
+            10: { name: "맹점", nameBox: { left: 77.0, top: 65.0, width: 21.0, height: 17.5 }, description: "시각 신경이 모여 나가는 부분으로, 시각 세포가 없어 상이 맺히더라도 볼 수 없다." },
+            11: { name: "섬모체", nameBox: { left: 77.1, top: 84.3, width: 21.0, height: 11.5 }, description: "수정체의 두께를 조절한다." }
         };
 
         // Active State Coordinates
