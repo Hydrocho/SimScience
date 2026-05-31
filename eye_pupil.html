@@ -1532,16 +1532,12 @@
                             <div id="shutter-flash" class="shutter-flash" style="border-radius: var(--radius-lg);"></div>
 
                             <!-- Overlay mini iris dashboard at the top center -->
-                            <div style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95); border: 1.5px solid rgba(0,0,0,0.1); border-radius: 16px; padding: 6px 12px; display: flex; align-items: center; gap: 8px; z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.12);">
-                                <canvas id="eye-canvas-mini" width="48" height="48" style="width: 48px; height: 48px; display: block;"></canvas>
-                                <div style="display: flex; flex-direction: column; justify-content: center; text-align: left; min-width: 60px;">
-                                    <div id="mini-target-size-lbl" style="font-size: 0.65rem; font-weight: 800; color: #10b981; line-height: 1.2;">목표: --mm</div>
-                                    <div id="mini-current-size-lbl" style="font-size: 0.7rem; font-weight: 900; color: #1e293b; line-height: 1.2; margin-top: 2px;">현재: --mm</div>
-                                </div>
+                            <div style="position: absolute; top: 15px; left: 50%; transform: translateX(-50%); background: rgba(255, 255, 255, 0.95); border: 1.5px solid rgba(0,0,0,0.1); border-radius: 50%; padding: 6px; display: flex; align-items: center; justify-content: center; z-index: 20; box-shadow: 0 4px 15px rgba(0,0,0,0.12); width: 108px; height: 108px;">
+                                <canvas id="eye-canvas-mini" width="96" height="96" style="width: 96px; height: 96px; display: block; border-radius: 50%;"></canvas>
                             </div>
 
                             <!-- Time limit count overlay -->
-                            <div id="countdown-hud" class="countdown-overlay">15</div>
+                            <div id="countdown-hud" class="countdown-overlay">150</div>
 
 
                             <!-- Target display info banner at bottom -->
@@ -2127,13 +2123,6 @@
             // Draw Realtime 2D Canvas Diagram (Mini Overlay)
             drawMiniEye(eyeCanvasMini, irisContraction, targetContraction);
 
-            // Update text readouts
-            if (document.getElementById('mini-target-size-lbl')) {
-                document.getElementById('mini-target-size-lbl').textContent = `목표: ${targetDiameter.toFixed(1)}mm`;
-            }
-            if (document.getElementById('mini-current-size-lbl')) {
-                document.getElementById('mini-current-size-lbl').textContent = `현재: ${pupilDiameter.toFixed(1)}mm`;
-            }
         }
 
         // --- Muscle Contraction Command (Space / click) ---
@@ -2173,7 +2162,7 @@
             updateHud();
 
             // Set round timer limit
-            let secondsLeft = 15;
+            let secondsLeft = 150;
             const countdownEl = document.getElementById('countdown-hud');
             countdownEl.style.display = 'block';
             countdownEl.textContent = secondsLeft;
