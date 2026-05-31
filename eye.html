@@ -1114,9 +1114,23 @@
                         <strong>실험실 PIN: <span style="color:var(--primary);">584731</span></strong>
                         <p style="font-size:0.78rem; color:var(--slate-600); margin-top:0.35rem;">문제당 제한 시간: 15초</p>
                     </div>
+                    
+                    <!-- Active Selected Question Info Panel -->
+                    <div id="quiz-teacher-active-question" style="display:none; padding:1.25rem; background: var(--slate-50); border: 2px solid var(--primary); border-radius: 12px; margin-bottom: 1rem; box-shadow: var(--shadow-sm);">
+                        <h4 style="font-size: 0.95rem; font-weight: 800; color: var(--primary); margin-bottom: 0.5rem;"><i class="fa-solid fa-bullhorn"></i> 현재 출제된 문제</h4>
+                        <div id="teacher-question-type-badge" style="display: inline-block; font-size: 0.72rem; font-weight: 800; padding: 0.15rem 0.5rem; border-radius: 9999px; background: var(--primary-light); color: var(--primary); margin-bottom: 0.5rem;">유형</div>
+                        <p id="teacher-question-text" style="font-size: 1.1rem; font-weight: 700; color: var(--slate-900); margin-bottom: 0.5rem;">질문 내용</p>
+                        <p id="teacher-question-answer" style="font-size: 0.85rem; font-weight: 700; color: var(--success);"><i class="fa-solid fa-key"></i> 정답: <span id="teacher-question-answer-val">공막</span></p>
+                        <div style="margin-top: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+                            <span style="font-size: 0.85rem; font-weight: 800; color: var(--slate-600);">남은 시간:</span>
+                            <span id="teacher-question-timer-val" style="font-family: 'Outfit', monospace; font-size: 1.25rem; font-weight: 900; color: var(--primary);">15.0초</span>
+                        </div>
+                    </div>
+
                     <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
-                    <button class="start-btn" style="margin-top:1rem;" onclick="launchQuizForStudents()">실시간 퀴즈 시작</button>
-                    <button class="start-btn" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--danger), var(--neon-pink));" onclick="finishQuizForStudents()">종료 (랭킹 보기)</button>
+                    <button class="start-btn" id="teacher-btn-launch" style="margin-top:1rem;" onclick="launchQuizForStudents()">실시간 퀴즈 시작</button>
+                    <button class="start-btn" id="teacher-btn-finish" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--danger), var(--neon-pink)); display:none;" onclick="finishQuizForStudents()">결과 공개 / 라운드 종료 🏁</button>
+                    <button class="start-btn" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--slate-600), var(--slate-800));" onclick="resetClassroomSession()">대기실로 돌아가기 (학생 리셋) 🚪</button>
                 </div>
                 <div>
                     <h3 style="margin-bottom:0.75rem;">접속 학생 <span id="quiz-teacher-student-count">0</span>명</h3>
@@ -1263,6 +1277,29 @@
         <div class="modal-card">
             <h2>교사의 시작 신호 대기 중</h2>
             <p class="subtitle">PIN 584731 수업에 참가했습니다. 모든 학생이 같은 문제를 동시에 풉니다.</p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="quiz-student-submitting-overlay">
+        <div class="modal-card">
+            <h2>답안 제출 완료!</h2>
+            <p class="subtitle">다른 학생들이 제출할 때까지 잠시만 기다려 주세요.</p>
+            <div style="margin: 2rem 0; font-size: 3rem; color: var(--primary);">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+            </div>
+            <p id="student-submitted-info" style="font-weight: 700; color: var(--slate-600);"></p>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="quiz-student-result-overlay">
+        <div class="modal-card">
+            <div class="rank-seal" id="student-result-seal" style="background: linear-gradient(135deg, var(--success) 0%, var(--primary) 100%);">1</div>
+            <h2 id="student-result-title">정답입니다! 🎉</h2>
+            <p class="subtitle" id="student-result-subtitle">정답: 공막 | 소요 시간: 3.25초</p>
+            <p style="font-size: 1.1rem; font-weight: 800; color: var(--slate-900); margin-top: 1rem;">
+                현재 내 순위: <span id="student-result-rank" style="color: var(--primary); font-size: 1.3rem;">1</span>위 / <span id="student-result-total-players">1</span>명 중
+            </p>
+            <p style="font-size: 0.85rem; color: var(--slate-500); margin-top: 1.5rem;">교사가 다음 문제를 출제할 때까지 기다려 주세요.</p>
         </div>
     </div>
 
@@ -1995,6 +2032,8 @@
         let quizActiveStudents = [];
         let quizTeacherScope = Object.keys(coordinates).map(Number);
         let quizTeacherRoundFinalized = false;
+        let teacherTimerInterval = null;
+        let teacherTimerStartedAt = 0;
 
         function shuffled(values) {
             const copy = [...values];
@@ -2175,29 +2214,54 @@
             const question = quizQuestions[quizIndex];
             const correctValue = question.type === 'description-to-number' ? question.id : coordinates[question.id].name;
             const correct = value === correctValue;
+            
+            const elapsed = Math.min(QUESTION_SECONDS, (performance.now() - quizQuestionStartedAt) / 1000);
+            
             quizAnswers.push({
                 questionIndex: quizIndex,
                 answer: value,
                 correct,
                 unanswered: value === null,
-                elapsedSeconds: Math.min(QUESTION_SECONDS, (performance.now() - quizQuestionStartedAt) / 1000)
+                elapsedSeconds: elapsed
             });
 
             const status = document.getElementById(`quiz-status-${quizIndex}`);
-            const badge = status.querySelector('.badge');
+            const badge = status ? status.querySelector('.badge') : null;
+            
             if (quizMode === 'single') {
-                badge.textContent = correct ? '정답' : value === null ? `미응답 (정답: ${correctValue})` : `오답 (정답: ${correctValue})`;
-                badge.style.color = correct ? 'var(--success)' : 'var(--danger)';
+                if (badge) {
+                    badge.textContent = correct ? '정답' : value === null ? `미응답 (정답: ${correctValue})` : `오답 (정답: ${correctValue})`;
+                    badge.style.color = correct ? 'var(--success)' : 'var(--danger)';
+                }
                 if (correct) playSuccessSound();
                 else playErrorSound();
-            } else {
-                badge.textContent = value === null ? '미응답' : '응답 완료';
-                return;
+                
+                clearInterval(quizQuestionTimer);
+                quizIndex++;
+                setTimeout(showQuizQuestion, 650);
+            } else if (quizMode === 'student') {
+                if (badge) {
+                    badge.textContent = value === null ? '미응답' : '제출 완료';
+                    badge.style.color = 'var(--primary)';
+                }
+                
+                // Stop local countdown timer
+                clearInterval(quizQuestionTimer);
+                
+                // Show submitting overlay
+                const infoText = value === null ? "제출 상태: 시간 초과 (미응답)" : `제출 완료: ${value}`;
+                document.getElementById('student-submitted-info').textContent = infoText;
+                document.getElementById('quiz-student-submitting-overlay').classList.add('show');
+                
+                // Send result to teacher immediately
+                quizNetwork.sendResult(correct ? 1 : 0, {
+                    answer: value,
+                    correct: correct,
+                    elapsedSeconds: elapsed,
+                    unanswered: value === null,
+                    totalQuestions: 1
+                });
             }
-
-            clearInterval(quizQuestionTimer);
-            quizIndex++;
-            setTimeout(showQuizQuestion, 650);
         }
 
         function completeQuizQuestion() {
@@ -2206,8 +2270,7 @@
                 if (quizMode === 'single') return;
             }
             if (quizMode === 'student') {
-                quizIndex++;
-                showQuizQuestion();
+                // In student single-question mode, we wait for the teacher's round end signal.
             }
         }
 
@@ -2322,19 +2385,84 @@
             });
             quizNetwork.on('onGameStart', payload => {
                 if (Array.isArray(payload.quizQuestions)) quizQuestions = payload.quizQuestions;
+                
+                // Clear any previous student overlays
                 document.getElementById('quiz-student-waiting-overlay').classList.remove('show');
+                document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
+                document.getElementById('quiz-student-result-overlay').classList.remove('show');
+                
                 prepareQuizRun(quizQuestions, 'student');
             });
-            quizNetwork.on('onForceSubmit', () => finishQuizRun(true));
+            quizNetwork.on('onForceSubmit', () => {
+                if (!quizAnswerLocked && quizRunning) {
+                    recordQuizAnswer(null);
+                }
+            });
             quizNetwork.on('onRoundReset', () => {
                 clearInterval(quizQuestionTimer);
                 quizRunning = false;
+                document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
+                document.getElementById('quiz-student-result-overlay').classList.remove('show');
                 document.getElementById('arena-screen').style.display = 'none';
                 document.getElementById('quiz-student-waiting-overlay').classList.add('show');
             });
             quizNetwork.on('onRankingUpdate', payload => {
-                const me = payload.rankings.findIndex(result => result.studentId === quizNetwork.id);
-                if (me >= 0) showToast(`현재 순위: ${me + 1}위`);
+                if (payload.finished) {
+                    document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
+                    
+                    const myResultIndex = payload.rankings.findIndex(result => result.studentId === quizNetwork.id);
+                    const totalPlayers = payload.rankings.length;
+                    
+                    const resultOverlay = document.getElementById('quiz-student-result-overlay');
+                    const seal = document.getElementById('student-result-seal');
+                    const title = document.getElementById('student-result-title');
+                    const subtitle = document.getElementById('student-result-subtitle');
+                    const rankSpan = document.getElementById('student-result-rank');
+                    const totalSpan = document.getElementById('student-result-total-players');
+                    
+                    if (myResultIndex >= 0) {
+                        const myResult = payload.rankings[myResultIndex];
+                        const myRank = myResultIndex + 1;
+                        
+                        seal.textContent = `${myRank}`;
+                        if (myResult.correct) {
+                            title.innerHTML = '정답입니다! 🎉';
+                            seal.style.background = 'linear-gradient(135deg, var(--success) 0%, var(--primary) 100%)';
+                            playSuccessSound();
+                        } else {
+                            title.innerHTML = '오답입니다! ❌';
+                            seal.style.background = 'linear-gradient(135deg, var(--danger) 0%, var(--primary) 100%)';
+                            playErrorSound();
+                        }
+                        
+                        const ansText = myResult.unanswered ? '시간 초과' : myResult.answer;
+                        subtitle.textContent = `내 제출: ${ansText || '없음'} (정답: ${payload.correctValue}) | 소요 시간: ${myResult.elapsedSeconds.toFixed(2)}초`;
+                        rankSpan.textContent = `${myRank}`;
+                    } else {
+                        seal.textContent = '-';
+                        title.innerHTML = '미응답 ⏰';
+                        seal.style.background = 'linear-gradient(135deg, var(--slate-600) 0%, var(--slate-800) 100%)';
+                        subtitle.textContent = `정답: ${payload.correctValue}`;
+                        rankSpan.textContent = '-';
+                        playErrorSound();
+                    }
+                    
+                    totalSpan.textContent = `${totalPlayers}`;
+                    resultOverlay.classList.add('show');
+                    
+                    const activeQuestion = quizQuestions[0];
+                    if (activeQuestion) {
+                        const correctVal = activeQuestion.type === 'description-to-number' ? activeQuestion.id : coordinates[activeQuestion.id].name;
+                        const myAns = myResultIndex >= 0 ? payload.rankings[myResultIndex] : null;
+                        const isCorrect = myAns ? myAns.correct : false;
+                        
+                        const statusBadge = document.querySelector(`#quiz-status-0 .badge`);
+                        if (statusBadge) {
+                            statusBadge.textContent = isCorrect ? '정답' : myAns?.unanswered ? `미응답 (정답: ${correctVal})` : `오답 (정답: ${correctVal})`;
+                            statusBadge.style.color = isCorrect ? 'var(--success)' : 'var(--danger)';
+                        }
+                    }
+                }
             });
         }
 
@@ -2370,18 +2498,22 @@
                 document.getElementById('quiz-teacher-student-list').innerHTML = students.length
                     ? students.map(student => `<span class="chip-item active" style="display:inline-flex; margin:0.2rem;">${student.nickname}</span>`).join('')
                     : '학생 접속 대기 중...';
+                
+                // Re-render submissions to reflect new students or departures
+                renderQuizRankings();
             });
+            
             quizNetwork.on('onResultReported', payload => {
                 const index = quizStudentResults.findIndex(result => result.studentId === payload.studentId);
                 if (index >= 0) quizStudentResults[index] = payload;
                 else quizStudentResults.push(payload);
-                sortQuizResults();
+                
+                // Render the real-time submission status (without revealing correctness)
                 renderQuizRankings();
-                quizNetwork.broadcastRankings({ rankings: quizStudentResults });
+                
+                // If all connected students have submitted, automatically reveal findings
                 if (!quizTeacherRoundFinalized && quizStudentResults.length >= quizActiveStudents.length && quizActiveStudents.length > 0) {
-                    quizTeacherRoundFinalized = true;
-                    openQuizTeacherRankingPopup();
-                    quizNetwork.broadcastRoundReset();
+                    finishQuizForStudents();
                 }
             });
         }
@@ -2398,41 +2530,225 @@
                 alert('접속한 학생이 없습니다.');
                 return;
             }
+            
+            // 1. Pick a random structure ID from quizTeacherScope
+            const randomId = quizTeacherScope[Math.floor(Math.random() * quizTeacherScope.length)];
+            
+            // 2. Pick a random type ('description-to-number' or 'number-to-name')
+            const type = Math.random() < 0.5 ? 'description-to-number' : 'number-to-name';
+            
+            // 3. Build a single question object
+            const names = Object.keys(coordinates).map(Number).map(id => coordinates[id].name);
+            const question = {
+                type: type,
+                id: randomId,
+                options: type === 'number-to-name' ? shuffled(names) : []
+            };
+
+            // 4. Initialize states
+            quizQuestions = [question];
+            quizIndex = 0;
             quizStudentResults = [];
             quizTeacherRoundFinalized = false;
+            
+            // 5. Update teacher dashboard UI to show active question details
+            const activeQuestionPanel = document.getElementById('quiz-teacher-active-question');
+            if (activeQuestionPanel) {
+                activeQuestionPanel.style.display = 'block';
+                document.getElementById('teacher-question-type-badge').textContent = type === 'description-to-number' ? '설명 → 번호 매칭' : '번호 → 이름 객관식';
+                
+                const corrName = coordinates[randomId].name;
+                if (type === 'description-to-number') {
+                    document.getElementById('teacher-question-text').textContent = `[설명] ${coordinates[randomId].description}`;
+                    document.getElementById('teacher-question-answer-val').textContent = `${randomId}번 (${corrName})`;
+                } else {
+                    document.getElementById('teacher-question-text').textContent = `[위치] ${randomId}번 구조의 이름은?`;
+                    document.getElementById('teacher-question-answer-val').textContent = corrName;
+                }
+            }
+
+            // Show active buttons
+            document.getElementById('teacher-btn-launch').textContent = '다음 랜덤 문제 출제 🎲';
+            document.getElementById('teacher-btn-finish').style.display = 'block';
+
             renderQuizRankings();
-            const questions = buildQuestions(quizTeacherScope);
-            quizNetwork.broadcastSettings({ quizQuestions: questions, questionSeconds: QUESTION_SECONDS });
-            setTimeout(() => quizNetwork.broadcastStart({ quizQuestions: questions }), 120);
+
+            // 6. Broadcast the question settings & start command
+            quizNetwork.broadcastSettings({ quizQuestions: [question], questionSeconds: QUESTION_SECONDS });
+            setTimeout(() => quizNetwork.broadcastStart({ quizQuestions: [question] }), 120);
+
+            // 7. Start teacher countdown timer
+            startTeacherCountdownTimer();
+        }
+
+        function startTeacherCountdownTimer() {
+            if (teacherTimerInterval) clearInterval(teacherTimerInterval);
+            teacherTimerStartedAt = performance.now();
+            updateTeacherCountdown();
+            teacherTimerInterval = setInterval(updateTeacherCountdown, 50);
+        }
+
+        function updateTeacherCountdown() {
+            if (quizTeacherRoundFinalized) {
+                clearInterval(teacherTimerInterval);
+                return;
+            }
+            const elapsed = (performance.now() - teacherTimerStartedAt) / 1000;
+            const left = Math.max(0, QUESTION_SECONDS - elapsed);
+            
+            const timerEl = document.getElementById('teacher-question-timer-val');
+            if (timerEl) {
+                timerEl.textContent = left.toFixed(1) + '초';
+                if (left <= 1.5) {
+                    timerEl.style.color = 'var(--danger)';
+                } else {
+                    timerEl.style.color = 'var(--primary)';
+                }
+            }
+
+            if (left <= 0) {
+                clearInterval(teacherTimerInterval);
+                finishQuizForStudents();
+            }
         }
 
         async function finishQuizForStudents() {
             if (!quizNetwork || quizNetwork.role !== 'teacher') return;
-            quizNetwork.broadcastForceSubmit();
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            sortQuizResults();
-            renderQuizRankings();
+            if (quizTeacherRoundFinalized) return;
+            
             quizTeacherRoundFinalized = true;
-            openQuizTeacherRankingPopup();
-            quizNetwork.broadcastRoundReset();
+            if (teacherTimerInterval) clearInterval(teacherTimerInterval);
+            
+            // Broadcast force submit to any student who hasn't submitted yet
+            quizNetwork.broadcastForceSubmit();
+            
+            // Wait brief moment for any pending network updates to arrive
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            // Sort student results
+            sortQuizResults();
+            
+            // Render the final rankings on the teacher dashboard
+            renderQuizRankings();
+            
+            // Hide the '종료' button
+            document.getElementById('teacher-btn-finish').style.display = 'none';
+
+            // Get correct answer text
+            const activeQuestion = quizQuestions[0];
+            let correctText = '';
+            if (activeQuestion) {
+                correctText = activeQuestion.type === 'description-to-number' 
+                    ? `${activeQuestion.id}번` 
+                    : coordinates[activeQuestion.id].name;
+            }
+
+            // Broadcast the rankings and round end to students
+            quizNetwork.broadcastRankings({ 
+                rankings: quizStudentResults, 
+                finished: true,
+                correctValue: correctText
+            });
+        }
+
+        function resetClassroomSession() {
+            if (!quizNetwork || quizNetwork.role !== 'teacher') return;
+            if (confirm('모든 학생을 대기실로 보내고 대시보드를 초기화하시겠습니까?')) {
+                quizNetwork.broadcastRoundReset();
+                // Return teacher to lobby
+                document.getElementById('quiz-teacher-dashboard').style.display = 'none';
+                document.getElementById('lobby-screen').style.display = 'block';
+                
+                // Hide active question panel
+                const activeQuestionPanel = document.getElementById('quiz-teacher-active-question');
+                if (activeQuestionPanel) activeQuestionPanel.style.display = 'none';
+                
+                // Reset teacher buttons
+                document.getElementById('teacher-btn-launch').textContent = '실시간 퀴즈 시작';
+                document.getElementById('teacher-btn-finish').style.display = 'none';
+                
+                // Reset variables
+                quizQuestions = [];
+                quizStudentResults = [];
+                quizTeacherRoundFinalized = false;
+                if (teacherTimerInterval) clearInterval(teacherTimerInterval);
+                renderQuizRankings();
+            }
         }
 
         function sortQuizResults() {
-            quizStudentResults.sort((a, b) => b.correctCount - a.correctCount || a.elapsedSeconds - b.elapsedSeconds);
+            quizStudentResults.sort((a, b) => {
+                if (a.correct !== b.correct) {
+                    return a.correct ? -1 : 1;
+                }
+                return a.elapsedSeconds - b.elapsedSeconds;
+            });
+        }
+
+        function quizSubmissionStatusTable() {
+            const submittedIds = new Set(quizStudentResults.map(r => r.studentId));
+            const total = quizActiveStudents.length;
+            const submittedCount = quizStudentResults.length;
+            
+            let html = `<div style="margin-bottom: 0.5rem; font-weight: 700; color: var(--primary);">제출 완료: ${submittedCount} / ${total} 명</div>`;
+            
+            if (!quizActiveStudents.length) {
+                return html + '<p style="padding:1rem; color:var(--slate-600);">접속한 학생이 없습니다.</p>';
+            }
+            
+            html += `<table class="result-table" style="width:100%;">
+                <thead>
+                    <tr><th>학생 닉네임</th><th>제출 상태</th></tr>
+                </thead>
+                <tbody>`;
+            
+            quizActiveStudents.forEach(student => {
+                const hasSubmitted = submittedIds.has(student.id);
+                html += `<tr>
+                    <td>${student.nickname}</td>
+                    <td>
+                        <span class="badge" style="background-color: ${hasSubmitted ? 'var(--success)' : 'var(--slate-200)'}; color: ${hasSubmitted ? 'white' : 'var(--slate-600)'}; font-weight: 800; padding: 0.25rem 0.65rem; border-radius: 8px;">
+                            ${hasSubmitted ? '제출 완료 ✓' : '생각 중... 💬'}
+                        </span>
+                    </td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            return html;
         }
 
         function quizRankingTable() {
             if (!quizStudentResults.length) return '<p style="padding:1rem; color:var(--slate-600);">제출 결과가 없습니다.</p>';
             return `<table class="result-table" style="width:100%;">
-                <tr><th>순위</th><th>학생</th><th>정답</th><th>풀이 시간</th><th>미응답</th></tr>
-                ${quizStudentResults.map((result, index) => `
-                    <tr><td>${index + 1}</td><td>${result.nickname}</td><td>${result.correctCount} / ${result.totalQuestions}</td><td>${result.elapsedSeconds.toFixed(2)}초</td><td>${result.unansweredCount}</td></tr>
-                `).join('')}
+                <thead>
+                    <tr><th>순위</th><th>학생</th><th>정답 여부</th><th>소요 시간</th></tr>
+                </thead>
+                <tbody>
+                    ${quizStudentResults.map((result, index) => {
+                        const isCorrect = result.correct;
+                        return `<tr>
+                            <td><strong>${index + 1}위</strong></td>
+                            <td>${result.nickname}</td>
+                            <td>
+                                <span style="font-weight: 800; color: ${isCorrect ? 'var(--success)' : 'var(--danger)'};">
+                                    ${isCorrect ? 'O (정답)' : 'X (오답)'}
+                                </span>
+                            </td>
+                            <td>${result.elapsedSeconds.toFixed(2)}초</td>
+                        </tr>`;
+                    }).join('')}
+                </tbody>
             </table>`;
         }
 
         function renderQuizRankings() {
-            document.getElementById('quiz-teacher-ranking-inline').innerHTML = quizRankingTable();
+            const container = document.getElementById('quiz-teacher-ranking-inline');
+            if (quizTeacherRoundFinalized) {
+                container.innerHTML = quizRankingTable();
+            } else {
+                container.innerHTML = quizSubmissionStatusTable();
+            }
         }
 
         function openQuizTeacherRankingPopup() {
@@ -2457,6 +2773,7 @@
         window.launchQuizForStudents = launchQuizForStudents;
         window.finishQuizForStudents = finishQuizForStudents;
         window.closeQuizTeacherRankingPopup = closeQuizTeacherRankingPopup;
+        window.resetClassroomSession = resetClassroomSession;
 
         switchQuizMode(new URLSearchParams(window.location.search).get('tab') === 'teacher' ? 'teacher' : 'single');
     </script>
