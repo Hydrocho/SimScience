@@ -1316,8 +1316,20 @@
                         </button>
                     </div>
 
-                    <!-- Teacher control container (only visible when logged in) -->
-                    <div id="teacher-dashboard-block" style="display: none; text-align: left;">
+                    <!-- Teacher entry card (only visible when logged in) -->
+                    <div id="teacher-dashboard-block" style="display: none;">
+                        <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 20px 0;">
+                            <p style="font-size: 1.25rem; font-weight: 700; color: #1e293b; margin: 0; text-align: center;">
+                                세션 PIN: <strong id="teacher-pin-txt" style="color: #4f46e5; font-size: 1.75rem; font-weight: 800; margin-left: 8px; letter-spacing: 1px;">------</strong>
+                            </p>
+                            <button class="start-btn" onclick="enterTeacherDashboard()" style="width: 100%; max-width: 280px; margin: 0;">입장하기</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Teacher Dedicated Dashboard Screen -->
+            <section id="teacher-detail-dashboard" style="display: none;">
                         <div class="teacher-dashboard-layout">
                             
                             <!-- Teacher Sidebar Controls -->
@@ -1326,7 +1338,7 @@
                                     로그인 상태 확인 중...
                                 </div>
                                 <div class="pin-display-card" style="text-align: center; margin-bottom: 0.5rem;">
-                                    PIN: <span id="teacher-pin-txt">------</span>
+                                    PIN: <span id="teacher-pin-value-sidebar">------</span>
                                 </div>
 
                                 <div class="grid-stats-row">
@@ -1406,9 +1418,7 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
+            </section>
 
             <!-- Game Arena Screen -->
             <div id="arena-screen" class="arena-screen">
@@ -2509,6 +2519,7 @@
                     
                     const pin = FIXED_SESSION_PIN;
                     document.getElementById('teacher-pin-txt').textContent = pin;
+                    document.getElementById('teacher-pin-value-sidebar').textContent = pin;
                     document.getElementById('teacher-pin-value-detail').textContent = pin;
                     
                     userRole = 'teacher';
@@ -2574,6 +2585,16 @@
                 loginBlock.style.display = 'block';
                 dashboardBlock.style.display = 'none';
             }
+        }
+
+        function enterTeacherDashboard() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+
+            lobbyScreen.style.display = 'none';
+            document.getElementById('teacher-detail-dashboard').style.display = 'block';
+            studentResults = [];
+            document.getElementById('completed-students-count').textContent = '0';
+            renderTeacherRankingsTableDetail();
         }
 
         // --- Teacher Settings Sync Broadcast ---
@@ -2740,6 +2761,7 @@
         window.startGame = startGame;
         window.joinAsStudent = joinAsStudent;
         window.handleTeacherLogin = handleTeacherLogin;
+        window.enterTeacherDashboard = enterTeacherDashboard;
         window.teacherSyncSettings = teacherSyncSettings;
         window.teacherTriggerLaunch = teacherTriggerLaunch;
         window.capturePhoto = capturePhoto;
