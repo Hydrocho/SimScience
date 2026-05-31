@@ -448,40 +448,6 @@
             display: none;
         }
 
-        .hud-panel {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem;
-            background: var(--glass-bg);
-            border: 1px solid var(--glass-border);
-            border-radius: var(--radius-md);
-        }
-
-        .hud-item {
-            text-align: center;
-        }
-
-        .hud-label {
-            font-size: 0.7rem;
-            font-weight: 700;
-            color: var(--slate-400);
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            margin-bottom: 0.2rem;
-        }
-
-        .hud-val {
-            font-family: 'Outfit', sans-serif;
-            font-size: 1.35rem;
-            font-weight: 800;
-            color: var(--slate-50);
-        }
-        
-        .hud-val.combo {
-            color: var(--neon-pink);
-            text-shadow: 0 0 10px rgba(236, 72, 153, 0.1);
-        }
 
         /* Realtime Eye Canvas Panel */
         .eye-canvas-panel {
@@ -1485,21 +1451,6 @@
                         </div>
                     </div>
 
-                    <!-- Bot HUD details -->
-                    <div class="hud-panel">
-                        <div class="hud-item">
-                            <div class="hud-label">진행 라운드</div>
-                            <div class="hud-val" id="round-val">1 / 3</div>
-                        </div>
-                        <div class="hud-item" style="border-left: 1px solid rgba(0,0,0,0.06); border-right: 1px solid rgba(0,0,0,0.06); padding: 0 2rem;">
-                            <div class="hud-label">현재 누적 점수</div>
-                            <div class="hud-val" id="score-val" style="color:var(--primary)">0 점</div>
-                        </div>
-                        <div class="hud-item">
-                            <div class="hud-label">콤보</div>
-                            <div class="hud-val combo" id="combo-val">0 Combo</div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- Right: Sidebars -->
@@ -2125,9 +2076,7 @@
         }
 
         function updateHud() {
-            document.getElementById('round-val').textContent = `${currentRound} / ${maxRounds}`;
-            document.getElementById('score-val').textContent = `${score} 점`;
-            document.getElementById('combo-val').textContent = `${combo} Combo`;
+            // HUD removed
         }
 
         // --- Procedural 2D Capture Draw inside Polaroid ---
