@@ -1483,26 +1483,7 @@
                     <!-- Muscle control board -->
                     <div class="focus-control-panel">
                         <div class="panel-heading" style="color: var(--neon-yellow)">
-                            <i class="fa-solid fa-expand"></i> 동공 조절 게이지 (노출 매칭)
-                        </div>
-                        
-                        <div class="focus-gauge-wrapper">
-                            <div class="slider-header">
-                                <span>어두움 (저노출)</span>
-                                <span>밝음 (과노출)</span>
-                            </div>
-                            <div class="gauge-bar-container">
-                                <div id="perfect-range-bar"></div>
-                                <div id="focal-plane-marker"></div>
-                            </div>
-                            <div class="gauge-ticks">
-                                <span>- 노출</span>
-                                <span style="color:var(--neon-green)">[ 적정 범위 ]</span>
-                                <span>+ 노출</span>
-                            </div>
-                            <div class="target-value-container" style="text-align: center; font-size: 0.8rem; font-weight: 700; color: var(--slate-300); margin-top: 4px; letter-spacing: -0.02em;">
-                                적정값(목표값): <span id="target-value-display" style="color: var(--neon-green); font-size: 0.85rem;">0</span>%
-                            </div>
+                            <i class="fa-solid fa-expand"></i> 동공 크기 조절
                         </div>
 
                         <div class="control-button-area" style="margin-top:0.5rem; display:grid; grid-template-columns:1fr 1fr; gap:0.75rem;">
@@ -1935,7 +1916,9 @@
 
             // Sync marker position in focus control gauge directly based on irisContraction (0 to 100%)
             const markerPercent = irisContraction * 100;
-            focalPlaneMarker.style.left = `${markerPercent}%`;
+            if (focalPlaneMarker) {
+                focalPlaneMarker.style.left = `${markerPercent}%`;
+            }
 
             // Sync perfect range bar position dynamically based on targetContraction
             const perfectRangeBar = document.getElementById('perfect-range-bar');
