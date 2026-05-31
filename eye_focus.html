@@ -2743,6 +2743,10 @@
             gameAudio.playShutter();
 
             // 3. Extract screen image from WebGL canvas
+            if (!isThreeInitialized || !renderer || !composer) {
+                console.error('Cannot capture photo before the 3D scene is initialized.');
+                return;
+            }
             renderer.render(scene, camera);
             composer.render();
             const dataUrl = renderer.domElement.toDataURL('image/png');
@@ -2915,6 +2919,10 @@
                     lobbyScreen.style.display = 'none';
                     arenaScreen.style.display = 'grid';
                     gameMode = 'active';
+
+                    if (!isThreeInitialized) {
+                        initThreeJS();
+                    }
 
                     // Position the target mesh exactly at the distance set by teacher
                     if (meshes[targetObjectIndex]) {
@@ -3624,6 +3632,10 @@
 
         function animate() {
             if (gameMode !== 'active') return;
+            if (!isThreeInitialized || !renderer || !composer) {
+                console.error('Cannot animate before the 3D scene is initialized.');
+                return;
+            }
 
             requestAnimationFrame(animate);
 
