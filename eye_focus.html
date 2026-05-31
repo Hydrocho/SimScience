@@ -1311,14 +1311,7 @@
             <aside class="sidebar">
 
 
-                <div class="eye-canvas-panel">
-                    <div class="panel-heading"><i class="fa-solid fa-eye"></i><span>실시간 초점 상태</span></div>
-                    <div class="eye-diagram-container"><canvas id="eye-canvas" width="600" height="300"></canvas></div>
-                    <div class="eye-labels-indicator">
-                        <span id="label-ciliary">섬모체 수축: 0%</span>
-                        <span id="label-lens">수정체: 얇음</span>
-                    </div>
-                </div>
+
 
                 <div class="focus-control-panel">
                     <div class="panel-heading"><i class="fa-solid fa-compress"></i><span>초점 조절</span></div>
@@ -1665,7 +1658,7 @@
 
         // 2D Anatomy Eye Diagram Canvas
         const eyeCanvas = document.getElementById('eye-canvas');
-        const eyeCtx = eyeCanvas.getContext('2d');
+        const eyeCtx = eyeCanvas ? eyeCanvas.getContext('2d') : null;
         const labelCiliary = document.getElementById('label-ciliary');
         const labelLens = document.getElementById('label-lens');
 
@@ -2878,69 +2871,71 @@
 
         // --- Render the 2D Eye Accommodation Diagram ---
         function drawEyeDiagram(ratio) {
-            const ctx = eyeCtx;
-            const w = eyeCanvas.width;   // 600
-            const h = eyeCanvas.height;  // 300
+            if (eyeCanvas && eyeCtx) {
+                const ctx = eyeCtx;
+                const w = eyeCanvas.width;   // 600
+                const h = eyeCanvas.height;  // 300
 
-            ctx.clearRect(0, 0, w, h);
+                ctx.clearRect(0, 0, w, h);
 
-            // ──────────────────────────────────────────
-            // 남은 시간 (중앙에 원형 타이머 그리기)
-            // ──────────────────────────────────────────
-            const leftCx = w / 2;      // 300 (Center of canvas)
-            const leftCy = h / 2;      // 150
+                // ──────────────────────────────────────────
+                // 남은 시간 (중앙에 원형 타이머 그리기)
+                // ──────────────────────────────────────────
+                const leftCx = w / 2;      // 300 (Center of canvas)
+                const leftCy = h / 2;      // 150
 
-            // 섹션 제목
-            ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
-            ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
-            ctx.textAlign = 'center';
-            ctx.fillText('남은 시간', leftCx, 30);
+                // 섹션 제목
+                ctx.font = 'bold 14px "Noto Sans KR", sans-serif';
+                ctx.fillStyle = 'rgba(148, 163, 184, 0.7)';
+                ctx.textAlign = 'center';
+                ctx.fillText('남은 시간', leftCx, 30);
 
-            // 남은 시간 수치
-            const timeLeft = Math.max(0, Math.ceil(shutterWaitTime));
-            const minutes = Math.floor(timeLeft / 60);
-            const seconds = timeLeft % 60;
-            const timeStr = minutes > 0
-                ? `${minutes}:${String(seconds).padStart(2, '0')}`
-                : `${seconds}`;
+                // 남은 시간 수치
+                const timeLeft = Math.max(0, Math.ceil(shutterWaitTime));
+                const minutes = Math.floor(timeLeft / 60);
+                const seconds = timeLeft % 60;
+                const timeStr = minutes > 0
+                    ? `${minutes}:${String(seconds).padStart(2, '0')}`
+                    : `${seconds}`;
 
-            // 원형 타이머 배경
-            const timerR = 72;
-            ctx.beginPath();
-            ctx.arc(leftCx, leftCy, timerR, 0, Math.PI * 2);
-            ctx.fillStyle = 'rgba(255,255,255,0.04)';
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-            ctx.lineWidth = 2;
-            ctx.stroke();
+                // 원형 타이머 배경
+                const timerR = 72;
+                ctx.beginPath();
+                ctx.arc(leftCx, leftCy, timerR, 0, Math.PI * 2);
+                ctx.fillStyle = 'rgba(255,255,255,0.04)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+                ctx.lineWidth = 2;
+                ctx.stroke();
 
-            // 남은 시간 진행 바 (총 게임시간 기준)
-            const totalTime = 15.0;
-            const progressRatio = Math.max(0, Math.min(1, shutterWaitTime / totalTime));
-            const startAngle = -Math.PI / 2;
-            const endAngle = startAngle + progressRatio * Math.PI * 2;
-            const timerColor = shutterWaitTime > 5 ? '#38bdf8' : '#f87171';
-            ctx.beginPath();
-            ctx.arc(leftCx, leftCy, timerR, startAngle, endAngle);
-            ctx.strokeStyle = timerColor;
-            ctx.lineWidth = 6;
-            ctx.lineCap = 'round';
-            ctx.stroke();
-            ctx.lineCap = 'butt';
+                // 남은 시간 진행 바 (총 게임시간 기준)
+                const totalTime = 15.0;
+                const progressRatio = Math.max(0, Math.min(1, shutterWaitTime / totalTime));
+                const startAngle = -Math.PI / 2;
+                const endAngle = startAngle + progressRatio * Math.PI * 2;
+                const timerColor = shutterWaitTime > 5 ? '#38bdf8' : '#f87171';
+                ctx.beginPath();
+                ctx.arc(leftCx, leftCy, timerR, startAngle, endAngle);
+                ctx.strokeStyle = timerColor;
+                ctx.lineWidth = 6;
+                ctx.lineCap = 'round';
+                ctx.stroke();
+                ctx.lineCap = 'butt';
 
-            // 시간 숫자
-            const timeFontSize = timeStr.length > 3 ? 44 : 58;
-            ctx.font = `900 ${timeFontSize}px 'Outfit', monospace`;
-            ctx.fillStyle = shutterWaitTime > 5 ? 'rgba(255,255,255,0.95)' : '#f87171';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(timeStr, leftCx, leftCy);
-            ctx.textBaseline = 'alphabetic';
+                // 시간 숫자
+                const timeFontSize = timeStr.length > 3 ? 44 : 58;
+                ctx.font = `900 ${timeFontSize}px 'Outfit', monospace`;
+                ctx.fillStyle = shutterWaitTime > 5 ? 'rgba(255,255,255,0.95)' : '#f87171';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(timeStr, leftCx, leftCy);
+                ctx.textBaseline = 'alphabetic';
 
-            // 단위
-            ctx.font = 'bold 13px "Noto Sans KR", sans-serif';
-            ctx.fillStyle = 'rgba(148,163,184,0.7)';
-            ctx.fillText('초', leftCx, leftCy + timerR + 20);
+                // 단위
+                ctx.font = 'bold 13px "Noto Sans KR", sans-serif';
+                ctx.fillStyle = 'rgba(148,163,184,0.7)';
+                ctx.fillText('초', leftCx, leftCy + timerR + 20);
+            }
 
             // ──────────────────────────────────────────
             // HUD 수정체 캔버스 그리기
@@ -3033,14 +3028,18 @@
             // ──────────────────────────────────────────
             // 하단 레이블 DOM 업데이트
             // ──────────────────────────────────────────
-            labelCiliary.textContent = `섬모체 수축: ${Math.round(ratio * 100)}%`;
-            labelCiliary.className = ratio > 0.5 ? 'active' : '';
+            if (labelCiliary) {
+                labelCiliary.textContent = `섬모체 수축: ${Math.round(ratio * 100)}%`;
+                labelCiliary.className = ratio > 0.5 ? 'active' : '';
+            }
 
-            let thicknessTxt = '보통 (Normal)';
-            if (ratio > 0.7) thicknessTxt = '두꺼움 (Thick)';
-            else if (ratio < 0.3) thicknessTxt = '얇음 (Thin)';
-            labelLens.textContent = `수정체: ${thicknessTxt}`;
-            labelLens.className = ratio > 0.7 ? 'active' : '';
+            if (labelLens) {
+                let thicknessTxt = '보통 (Normal)';
+                if (ratio > 0.7) thicknessTxt = '두꺼움 (Thick)';
+                else if (ratio < 0.3) thicknessTxt = '얇음 (Thin)';
+                labelLens.textContent = `수정체: ${thicknessTxt}`;
+                labelLens.className = ratio > 0.7 ? 'active' : '';
+            }
         }
 
         // --- Main Animation Frame Loop ---
