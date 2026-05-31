@@ -1420,7 +1420,7 @@
                 <div class="setup-controls">
                     <div class="input-group">
                         <label for="student-pin-input">PIN 번호</label>
-                        <input type="text" id="student-pin-input" placeholder="PIN 번호">
+                        <input type="text" id="student-pin-input" value="672328" readonly>
                     </div>
                     <div class="input-group">
                         <label for="student-nickname-input">닉네임</label>
@@ -1651,7 +1651,7 @@
                     <div class="control-button-area">
                         <button class="hold-btn" id="hold-action-btn">
                             <span>섬모체 수축</span>
-                            <span class="btn-subtext">누르고 있는 동안 가까운 곳에 초점을 맞춥니다.</span>
+                            <span class="btn-subtext">버튼을 반복해서 눌러 가까운 곳에 초점을 맞춥니다. 누르지 않으면 자동으로 이완됩니다.</span>
                         </button>
                         <div class="keyboard-hint">Spacebar 또는 위쪽 방향키를 사용할 수 있습니다.</div>
                     </div>
@@ -1917,6 +1917,8 @@
         // Supabase Project Creds
         const SUPABASE_URL = "https://vdyvpsteofvhbvvrilxe.supabase.co";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU";
+
+        const FIXED_SESSION_PIN = '672328';
 
         // Game States & Configurations
         let gameMode = 'lobby'; // lobby, active, result, finished
@@ -2773,8 +2775,8 @@
             let feedback = '';
 
             const focusDirectionFeedback = focalDistance > actualDist 
-                ? "초점 거리가 타겟보다 너무 멉니다. 섬모체를 수축시켜(버튼을 눌러) 수정체를 더 두껍게 만들어 초점을 가까이 당기세요."
-                : "초점 거리가 타겟보다 너무 가깝습니다! 섬모체를 이완시켜(버튼을 놓아) 수정체를 얇게 만들어 초점을 멀리 보내세요.";
+                ? "초점 거리가 타겟보다 너무 멉니다. 버튼을 반복해서 눌러 섬모체를 수축시키고, 수정체를 더 두껍게 만들어 초점을 가까이 당기세요."
+                : "초점 거리가 타겟보다 너무 가깝습니다! 버튼 입력을 멈추고 섬모체를 이완시켜 수정체를 얇게 만들어 초점을 멀리 보내세요.";
 
             if (errOffset <= 2.0) { // 오차 범위 판정 (PERFECT)
                 rank = 'PERFECT';
@@ -2880,7 +2882,7 @@
 
         // --- Student Join Action ---
         async function joinAsStudent() {
-            const pin = document.getElementById('student-pin-input').value.trim();
+            const pin = FIXED_SESSION_PIN;
             const nickname = document.getElementById('student-nickname-input').value.trim();
             if (!pin || pin.length < 4) {
                 alert("올바른 PIN 번호를 입력해주세요!");
@@ -2976,8 +2978,9 @@
                     dashboardBlock.style.display = 'block';
                     document.getElementById('teacher-email-txt').innerHTML = `<i class="fa-solid fa-circle-check" style="color:var(--neon-green)"></i> 승인완료: ${email}`;
                     
-                    // Generate Session PIN
-                    const pin = Math.floor(100000 + Math.random() * 900000).toString();
+                    // Random PIN generation kept for future use:
+                    // const pin = Math.floor(100000 + Math.random() * 900000).toString();
+                    const pin = FIXED_SESSION_PIN;
                     document.getElementById('teacher-pin-txt').textContent = pin;
                     document.getElementById('teacher-pin-value-detail').textContent = pin;
                     document.getElementById('large-lobby-pin-value-detail').textContent = pin;
