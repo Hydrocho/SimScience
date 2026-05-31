@@ -1064,19 +1064,7 @@
                         </div>
                     </div>
 
-                    <!-- Teacher Link Copy Card -->
-                    <div class="teacher-share-card" style="background: var(--primary-light); border: 1.5px dashed var(--primary); padding: 1rem; border-radius: 12px; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.5rem; text-align: left;">
-                        <div style="font-size: 0.8rem; font-weight: 800; color: var(--primary); display: flex; align-items: center; gap: 0.35rem;">
-                            <i class="fa-solid fa-chalkboard-user"></i>
-                            <span>교사용 기능: 학생용 맞춤 퀴즈 링크</span>
-                        </div>
-                        <p style="font-size: 0.75rem; color: var(--slate-600); line-height: 1.4;">
-                            선택된 문제 세트로 링크를 복사하여 학생들에게 배포할 수 있습니다.
-                        </p>
-                        <button class="share-copy-btn" onclick="copyTeacherShareLink()" style="background: white; border: 1px solid var(--primary); color: var(--primary); font-weight: 700; padding: 0.5rem; border-radius: 8px; font-size: 0.8rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.35rem; transition: all 0.2s; width: 100%;">
-                            <i class="fa-solid fa-link"></i> 현재 출제 세트 링크 복사
-                        </button>
-                    </div>
+
 
                     <button class="start-btn" onclick="startQuizRace()">
                         <i class="fa-solid fa-flag-checkered"></i> 레이스 스타트!
@@ -1433,17 +1421,7 @@
 
         // Initialize Lobby Options
         window.addEventListener('DOMContentLoaded', () => {
-            // Check for q query parameter (teacher share link)
-            const urlParams = new URLSearchParams(window.location.search);
-            const qParam = urlParams.get('q');
-            if (qParam) {
-                const parsed = qParam.split(',').map(n => parseInt(n.trim())).filter(n => !isNaN(n) && n >= 1 && n <= 11);
-                if (parsed.length >= 2) {
-                    activeQuestionsPool = parsed;
-                    activeQuestionsPool.sort((a, b) => a - b);
-                    setTimeout(() => showToast("🎒 교사가 지정한 문제 세트가 로드되었습니다!"), 500);
-                }
-            }
+
 
             renderLobbyDiagramBadges();
             renderLobbySelectionChips();
@@ -1533,18 +1511,7 @@
             showToast("🎯 출제 문항 프리셋이 적용되었습니다.");
         }
 
-        function copyTeacherShareLink() {
-            const qStr = activeQuestionsPool.join(',');
-            const baseUrl = window.location.origin + window.location.pathname;
-            const shareUrl = `${baseUrl}?q=${qStr}`;
-            
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                showToast("🔗 출제 공유 링크가 클립보드에 복사되었습니다!");
-            }).catch(err => {
-                console.error("Link copy failed:", err);
-                showToast("❌ 링크 복사에 실패했습니다. 주소 표시줄에서 복사해주세요.");
-            });
-        }
+
 
         function showToast(msg) {
             let toast = document.getElementById('custom-toast');
