@@ -1600,9 +1600,12 @@
         
         let ciliaryContraction = 0.0; // 0.0 (fully relaxed) to 1.0 (fully contracted)
         let isButtonPressed = false;
+        const ciliaryRelaxationSpeed = 0.175;
+        const relaxedHoldClicksPerSecond = 1.5;
+        const contractedHoldClicksPerSecond = 4.0;
         let focalDistance = 37.5; // Default starts at 37.5m (ranges between 7.5m and 52.5m, 1.5諛?議곗젙 諛섏쁺)
         let targetDistance = 35.0;
-        let shutterWaitTime = 150.0; // Extended test duration (seconds)
+        let shutterWaitTime = 15.0;
 
         let soundEnabled = true;
 
@@ -2237,7 +2240,7 @@
             score = 0;
             combo = 0;
             
-            shutterWaitTime = 150.0;
+            shutterWaitTime = 15.0;
 
             updateHud();
 
@@ -2311,6 +2314,7 @@
         function resetFocusForRound() {
             ciliaryContraction = 0.0;
             isButtonPressed = false;
+            holdBtn.classList.remove('pressed');
             focalDistance = 37.5;
 
             if (focalFrameMesh) {
@@ -2804,13 +2808,7 @@
 
         // --- Physics Update & Button Control Loop ---
         function updatePhysics(deltaTime) {
-            const speed = 0.175;
-            
-            if (isButtonPressed) {
-                ciliaryContraction = Math.min(1.0, ciliaryContraction + speed * deltaTime);
-            } else {
-                ciliaryContraction = Math.max(0.0, ciliaryContraction - speed * deltaTime);
-            }
+            ciliaryContraction = Math.max(0.0, ciliaryContraction - ciliaryRelaxationSpeed * deltaTime);
 
             const minFocal = 7.5; // 1.5배 공간 깊이 반영
             const maxFocal = 52.5; // 1.5배 공간 깊이 반영
@@ -3100,14 +3098,27 @@
         }
 
         // --- Button & Input Bindings ---
+        function contractCiliaryOnce() {
+            const holdClicksPerSecond = THREE.MathUtils.lerp(
+                relaxedHoldClicksPerSecond,
+                contractedHoldClicksPerSecond,
+                ciliaryContraction
+            );
+            const contractionPerPress = ciliaryRelaxationSpeed / holdClicksPerSecond;
+            ciliaryContraction = Math.min(1.0, ciliaryContraction + contractionPerPress);
+        }
+
         function setPressed(pressed) {
-            if (gameMode !== 'active') return;
-            isButtonPressed = pressed;
-            if (pressed) {
-                holdBtn.classList.add('pressed');
-            } else {
+            if (!pressed) {
+                isButtonPressed = false;
                 holdBtn.classList.remove('pressed');
+                return;
             }
+
+            if (gameMode !== 'active' || isButtonPressed) return;
+            isButtonPressed = pressed;
+            holdBtn.classList.add('pressed');
+            contractCiliaryOnce();
         }
 
         // Mouse & Touch triggers on button
@@ -3123,11 +3134,13 @@
             setPressed(true);
         });
         holdBtn.addEventListener('touchend', () => setPressed(false));
+        holdBtn.addEventListener('touchcancel', () => setPressed(false));
 
         // Keyboard bindings
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space' || e.code === 'ArrowUp') {
                 e.preventDefault();
+                if (e.repeat) return;
                 setPressed(true);
             }
         });
