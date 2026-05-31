@@ -1003,7 +1003,13 @@
                 </div>
             </div>
             
-            <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+                <!-- Sound switch relocated to header -->
+                <label class="sound-switch" style="font-size: 0.85rem; font-weight: 700; color: var(--slate-600); display: flex; align-items: center; gap: 0.35rem; cursor: pointer; user-select: none; background: white; padding: 0.5rem 1rem; border-radius: 8px; border: 1px solid var(--slate-200); box-shadow: var(--shadow-sm); transition: all 0.2s;">
+                    <input type="checkbox" id="chk-sound" checked style="accent-color: var(--primary); width: 1rem; height: 1rem; cursor: pointer;">
+                    <span><i class="fa-solid fa-volume-high"></i> 효과음</span>
+                </label>
+
                 <a href="index.html" class="link-back">
                     <i class="fa-solid fa-arrow-left"></i> 과학실험실 홈으로 돌아가기
                 </a>
@@ -1127,38 +1133,30 @@
             <!-- Left Display: Prompter and Image -->
             <div style="display: flex; flex-direction: column; gap: 1rem;">
                 
-                <!-- Live Scoreboard -->
-                <div class="glass-panel scoreboard-panel">
-                    <div style="display: flex; align-items: center;">
-                        <div class="timer-stopwatch" id="timer-stopwatch">
-                            <span>00:00</span><span class="ms">.00</span>
+                <!-- Text explanation billboard -->
+                <div class="billboard-prompter" style="display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1; text-align: left;">
+                        <div class="billboard-lbl" style="display: flex; align-items: center; gap: 0.5rem;">
+                            <span>출제 부위 기능 설명</span>
+                            <!-- Compact Combo meter inside question badge -->
+                            <div class="combo-meter" id="combo-meter" style="opacity: 0; font-family: 'Outfit', sans-serif; font-weight: 900; font-size: 0.75rem; color: var(--neon-pink); background: var(--neon-pink-light); padding: 0.15rem 0.5rem; border-radius: 9999px; box-shadow: 0 2px 6px rgba(236, 72, 153, 0.1); display: inline-flex; align-items: center; gap: 0.25rem; transition: opacity 0.2s;">
+                                <i class="fa-solid fa-fire animate-bounce"></i>
+                                <span><span id="combo-count">0</span> COMBO</span>
+                            </div>
                         </div>
+                        <div class="billboard-desc" id="question-billboard-text">
+                            설명이 여기에 출제됩니다. 알맞은 숫자를 아래 그림에서 고르세요!
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
                         <!-- Penalty time addition notifier -->
-                        <div class="penalty-display" id="penalty-display">
+                        <div class="penalty-display" id="penalty-display" style="font-family: 'Outfit', monospace; font-size: 0.85rem; font-weight: 700; color: var(--danger); background: var(--danger-light); padding: 0.25rem 0.5rem; border-radius: 6px; display: none; align-items: center; gap: 0.25rem;">
                             <i class="fa-solid fa-circle-exclamation"></i> 오답 +3.0s
                         </div>
-                    </div>
-
-                    <div class="arena-header-controls">
-                        <!-- Sound toggle -->
-                        <label class="sound-switch">
-                            <input type="checkbox" id="chk-sound" checked>
-                            <span><i class="fa-solid fa-volume-high"></i> 효과음</span>
-                        </label>
-
-                        <!-- Combo meter -->
-                        <div class="combo-meter" id="combo-meter" style="opacity: 0;">
-                            <i class="fa-solid fa-fire animate-bounce"></i>
-                            <span><span id="combo-count">0</span> COMBO</span>
+                        <!-- Universal timer container (stopwatch or countdown) -->
+                        <div id="quiz-countdown-timer" style="display: none; font-family: 'Outfit', monospace; font-size: 1.8rem; font-weight: 900; color: var(--primary); margin-left: 0.5rem; align-items: center; justify-content: center; min-width: 64px; height: 64px; padding: 0 16px; border-radius: 32px; border: 3px solid var(--primary); box-shadow: 0 4px 12px rgba(79, 70, 229, 0.15); background: white; line-height: 1; flex-shrink: 0; white-space: nowrap;">
+                            00:00.00
                         </div>
-                    </div>
-                </div>
-
-                <!-- Text explanation billboard -->
-                <div class="billboard-prompter">
-                    <div class="billboard-lbl">출제 부위 기능 설명</div>
-                    <div class="billboard-desc" id="question-billboard-text">
-                        설명이 여기에 출제됩니다. 알맞은 숫자를 아래 그림에서 고르세요!
                     </div>
                 </div>
                 <div id="quiz-name-options" class="glass-panel" style="display:none; grid-template-columns:repeat(auto-fit, minmax(110px, 1fr)); gap:0.5rem;"></div>
@@ -1557,6 +1555,15 @@
             document.getElementById('lobby-screen').style.display = 'none';
             document.getElementById('arena-screen').style.display = 'grid';
 
+            // Ensure proper timers displayed
+            const qTimer = document.getElementById('quiz-countdown-timer');
+            if (qTimer) {
+                qTimer.style.display = 'flex';
+                qTimer.style.color = 'var(--primary)';
+                qTimer.style.borderColor = 'var(--primary)';
+                qTimer.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.15)';
+            }
+
             // Configure keypad keys (disable buttons that are not in play)
             for (let i = 1; i <= 11; i++) {
                 const btn = document.getElementById(`pad-${i}`);
@@ -1649,8 +1656,10 @@
             const displayMinSec = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
             const displayMs = '.' + String(ms).padStart(2, '0');
 
-            const stopwatchEl = document.getElementById('timer-stopwatch');
-            stopwatchEl.innerHTML = `${displayMinSec}<span class="ms">${displayMs}</span>`;
+            const stopwatchEl = document.getElementById('quiz-countdown-timer');
+            if (stopwatchEl) {
+                stopwatchEl.innerHTML = `${displayMinSec}<span style="font-size:1.15rem; color:var(--slate-600); font-weight:700;">${displayMs}</span>`;
+            }
 
             gameTimer = requestAnimationFrame(updateStopwatch);
         }
@@ -1870,6 +1879,10 @@
             document.getElementById('arena-screen').style.display = 'none';
             document.getElementById('lobby-screen').style.display = 'block';
             
+            // Reset timers
+            const qTimer = document.getElementById('quiz-countdown-timer');
+            if (qTimer) qTimer.style.display = 'none';
+            
             // Re-render lobby diagram and chips to ensure proper sync
             renderLobbyDiagramBadges();
             renderLobbySelectionChips();
@@ -2030,6 +2043,16 @@
             document.getElementById('quiz-teacher-dashboard').style.display = 'none';
             document.getElementById('arena-screen').style.display = 'grid';
             document.getElementById('result-modal-overlay').classList.remove('show');
+
+            // Show countdown timer in billboard
+            const qTimer = document.getElementById('quiz-countdown-timer');
+            if (qTimer) {
+                qTimer.style.display = 'flex';
+                qTimer.style.color = 'var(--primary)';
+                qTimer.style.borderColor = 'var(--primary)';
+                qTimer.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.15)';
+            }
+
             renderQuizDiagram();
             renderQuizStatus();
             showQuizQuestion();
@@ -2107,7 +2130,19 @@
         function updateQuizCountdown() {
             const elapsed = (performance.now() - quizQuestionStartedAt) / 1000;
             const left = Math.max(0, QUESTION_SECONDS - elapsed);
-            document.getElementById('timer-stopwatch').innerHTML = `<span>${left.toFixed(1)}초</span>`;
+            const qTimer = document.getElementById('quiz-countdown-timer');
+            if (qTimer) {
+                qTimer.textContent = left.toFixed(1);
+                if (left <= 1.5) {
+                    qTimer.style.color = 'var(--danger)';
+                    qTimer.style.borderColor = 'var(--danger)';
+                    qTimer.style.boxShadow = '0 4px 12px rgba(239, 68, 68, 0.25)';
+                } else {
+                    qTimer.style.color = 'var(--primary)';
+                    qTimer.style.borderColor = 'var(--primary)';
+                    qTimer.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.15)';
+                }
+            }
             if (left <= 0) {
                 clearInterval(quizQuestionTimer);
                 completeQuizQuestion();
@@ -2222,6 +2257,12 @@
             document.getElementById('result-modal-overlay').classList.remove('show');
             document.getElementById('arena-screen').style.display = 'none';
             document.getElementById('lobby-screen').style.display = 'block';
+
+            // Restore default timer layouts
+            const qTimer = document.getElementById('quiz-countdown-timer');
+            if (qTimer) qTimer.style.display = 'none';
+            const stopwatch = document.getElementById('timer-stopwatch');
+            if (stopwatch) stopwatch.style.display = 'flex';
         }
 
         function pressPad(value) {
