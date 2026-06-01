@@ -58,7 +58,34 @@ export class ClassroomNetwork {
     this.pin = pin;
     this.nickname = nickname;
     this.role = role;
-    this.id = role === 'teacher' ? 'teacher' : 'std_' + Math.random().toString(36).substring(2, 11);
+    
+    if (role === 'teacher') {
+      this.id = 'teacher';
+    } else {
+      const sessionKey = `classroom_session_${pin}`;
+      let studentId = null;
+      try {
+        const saved = sessionStorage.getItem(sessionKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.nickname === nickname) {
+            studentId = parsed.id;
+          }
+        }
+      } catch (e) {
+        console.warn("[Network] sessionStorage read failed:", e);
+      }
+
+      if (!studentId) {
+        studentId = 'std_' + Math.random().toString(36).substring(2, 11);
+        try {
+          sessionStorage.setItem(sessionKey, JSON.stringify({ id: studentId, nickname }));
+        } catch (e) {
+          console.warn("[Network] sessionStorage write failed:", e);
+        }
+      }
+      this.id = studentId;
+    }
 
     const channelName = `classroom_room_${pin}`;
     this.channel = this.client.channel(channelName, {
@@ -76,26 +103,43 @@ export class ClassroomNetwork {
       });
 
       // Filter and format students
-      const students = rawUsers.filter(u => u.role === 'student');
+      const rawStudents = rawUsers.filter(u => u.role === 'student');
       
+      // Sort chronologically by joinedAt so we preserve the original order of connection
+      rawStudents.sort((a, b) => {
+        const timeA = a.joinedAt ? new Date(a.joinedAt).getTime() : 0;
+        const timeB = b.joinedAt ? new Date(b.joinedAt).getTime() : 0;
+        return timeA - timeB;
+      });
+
       // Check for duplicate nicknames if we are the teacher
       if (this.role === 'teacher') {
-        const usedNames = new Set();
-        students.forEach(student => {
-          if (usedNames.has(student.nickname)) {
-            // Kick duplicate student via broadcast
-            this.channel.send({
-              type: 'broadcast',
-              event: 'kick-student',
-              payload: { targetId: student.id, reason: 'duplicate_nickname' }
-            });
+        const nicknameToId = new Map();
+        rawStudents.forEach(student => {
+          if (nicknameToId.has(student.nickname)) {
+            const existingId = nicknameToId.get(student.nickname);
+            if (existingId !== student.id) {
+              // Different ID, same nickname -> Kick duplicate student via broadcast
+              this.channel.send({
+                type: 'broadcast',
+                event: 'kick-student',
+                payload: { targetId: student.id, reason: 'duplicate_nickname' }
+              });
+            }
           } else {
-            usedNames.add(student.nickname);
+            nicknameToId.set(student.nickname, student.id);
           }
         });
       }
 
-      this.callbacks.onStudentSync(students);
+      // Deduplicate student list by nickname (latest socket connection overwrites previous)
+      const uniqueStudentsMap = new Map();
+      rawStudents.forEach(student => {
+        uniqueStudentsMap.set(student.nickname, student);
+      });
+      const uniqueStudents = Array.from(uniqueStudentsMap.values());
+
+      this.callbacks.onStudentSync(uniqueStudents);
     });
 
     // 2. Setup Broadcast Listeners

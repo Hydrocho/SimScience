@@ -2376,6 +2376,14 @@
                     }
                 }
             });
+            quizNetwork.on('onKick', (reason) => {
+                if (reason === 'duplicate_nickname') {
+                    alert("중복 로그인으로 인해 접속이 해제되었습니다.");
+                } else {
+                    alert("교사에 의해 강제 퇴장되었습니다.");
+                }
+                location.reload();
+            });
         }
 
         async function initQuizTeacherMode() {
@@ -2403,14 +2411,43 @@
             });
         }
 
+        function renderTeacherStudentListUI() {
+            document.getElementById('quiz-teacher-student-list').innerHTML = quizActiveStudents.length
+                ? quizActiveStudents.map(student => `
+                    <span class="chip-item active" style="display:inline-flex; align-items:center; gap:0.35rem; margin:0.2rem; cursor:default;">
+                        <span>${student.nickname}</span>
+                        <button type="button" class="kick-btn" onclick="kickStudentByTeacher('${student.id}', '${student.nickname}')" style="background:none; border:none; color:var(--danger); cursor:pointer; font-size:0.9rem; font-weight:bold; padding:0 0.2rem; display:inline-flex; align-items:center; justify-content:center; line-height:1;" title="강제 퇴장">&times;</button>
+                    </span>
+                `).join('')
+                : '학생 접속 대기 중...';
+        }
+
+        async function kickStudentByTeacher(studentId, nickname) {
+            if (!confirm(`'${nickname}' 학생을 강제로 퇴장시키겠습니까?`)) return;
+            
+            // Remove locally first
+            quizActiveStudents = quizActiveStudents.filter(s => s.id !== studentId);
+            document.getElementById('quiz-teacher-student-count').textContent = quizActiveStudents.length;
+            
+            renderTeacherStudentListUI();
+
+            // Send kick command via broadcast
+            if (quizNetwork && quizNetwork.channel) {
+                await quizNetwork.channel.send({
+                    type: 'broadcast',
+                    event: 'kick-student',
+                    payload: { targetId: studentId, reason: 'kicked_by_teacher' }
+                });
+            }
+        }
+
         function bindQuizTeacherEvents() {
             quizNetwork.on('onStudentSync', students => {
                 quizActiveStudents = students;
                 document.getElementById('quiz-teacher-student-count').textContent = students.length;
-                document.getElementById('quiz-teacher-student-list').innerHTML = students.length
-                    ? students.map(student => `<span class="chip-item active" style="display:inline-flex; margin:0.2rem;">${student.nickname}</span>`).join('')
-                    : '학생 접속 대기 중...';
+                renderTeacherStudentListUI();
                 
+                // Re-render submissions to reflect new students or departures
                 renderQuizRankings();
             });
             
@@ -2419,8 +2456,10 @@
                 if (index >= 0) quizStudentResults[index] = payload;
                 else quizStudentResults.push(payload);
                 
+                // Render the real-time submission status (without revealing correctness)
                 renderQuizRankings();
                 
+                // If all connected students have submitted, automatically reveal findings
                 if (!quizTeacherRoundFinalized && quizStudentResults.length >= quizActiveStudents.length && quizActiveStudents.length > 0) {
                     finishQuizForStudents();
                 }
@@ -2770,6 +2809,7 @@
         window.openQuizTeacherQuestionPreview = openQuizTeacherQuestionPreview;
         window.closeQuizTeacherQuestionPreview = closeQuizTeacherQuestionPreview;
         window.resetClassroomSession = resetClassroomSession;
+        window.kickStudentByTeacher = kickStudentByTeacher;
 
         switchQuizMode(new URLSearchParams(window.location.search).get('tab') === 'teacher' ? 'teacher' : 'single');
     </script>
