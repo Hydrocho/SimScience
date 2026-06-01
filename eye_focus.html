@@ -1693,8 +1693,8 @@
                 </div>
 
                 <!-- Footer buttons -->
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="exitToLobby()"><i class="fa-solid fa-home"></i> 홈으로</button>
+                <div class="action-buttons" id="result-action-buttons">
+                    <button class="action-btn" id="result-home-btn" onclick="exitToLobby()"><i class="fa-solid fa-home"></i> 홈으로</button>
                     <!-- Next round button will be labeled waiting in multiplayer -->
                     <button class="action-btn primary" id="next-round-btn" onclick="proceedToNextRound()"><i class="fa-solid fa-arrow-right"></i> 다음 라운드</button>
                 </div>
@@ -1965,6 +1965,8 @@
         const resErrorOffset = document.getElementById('res-error-offset');
         const resEarnedScore = document.getElementById('res-earned-score');
         const nextRoundBtn = document.getElementById('next-round-btn');
+        const resultHomeBtn = document.getElementById('result-home-btn');
+        const resultActionButtons = document.getElementById('result-action-buttons');
 
         // 2D Anatomy Eye Diagram Canvas
         const eyeCanvas = document.getElementById('eye-canvas');
@@ -2683,6 +2685,7 @@
             if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
 
             gameMode = 'result';
+            updateResultModalActions();
             countdownHud.style.display = 'none';
             countdownHud.classList.remove('urgent');
             timeWarningOverlay.className = 'time-warning-overlay';
@@ -2799,6 +2802,12 @@
         }
 
         // --- Next round progression ---
+        function updateResultModalActions() {
+            const isStudentSession = isMultiplayer && userRole === 'student';
+            resultHomeBtn.style.display = isStudentSession ? 'none' : '';
+            resultActionButtons.style.gridTemplateColumns = isStudentSession ? '1fr' : '1fr 1fr';
+        }
+
         function proceedToNextRound() {
             resultModal.classList.remove('show');
 
