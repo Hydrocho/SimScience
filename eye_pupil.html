@@ -2646,6 +2646,11 @@
             resultModal.classList.remove('show');
 
             if (isMultiplayer) {
+                // If a new round has already started on student side, ignore the confirm click to prevent returning to lobby.
+                if (userRole === 'student' && gameMode === 'active') {
+                    console.log("[Debug Student] proceedToNextRound: next round has already started. Ignoring lobby transition.");
+                    return;
+                }
                 executeReturnToWaitingRoom();
             } else {
                 if (currentRound >= maxRounds) {
@@ -3025,6 +3030,10 @@
 
                     // Synchronize results reported by student
                     classroomNetwork.on('onResultReported', (payload) => {
+                        if (teacherRoundStatus === 'waiting') {
+                            console.warn('[eye_pupil] 대기실 상태에서는 학생 결과를 무시합니다.');
+                            return;
+                        }
                         if (Number(payload.roundId) !== Number(teacherRoundId)) {
                             console.warn('[eye_pupil] 다른 라운드의 학생 결과를 무시했습니다.', {
                                 receivedRoundId: payload.roundId,
@@ -3387,7 +3396,6 @@
             if (!isMultiplayer || userRole !== 'teacher' || !classroomNetwork) return;
 
             clearTeacherRoundTimers();
-            teacherRoundId += 1;
             teacherRoundFinalizing = false;
             document.getElementById('teacher-sidebar-lobby').style.display = 'flex';
             document.getElementById('teacher-sidebar-active').style.display = 'none';
@@ -3584,6 +3592,18 @@
             if (classroomNetwork?.role === 'teacher' && teacherRoundStatus === 'playing') {
                 event.preventDefault();
                 event.returnValue = '';
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && classroomNetwork && isMultiplayer) {
+                console.log("[Debug] Page became visible. Checking channel status...");
+                if (!classroomNetwork.channel || classroomNetwork.channel.state !== 'joined') {
+                    console.warn("[Debug] Channel is not joined (State: " + (classroomNetwork.channel ? classroomNetwork.channel.state : "null") + "). Reconnecting channel...");
+                    classroomNetwork.reconnect();
+                } else {
+                    console.log("[Debug] Channel is healthy. State: joined");
+                }
             }
         });
 
