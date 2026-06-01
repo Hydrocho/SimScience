@@ -2925,10 +2925,12 @@
                 classroomNetwork.on('onGameStart', launchStudentRound);
 
                 classroomNetwork.on('onForceSubmit', () => {
-                    if (gameMode === 'active' && !hasSubmittedCurrentRound) {
-                        submitCurrentStateOnTeacherRequest();
-                    } else if (gameMode === 'result' && !lastStudentResult) {
-                        submitCurrentStateOnTeacherRequest(true);
+                    if (!hasSubmittedCurrentRound) {
+                        if (gameMode === 'active') {
+                            submitCurrentStateOnTeacherRequest();
+                        } else if (gameMode === 'result' && !lastStudentResult) {
+                            submitCurrentStateOnTeacherRequest(true);
+                        }
                     } else {
                         transmitCachedStudentResult();
                     }
