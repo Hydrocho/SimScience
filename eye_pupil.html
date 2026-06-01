@@ -2342,7 +2342,7 @@
 
             // Get game-image element
             const img = document.getElementById('game-image');
-            if (!img) return;
+            if (!img || !img.complete || !img.naturalWidth) return;
 
             // Compute brightness and blur based on current Lux and Pupil size
             const logLux = Math.log10(currentLux);
@@ -2450,6 +2450,15 @@
             ctx.restore();
         }
 
+        function drawCapturedPolaroidSafely(rank) {
+            try {
+                drawCapturedPolaroid(rank);
+            } catch (error) {
+                // The result submission must continue even if the visual snapshot is not ready.
+                console.error('Failed to draw captured polaroid image:', error);
+            }
+        }
+
         // --- Photo Capture Trigger ---
         function capturePhoto() {
             if (gameMode !== 'active') return;
@@ -2535,9 +2544,6 @@
                 snapDate.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             }
 
-            // Draw image on polaroid canvas
-            drawCapturedPolaroid(rank);
-
             // Handle multiplayer sync
             if (isMultiplayer && userRole === 'student') {
                 nextRoundBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 교사 대기 신호 받는 중...';
@@ -2560,6 +2566,9 @@
                     nextRoundBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> 다음 라운드';
                 }
             }
+
+            // Snapshot generation is visual-only and must not block result submission.
+            drawCapturedPolaroidSafely(rank);
 
             // Open result modal
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
@@ -2599,9 +2608,6 @@
                 snapDate.textContent = `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
             }
 
-            drawCapturedPolaroid('MISS');
-            gameAudio.playFail();
-
             if (isMultiplayer && userRole === 'student') {
                 nextRoundBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 교사 대기 신호 받는 중...';
                 nextRoundBtn.disabled = true;
@@ -2622,6 +2628,10 @@
                     nextRoundBtn.innerHTML = '<i class="fa-solid fa-arrow-right"></i> 다음 라운드';
                 }
             }
+
+            // Snapshot generation is visual-only and must not block result submission.
+            drawCapturedPolaroidSafely('MISS');
+            gameAudio.playFail();
 
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
             resultModalShowTimeout = setTimeout(() => {
@@ -2662,8 +2672,10 @@
             resultActionButtons.style.gridTemplateColumns = isStudentSession ? '1fr' : '1fr 1fr';
         }
 
-        function submitCurrentStateOnTeacherRequest() {
-            if (gameMode !== 'active' || hasSubmittedCurrentRound) return;
+        function submitCurrentStateOnTeacherRequest(allowResultRecovery = false) {
+            const shouldSubmitActiveRound = gameMode === 'active' && !hasSubmittedCurrentRound;
+            const shouldRecoverMissingResult = allowResultRecovery && gameMode === 'result' && !lastStudentResult;
+            if (!shouldSubmitActiveRound && !shouldRecoverMissingResult) return;
             if (gameTimerInterval) clearInterval(gameTimerInterval);
 
             const currentPupilDiameter = 2.0 + irisContraction * 6.0;
@@ -2741,7 +2753,7 @@
 
         function transmitCachedStudentResult() {
             if (!lastStudentResult || !classroomNetwork) return;
-            if (lastStudentResult.details.roundId !== activeStudentRoundId) return;
+            if (String(lastStudentResult.details.roundId) !== String(activeStudentRoundId)) return;
             classroomNetwork.sendResult(lastStudentResult.score, lastStudentResult.details);
         }
 
@@ -2910,6 +2922,8 @@
                 classroomNetwork.on('onForceSubmit', () => {
                     if (gameMode === 'active' && !hasSubmittedCurrentRound) {
                         submitCurrentStateOnTeacherRequest();
+                    } else if (gameMode === 'result' && !lastStudentResult) {
+                        submitCurrentStateOnTeacherRequest(true);
                     } else {
                         transmitCachedStudentResult();
                     }
@@ -3011,8 +3025,15 @@
 
                     // Synchronize results reported by student
                     classroomNetwork.on('onResultReported', (payload) => {
-                        if (Number(payload.roundId) !== Number(teacherRoundId)) return;
-                        classroomNetwork.sendResultAcknowledgement(payload.studentId, payload.roundId);
+                        if (Number(payload.roundId) !== Number(teacherRoundId)) {
+                            console.warn('[eye_pupil] 다른 라운드의 학생 결과를 무시했습니다.', {
+                                receivedRoundId: payload.roundId,
+                                activeRoundId: teacherRoundId,
+                                studentId: payload.studentId,
+                                nickname: payload.nickname
+                            });
+                            return;
+                        }
 
                         const index = studentResults.findIndex(r => r.studentId === payload.studentId);
                         if (index !== -1) {
@@ -3020,6 +3041,7 @@
                         } else {
                             studentResults.push(payload);
                         }
+                        classroomNetwork.sendResultAcknowledgement?.(payload.studentId, payload.roundId);
 
                         // Rank by smallest exposure error, then by fastest capture time.
                         sortStudentResults();
