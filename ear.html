@@ -1110,6 +1110,7 @@
                     <div id="quiz-teacher-scope" class="selection-chips-grid"></div>
                     <button class="start-btn" id="teacher-btn-launch" style="margin-top:1rem;" onclick="launchQuizForStudents()">실시간 퀴즈 시작</button>
                     <button class="start-btn" id="teacher-btn-finish" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--danger), var(--neon-pink)); display:none;" onclick="finishQuizForStudents()">결과 공개 / 라운드 종료 🏁</button>
+                    <button class="start-btn" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--primary), var(--neon-blue));" onclick="openQuizTeacherRankingPopup()">누적 순위 보기 🏆</button>
                     <button class="start-btn" style="margin-top:0.65rem; background:linear-gradient(135deg, var(--slate-600), var(--slate-800));" onclick="resetClassroomSession()">대기실로 돌아가기 (학생 리셋) 🚪</button>
                 </div>
                 <div>
@@ -1273,11 +1274,11 @@
     </div>
 
     <div class="modal-overlay" id="quiz-teacher-ranking-popup">
-        <div class="modal-card" style="position:relative; max-width:860px; width:92vw;">
+        <div class="modal-card" style="position:relative; max-width:860px; width:92vw; max-height:92vh; display:flex; flex-direction:column; overflow:hidden;">
             <button type="button" onclick="closeQuizTeacherRankingPopup()" aria-label="닫기" style="position:absolute; top:0.85rem; right:0.95rem; width:2.4rem; height:2.4rem; border:none; border-radius:50%; background:var(--slate-100); color:var(--slate-700); font-size:1.35rem; font-weight:900; cursor:pointer;">&times;</button>
             <h2>퀴즈 최종 랭킹</h2>
             <p class="subtitle">누적 정답 개수가 같으면 누적 풀이 시간이 짧은 학생이 우선입니다.</p>
-            <div id="quiz-teacher-ranking-popup-body"></div>
+            <div id="quiz-teacher-ranking-popup-body" style="min-height:0; overflow-y:auto; overscroll-behavior:contain; padding-right:0.35rem;"></div>
             <button class="restart-btn" onclick="closeQuizTeacherRankingPopup()">확인</button>
         </div>
     </div>
@@ -2904,6 +2905,7 @@
         window.enterQuizTeacherDashboard = enterQuizTeacherDashboard;
         window.launchQuizForStudents = launchQuizForStudents;
         window.finishQuizForStudents = finishQuizForStudents;
+        window.openQuizTeacherRankingPopup = openQuizTeacherRankingPopup;
         window.closeQuizTeacherRankingPopup = closeQuizTeacherRankingPopup;
         window.openQuizTeacherQuestionPreview = openQuizTeacherQuestionPreview;
         window.closeQuizTeacherQuestionPreview = closeQuizTeacherQuestionPreview;
