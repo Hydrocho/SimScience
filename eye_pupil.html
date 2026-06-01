@@ -1254,6 +1254,65 @@
         .ranking-table-detail tr:nth-child(2) td.rank-cell { color: #4b5563; }
         .ranking-table-detail tr:nth-child(3) td.rank-cell { color: #b45309; }
 
+        .teacher-ranking-modal {
+            background: rgba(15, 23, 42, 0.52);
+            backdrop-filter: blur(4px);
+        }
+
+        .teacher-ranking-modal-card {
+            width: min(920px, 92vw);
+            max-height: 88vh;
+            overflow: hidden;
+            background: #ffffff;
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            border-radius: 16px;
+            padding: 1.4rem;
+            box-shadow: 0 22px 60px rgba(15, 23, 42, 0.28);
+        }
+
+        .teacher-ranking-modal-card .result-title {
+            color: #0f172a;
+        }
+
+        .teacher-ranking-modal-description {
+            color: #475569;
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin: 0.35rem 0 1rem;
+        }
+
+        .teacher-ranking-scroll {
+            min-height: 0;
+            max-height: 58vh;
+            overflow: auto;
+            background: #ffffff;
+            border: 1px solid rgba(15, 23, 42, 0.14);
+            border-radius: 12px;
+        }
+
+        .teacher-ranking-scroll .ranking-table-detail {
+            margin-top: 0;
+        }
+
+        .teacher-ranking-scroll .ranking-table-detail th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            color: #475569;
+            background: #f1f5f9;
+            border-bottom-color: rgba(15, 23, 42, 0.16);
+        }
+
+        .teacher-ranking-scroll .ranking-table-detail td {
+            color: #1e293b;
+            background: #ffffff;
+            border-bottom-color: rgba(15, 23, 42, 0.08);
+        }
+
+        .teacher-ranking-scroll .ranking-table-detail tr:hover td {
+            background: #f8fafc;
+        }
+
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; }
@@ -1712,16 +1771,16 @@
     </div>
 
     <!-- Teacher Ranking Popup -->
-    <div id="teacher-ranking-popup" class="modal-overlay">
-        <div class="eval-panel" style="width: min(920px, 92vw); max-height: 82vh; overflow-y: auto;">
+    <div id="teacher-ranking-popup" class="modal-overlay teacher-ranking-modal">
+        <div class="eval-panel teacher-ranking-modal-card">
             <div class="rank-badge-row">
                 <h2 class="result-title">라운드 최종 랭킹</h2>
                 <span class="result-rank perfect">RESULT</span>
             </div>
-            <p style="font-size: 0.85rem; color: var(--slate-400); margin-bottom: 1rem;">
+            <p class="teacher-ranking-modal-description">
                 미제출 학생의 현재 상태까지 수집한 결과입니다. 오차가 같으면 촬영 시간이 짧은 학생이 우선입니다.
             </p>
-            <div class="leaderboard-container" style="overflow-x: auto; background: white; border: 1px solid rgba(0, 0, 0, 0.08); border-radius: 12px;">
+            <div class="leaderboard-container teacher-ranking-scroll">
                 <table class="ranking-table-detail">
                     <thead>
                         <tr>
@@ -1742,13 +1801,13 @@
         </div>
     </div>
 
-    <div id="teacher-cumulative-ranking-popup" class="modal-overlay">
-        <div class="eval-panel" style="width: min(920px, 92vw); max-height: 82vh; overflow-y: auto;">
+    <div id="teacher-cumulative-ranking-popup" class="modal-overlay teacher-ranking-modal">
+        <div class="eval-panel teacher-ranking-modal-card">
             <div class="rank-badge-row">
                 <h2 class="result-title">누적 순위</h2>
             </div>
-            <p style="color: var(--slate-400); margin: 0.35rem 0 1rem;">완료된 라운드의 총점이 높고, 누적 노출 편차가 작은 학생이 우선입니다.</p>
-            <div class="leaderboard-container">
+            <p class="teacher-ranking-modal-description">완료된 라운드의 총점이 높고, 누적 노출 편차가 작은 학생이 우선입니다.</p>
+            <div class="leaderboard-container teacher-ranking-scroll">
                 <table class="ranking-table-detail">
                     <thead>
                         <tr>
