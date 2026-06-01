@@ -2915,6 +2915,18 @@
             }
         });
 
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && quizNetwork && quizMode !== 'single') {
+                console.log("[Debug] Page became visible. Checking channel status...");
+                if (!quizNetwork.channel || quizNetwork.channel.state !== 'joined') {
+                    console.warn("[Debug] Channel is not joined (State: " + (quizNetwork.channel ? quizNetwork.channel.state : "null") + "). Reconnecting channel...");
+                    quizNetwork.reconnect();
+                } else {
+                    console.log("[Debug] Channel is healthy. State: joined");
+                }
+            }
+        });
+
         switchQuizMode(new URLSearchParams(window.location.search).get('tab') === 'teacher' ? 'teacher' : 'single');
     </script>
 </body>
