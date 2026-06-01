@@ -1985,6 +1985,7 @@
         let quizTeacherCumulativeResults = new Map();
         let teacherHeartbeatInterval = null;
         let lastSyncedQuestionIndex = -1;
+        let teacherDisconnectTimeout = null;
 
         function shuffled(values) {
             const copy = [...values];
@@ -2321,13 +2322,8 @@
                 }
             });
             quizNetwork.on('onRoundReset', () => {
-                clearInterval(quizQuestionTimer);
-                quizRunning = false;
-                lastSyncedQuestionIndex = -1; // Reset tracking index
-                document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
-                document.getElementById('quiz-student-result-overlay').classList.remove('show');
-                document.getElementById('arena-screen').style.display = 'none';
-                document.getElementById('quiz-student-waiting-overlay').classList.add('show');
+                alert("교사가 수업 세션을 초기화했습니다. 대기실로 돌아갑니다.");
+                location.reload();
             });
             quizNetwork.on('onRankingUpdate', payload => {
                 if (payload.finished) {
@@ -2396,6 +2392,25 @@
                 location.reload();
             });
             quizNetwork.on('onTeacherStateSync', teacherState => {
+                if (!teacherState) {
+                    // Teacher is missing from presence
+                    if (quizMode === 'student' && !teacherDisconnectTimeout) {
+                        console.log("[Presence Sync] Teacher missing. Starting disconnect grace period timer...");
+                        teacherDisconnectTimeout = setTimeout(() => {
+                            alert("교사와의 연결이 끊어졌습니다. 대기실로 돌아갑니다.");
+                            location.reload();
+                        }, 8000); // 8 seconds grace period
+                    }
+                    return;
+                }
+
+                // Teacher is present! Clear the disconnect timeout if it was running
+                if (teacherDisconnectTimeout) {
+                    console.log("[Presence Sync] Teacher reconnected. Clearing disconnect timer.");
+                    clearTimeout(teacherDisconnectTimeout);
+                    teacherDisconnectTimeout = null;
+                }
+
                 const teacherStatus = teacherState.status;
                 const teacherQuestionIndex = teacherState.questionIndex;
                 
@@ -2661,12 +2676,9 @@
                 if (teacherTimerInterval) clearInterval(teacherTimerInterval);
                 if (teacherHeartbeatInterval) clearInterval(teacherHeartbeatInterval);
 
-                // Update presence metadata state to 'waiting'
-                quizNetwork.updatePresenceState({
-                    status: 'waiting',
-                    quizQuestions: [],
-                    questionIndex: 0
-                });
+                // Disconnect session and clear network object
+                quizNetwork.disconnect();
+                quizNetwork = null;
 
                 closeQuizTeacherRankingPopup();
                 renderQuizRankings();
@@ -2897,6 +2909,13 @@
         window.closeQuizTeacherQuestionPreview = closeQuizTeacherQuestionPreview;
         window.resetClassroomSession = resetClassroomSession;
         window.kickStudentByTeacher = kickStudentByTeacher;
+
+        window.addEventListener('beforeunload', (e) => {
+            if (quizNetwork && quizNetwork.role === 'teacher' && quizTeacherQuestionQueue.length > 0 && !quizTeacherSessionCompleted) {
+                e.preventDefault();
+                e.returnValue = '';
+            }
+        });
 
         switchQuizMode(new URLSearchParams(window.location.search).get('tab') === 'teacher' ? 'teacher' : 'single');
     </script>

@@ -120,12 +120,14 @@ export class ClassroomNetwork {
           if (nicknameToId.has(student.nickname)) {
             const existingId = nicknameToId.get(student.nickname);
             if (existingId !== student.id) {
-              // Different ID, same nickname -> Kick duplicate student via broadcast
+              // Different ID, same nickname -> Kick the OLD duplicate student session
               this.channel.send({
                 type: 'broadcast',
                 event: 'kick-student',
-                payload: { targetId: student.id, reason: 'duplicate_nickname' }
+                payload: { targetId: existingId, reason: 'duplicate_nickname' }
               });
+              // Keep the newer session ID
+              nicknameToId.set(student.nickname, student.id);
             }
           } else {
             nicknameToId.set(student.nickname, student.id);
@@ -144,9 +146,7 @@ export class ClassroomNetwork {
 
       if (this.role === 'student') {
         const teacher = rawUsers.find(u => u.role === 'teacher');
-        if (teacher) {
-          this.callbacks.onTeacherStateSync(teacher);
-        }
+        this.callbacks.onTeacherStateSync(teacher || null);
       }
     });
 
