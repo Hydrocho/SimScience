@@ -2749,9 +2749,18 @@
             clearStudentResultRetries();
             lastStudentResult = { score, details };
             transmitCachedStudentResult();
-            [500, 1500, 3500, 6000].forEach(delay => {
+            [500, 1500, 3000, 5000, 8000].forEach(delay => {
                 studentResultRetryTimeouts.push(setTimeout(transmitCachedStudentResult, delay));
             });
+        }
+
+        function clearAcknowledgedStudentResult(payload = {}) {
+            if (!lastStudentResult) return;
+            const acknowledgedRoundId = getNumericRoundId(payload);
+            const submittedRoundId = getNumericRoundId(lastStudentResult.details);
+            if (acknowledgedRoundId === null || acknowledgedRoundId !== submittedRoundId) return;
+            clearStudentResultRetries();
+            lastStudentResult = null;
         }
 
         function getNumericRoundId(payload = {}) {
@@ -2802,10 +2811,7 @@
             nextRoundBtn.disabled = true;
             nextRoundBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 교사 신호 대기 중...';
             gameMode = 'lobby';
-            activeStudentRoundId = null;
             hasSubmittedCurrentRound = false;
-            lastStudentResult = null;
-            clearStudentResultRetries();
         }
 
         function launchStudentRound(payload = {}) {
@@ -2822,6 +2828,8 @@
             if (elapsedSeconds >= shutterWaitTime) return;
 
             rememberStudentRound(payload);
+            clearStudentResultRetries();
+            lastStudentResult = null;
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
             resultModalShowTimeout = null;
             pendingRoundReset = false;
@@ -2908,6 +2916,7 @@
                 });
 
                 classroomNetwork.on('onRoundReset', returnStudentToWaitingRoom);
+                classroomNetwork.on('onResultAcknowledged', clearAcknowledgedStudentResult);
 
                 classroomNetwork.on('onRankingUpdate', (payload) => {
                     const rankings = payload.rankings || [];
@@ -3003,6 +3012,7 @@
                     // Synchronize results reported by student
                     classroomNetwork.on('onResultReported', (payload) => {
                         if (Number(payload.roundId) !== Number(teacherRoundId)) return;
+                        classroomNetwork.sendResultAcknowledgement(payload.studentId, payload.roundId);
 
                         const index = studentResults.findIndex(r => r.studentId === payload.studentId);
                         if (index !== -1) {
@@ -3213,7 +3223,7 @@
             finishButton.disabled = true;
             finishButton.textContent = isAutomatic ? '제한 시간 종료: 결과 수집 중...' : '미제출 학생 결과 수집 중...';
             classroomNetwork.broadcastForceSubmit();
-            await waitForStudentResults(3500);
+            await waitForStudentResults(8500);
 
             fillMissingStudentResults();
             snapshotTeacherRoundResults();

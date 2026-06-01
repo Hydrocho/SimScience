@@ -23,6 +23,7 @@ export class ClassroomNetwork {
       onForceSubmit: () => {},     // Occurs when unfinished students must submit their current state
       onRoundReset: () => {},      // Occurs when students should return to the waiting room
       onResultReported: () => {},  // Occurs when teacher receives result from student
+      onResultAcknowledged: () => {}, // Occurs when teacher confirms receipt of a student result
       onRankingUpdate: () => {},   // Occurs when student receives leaderboard from teacher
       onKick: () => {},            // Occurs if kicked (e.g. duplicate nickname)
       onTeacherStateSync: () => {}, // Occurs when teacher's presence state is synced/updated
@@ -176,6 +177,11 @@ export class ClassroomNetwork {
           this.callbacks.onResultReported(payload);
         }
       })
+      .on('broadcast', { event: 'result-ack' }, ({ payload }) => {
+        if (this.role === 'student' && payload.studentId === this.id) {
+          this.callbacks.onResultAcknowledged(payload);
+        }
+      })
       .on('broadcast', { event: 'ranking-update' }, ({ payload }) => {
         if (this.role === 'student') {
           this.callbacks.onRankingUpdate(payload);
@@ -284,6 +290,14 @@ export class ClassroomNetwork {
       score: score,
       ...resultDetails
     });
+  }
+
+  /**
+   * [Teacher] Confirm receipt of one student's result
+   */
+  sendResultAcknowledgement(studentId, roundId) {
+    if (this.role !== 'teacher' || !this.channel) return;
+    this.sendBroadcast('result-ack', { studentId, roundId });
   }
 
   /**
