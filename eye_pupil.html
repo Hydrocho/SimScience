@@ -1698,8 +1698,8 @@
                     </div>
                 </div>
 
-                <div class="action-buttons">
-                    <button class="action-btn" onclick="exitToLobby()">
+                <div class="action-buttons" id="result-action-buttons">
+                    <button class="action-btn" id="result-lobby-btn" onclick="exitToLobby()">
                         <i class="fa-solid fa-door-open"></i> 포털 로비로
                     </button>
                     <button class="action-btn primary" id="next-round-btn" onclick="proceedToNextRound()">
@@ -1971,6 +1971,8 @@
         const resExposureError = document.getElementById('res-exposure-error');
         const resEarnedScore = document.getElementById('res-earned-score');
         const nextRoundBtn = document.getElementById('next-round-btn');
+        const resultLobbyBtn = document.getElementById('result-lobby-btn');
+        const resultActionButtons = document.getElementById('result-action-buttons');
 
 
 
@@ -2396,6 +2398,7 @@
             const captureTimeSeconds = getCaptureTimeSeconds();
             hasSubmittedCurrentRound = true;
             gameMode = 'result';
+            updateResultModalActions();
 
             // Play shutter click sound
             gameAudio.playShutter();
@@ -2516,6 +2519,7 @@
             const captureTimeSeconds = getCaptureTimeSeconds();
             hasSubmittedCurrentRound = true;
             gameMode = 'result';
+            updateResultModalActions();
 
             resultRankBadge.textContent = 'MISS';
             resultRankBadge.className = 'result-rank miss';
@@ -2593,6 +2597,12 @@
             return Math.max(0, (performance.now() - roundStartedAt) / 1000);
         }
 
+        function updateResultModalActions() {
+            const isStudentSession = isMultiplayer && userRole === 'student';
+            resultLobbyBtn.style.display = isStudentSession ? 'none' : '';
+            resultActionButtons.style.gridTemplateColumns = isStudentSession ? '1fr' : '1fr 1fr';
+        }
+
         function submitCurrentStateOnTeacherRequest() {
             if (gameMode !== 'active' || hasSubmittedCurrentRound) return;
             if (gameTimerInterval) clearInterval(gameTimerInterval);
@@ -2617,6 +2627,7 @@
 
             hasSubmittedCurrentRound = true;
             gameMode = 'result';
+            updateResultModalActions();
             sendStudentResult(earned, {
                 roundId: activeStudentRoundId,
                 currentLux,
