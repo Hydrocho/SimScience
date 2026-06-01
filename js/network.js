@@ -121,10 +121,9 @@ export class ClassroomNetwork {
             const existingId = nicknameToId.get(student.nickname);
             if (existingId !== student.id) {
               // Different ID, same nickname -> Kick the OLD duplicate student session
-              this.channel.send({
-                type: 'broadcast',
-                event: 'kick-student',
-                payload: { targetId: existingId, reason: 'duplicate_nickname' }
+              this.sendBroadcast('kick-student', {
+                targetId: existingId,
+                reason: 'duplicate_nickname'
               });
               // Keep the newer session ID
               nicknameToId.set(student.nickname, student.id);
@@ -213,16 +212,30 @@ export class ClassroomNetwork {
   }
 
   /**
+   * Broadcast over WebSocket when subscribed, or explicitly use REST while reconnecting.
+   * Supabase is deprecating the implicit send() REST fallback.
+   */
+  sendBroadcast(event, payload = {}) {
+    if (!this.channel) return Promise.resolve('error');
+    const message = {
+      type: 'broadcast',
+      event,
+      payload
+    };
+
+    if (this.channel.state !== 'joined' && typeof this.channel.httpSend === 'function') {
+      return this.channel.httpSend(message);
+    }
+    return this.channel.send(message);
+  }
+
+  /**
    * [Teacher] Broadcast settings payload (e.g. target, countdown)
    * @param {object} settings 
    */
   broadcastSettings(settings) {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'settings-change',
-      payload: settings
-    });
+    this.sendBroadcast('settings-change', settings);
   }
 
   /**
@@ -230,11 +243,7 @@ export class ClassroomNetwork {
    */
   broadcastStart(payload = {}) {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'start-game',
-      payload
-    });
+    this.sendBroadcast('start-game', payload);
   }
 
   /**
@@ -242,11 +251,7 @@ export class ClassroomNetwork {
    */
   broadcastForceSubmit() {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'force-submit',
-      payload: {}
-    });
+    this.sendBroadcast('force-submit');
   }
 
   /**
@@ -254,11 +259,7 @@ export class ClassroomNetwork {
    */
   broadcastRoundReset() {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'round-reset',
-      payload: {}
-    });
+    this.sendBroadcast('round-reset');
   }
 
   /**
@@ -267,11 +268,7 @@ export class ClassroomNetwork {
    */
   broadcastRankings(rankings) {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'ranking-update',
-      payload: rankings
-    });
+    this.sendBroadcast('ranking-update', rankings);
   }
 
   /**
@@ -281,16 +278,20 @@ export class ClassroomNetwork {
    */
   sendResult(score, resultDetails) {
     if (this.role !== 'student' || !this.channel) return;
-    this.channel.send({
-      type: 'broadcast',
-      event: 'report-result',
-      payload: {
-        studentId: this.id,
-        nickname: this.nickname,
-        score: score,
-        ...resultDetails
-      }
+    this.sendBroadcast('report-result', {
+      studentId: this.id,
+      nickname: this.nickname,
+      score: score,
+      ...resultDetails
     });
+  }
+
+  /**
+   * [Teacher] Remove one student from the session
+   */
+  sendKickStudent(studentId, reason = 'kicked_by_teacher') {
+    if (this.role !== 'teacher' || !this.channel) return;
+    this.sendBroadcast('kick-student', { targetId: studentId, reason });
   }
 
   /**

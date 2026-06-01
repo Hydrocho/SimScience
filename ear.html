@@ -2494,11 +2494,7 @@
 
             // Send kick command via broadcast
             if (quizNetwork && quizNetwork.channel) {
-                await quizNetwork.channel.send({
-                    type: 'broadcast',
-                    event: 'kick-student',
-                    payload: { targetId: studentId, reason: 'kicked_by_teacher' }
-                });
+                quizNetwork.sendKickStudent(studentId);
             }
         }
 
