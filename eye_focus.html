@@ -1904,13 +1904,13 @@
         let teacherRoundId = 0;
         let teacherRoundStatus = 'waiting';
         let activeStudentRoundId = null;
+        let latestStudentRoundId = 0;
         let submittedStudentRoundId = null;
         let lastStudentResult = null;
         let studentResultRetryTimeouts = [];
         const teacherRoundResults = new Map();
         let pendingRoundReset = false;
         let resultModalShowTimeout = null;
-        let studentWaitingRoomAutoTimeout = null;
 
         // Target Objects List
         const objectsConfig = [
@@ -2800,7 +2800,6 @@
 
         // --- Next round progression ---
         function proceedToNextRound() {
-            clearStudentWaitingRoomAutoTransition();
             resultModal.classList.remove('show');
 
             if (isMultiplayer) {
@@ -2826,7 +2825,6 @@
         }
 
         function exitToLobby() {
-            clearStudentWaitingRoomAutoTransition();
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
             resultModalShowTimeout = null;
             resultModal.classList.remove('show');
@@ -2849,19 +2847,6 @@
         function clearStudentResultRetries() {
             studentResultRetryTimeouts.forEach(timeout => clearTimeout(timeout));
             studentResultRetryTimeouts = [];
-        }
-
-        function clearStudentWaitingRoomAutoTransition() {
-            if (studentWaitingRoomAutoTimeout) clearTimeout(studentWaitingRoomAutoTimeout);
-            studentWaitingRoomAutoTimeout = null;
-        }
-
-        function scheduleStudentWaitingRoomAutoTransition() {
-            clearStudentWaitingRoomAutoTransition();
-            studentWaitingRoomAutoTimeout = setTimeout(() => {
-                studentWaitingRoomAutoTimeout = null;
-                if (pendingRoundReset) executeReturnToWaitingRoom();
-            }, 3000);
         }
 
         function transmitCachedStudentResult() {
@@ -2889,7 +2874,24 @@
             document.getElementById('wait-timer-display').textContent = `${shutterWaitTime}초`;
         }
 
-        function returnStudentToWaitingRoom() {
+        function getNumericRoundId(payload = {}) {
+            const roundId = Number(payload.roundId);
+            return Number.isFinite(roundId) ? roundId : null;
+        }
+
+        function isStaleStudentRound(payload = {}) {
+            const roundId = getNumericRoundId(payload);
+            return roundId !== null && roundId < latestStudentRoundId;
+        }
+
+        function rememberStudentRound(payload = {}) {
+            const roundId = getNumericRoundId(payload);
+            if (roundId !== null) latestStudentRoundId = Math.max(latestStudentRoundId, roundId);
+        }
+
+        function returnStudentToWaitingRoom(payload = {}) {
+            if (isStaleStudentRound(payload)) return;
+            rememberStudentRound(payload);
             if (gameTimerInterval) clearInterval(gameTimerInterval);
             if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
             gameTimerInterval = null;
@@ -2899,11 +2901,10 @@
             countdownHud.classList.remove('urgent');
             timeWarningOverlay.className = 'time-warning-overlay';
 
-            if (resultModal.classList.contains('show')) {
+            if (gameMode === 'result') {
                 pendingRoundReset = true;
                 nextRoundBtn.disabled = false;
-                nextRoundBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 확인 (3초 후 대기실로 자동 이동)';
-                scheduleStudentWaitingRoomAutoTransition();
+                nextRoundBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 확인 (대기실로 이동)';
             } else {
                 pendingRoundReset = false;
                 executeReturnToWaitingRoom();
@@ -2911,7 +2912,6 @@
         }
 
         function executeReturnToWaitingRoom() {
-            clearStudentWaitingRoomAutoTransition();
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
             resultModalShowTimeout = null;
             pendingRoundReset = false;
@@ -2935,13 +2935,14 @@
             applyMultiplayerSettings(payload);
 
             const roundId = payload.roundId;
+            if (isStaleStudentRound(payload)) return;
             if (roundId !== undefined && roundId !== null && roundId === activeStudentRoundId) return;
             if (payload.startedAt) {
                 const elapsedSeconds = (Date.now() - new Date(payload.startedAt).getTime()) / 1000;
                 if (elapsedSeconds >= shutterWaitTime) return;
             }
 
-            clearStudentWaitingRoomAutoTransition();
+            rememberStudentRound(payload);
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
             resultModalShowTimeout = null;
             pendingRoundReset = false;
@@ -2988,8 +2989,8 @@
 
             if (teacherState.status === 'playing') {
                 launchStudentRound(teacherState);
-            } else if (teacherState.status === 'waiting' && gameMode !== 'lobby') {
-                returnStudentToWaitingRoom();
+            } else if (teacherState.status === 'waiting') {
+                returnStudentToWaitingRoom(teacherState);
             }
         }
 
@@ -3415,7 +3416,7 @@
             clearTeacherRoundTimers();
             teacherRoundId += 1;
             studentResults = [];
-            classroomNetwork.broadcastRoundReset();
+            classroomNetwork.broadcastRoundReset(getTeacherRoundPayload('waiting'));
             updateTeacherPresence('waiting', { startedAt: null });
             classroomNetwork.broadcastSettings(getTeacherRoundPayload('waiting'));
         }

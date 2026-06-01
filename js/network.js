@@ -166,9 +166,9 @@ export class ClassroomNetwork {
           this.callbacks.onForceSubmit();
         }
       })
-      .on('broadcast', { event: 'round-reset' }, () => {
+      .on('broadcast', { event: 'round-reset' }, ({ payload }) => {
         if (this.role === 'student') {
-          this.callbacks.onRoundReset();
+          this.callbacks.onRoundReset(payload || {});
         }
       })
       .on('broadcast', { event: 'report-result' }, ({ payload }) => {
@@ -257,9 +257,9 @@ export class ClassroomNetwork {
   /**
    * [Teacher] Return student screens to the waiting room after a round
    */
-  broadcastRoundReset() {
+  broadcastRoundReset(payload = {}) {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.sendBroadcast('round-reset');
+    this.sendBroadcast('round-reset', payload);
   }
 
   /**
