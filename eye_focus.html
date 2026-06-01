@@ -2812,6 +2812,11 @@
             resultModal.classList.remove('show');
 
             if (isMultiplayer) {
+                // If a new round has already started on student side, ignore the confirm click to prevent returning to lobby.
+                if (userRole === 'student' && gameMode === 'active') {
+                    console.log("[Debug Student] proceedToNextRound: next round has already started. Ignoring lobby transition.");
+                    return;
+                }
                 if (pendingRoundReset) {
                     pendingRoundReset = false;
                     executeReturnToWaitingRoom();
@@ -3195,6 +3200,10 @@
                     // Student result reporting listener
                     classroomNetwork.on('onResultReported', (payload) => {
                         console.log("[Debug Teacher] onResultReported callback. payload.roundId:", payload.roundId, "teacherRoundId:", teacherRoundId, "payload:", payload);
+                        if (teacherRoundStatus === 'waiting') {
+                            console.warn("[Debug Teacher] Result ignored: teacher is in 'waiting' status (lobby).");
+                            return;
+                        }
                         if (Number(payload.roundId) !== Number(teacherRoundId)) {
                             console.warn("[Debug Teacher] Result ignored: roundId mismatch. payload.roundId:", payload.roundId, "teacherRoundId:", teacherRoundId);
                             return;
@@ -3482,11 +3491,9 @@
         function resetTeacherRound() {
             if (userRole !== 'teacher' || !classroomNetwork) return;
             clearTeacherRoundTimers();
-            const oldRoundId = teacherRoundId;
-            teacherRoundId += 1;
             studentResults = [];
             const payload = getTeacherRoundPayload('waiting');
-            console.log(`[Debug Teacher] resetTeacherRound called. teacherRoundId: ${oldRoundId} -> ${teacherRoundId}. payload:`, payload);
+            console.log(`[Debug Teacher] resetTeacherRound called. teacherRoundId remains: ${teacherRoundId}. payload:`, payload);
 
             classroomNetwork.broadcastRoundReset(payload);
             updateTeacherPresence('waiting', { startedAt: null });
@@ -4163,6 +4170,18 @@
             if (classroomNetwork?.role === 'teacher' && teacherRoundStatus === 'playing') {
                 event.preventDefault();
                 event.returnValue = '';
+            }
+        });
+
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden && classroomNetwork && isMultiplayer) {
+                console.log("[Debug] Page became visible. Checking channel status...");
+                if (!classroomNetwork.channel || classroomNetwork.channel.state !== 'joined') {
+                    console.warn("[Debug] Channel is not joined (State: " + (classroomNetwork.channel ? classroomNetwork.channel.state : "null") + "). Reconnecting channel...");
+                    classroomNetwork.reconnect();
+                } else {
+                    console.log("[Debug] Channel is healthy. State: joined");
+                }
             }
         });
 

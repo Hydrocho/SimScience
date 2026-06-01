@@ -14,6 +14,8 @@ export class ClassroomNetwork {
     this.role = null; // 'teacher' | 'student'
     this.id = null; // Unique ID (e.g. UUID or random string)
     this.nickname = null;
+    this.reconnectTimeout = null;
+    this._onSubscribeResolve = null;
     
     // Callback event handlers
     this.callbacks = {
@@ -60,6 +62,7 @@ export class ClassroomNetwork {
     this.pin = pin;
     this.nickname = nickname;
     this.role = role;
+    this.extraData = extraData;
     
     if (role === 'teacher') {
       this.id = 'teacher';
@@ -89,9 +92,26 @@ export class ClassroomNetwork {
       this.id = studentId;
     }
 
-    const channelName = `classroom_room_${pin}`;
+    return new Promise((resolve) => {
+      let resolved = false;
+      this._onSubscribeResolve = (success) => {
+        if (!resolved) {
+          resolved = true;
+          resolve(success);
+        }
+      };
+
+      this._initChannel(extraData);
+    });
+  }
+
+  /**
+   * Internal helper to create channel and register sync / broadcast event listeners
+   */
+  _initChannel(extraData) {
+    const channelName = `classroom_room_${this.pin}`;
     this.channel = this.client.channel(channelName, {
-      config: { presence: { key: pin } }
+      config: { presence: { key: this.pin } }
     });
 
     // 1. Setup Presence Sync Listener (Student List monitoring)
@@ -204,27 +224,51 @@ export class ClassroomNetwork {
         }
       });
 
-    // 3. Subscribe and Track presence
-    return new Promise((resolve) => {
-      this.channel.subscribe(async (status) => {
-        console.log(`[Debug Network] Channel subscription status change: "${status}" for channel: ${channelName}`);
-        if (status === 'SUBSCRIBED') {
-          console.log(`[Network] Subscribed to Supabase channel: ${channelName}`);
-          
-          // Track presence
-          await this.channel.track({
-            id: this.id,
-            nickname: this.nickname,
-            role: this.role,
-            joinedAt: new Date().toISOString(),
-            ...extraData
-          });
-          
-          resolve(true);
-        } else {
-          resolve(false);
+    this._subscribeChannel(extraData);
+  }
+
+  /**
+   * Internal helper to subscribe to channel and track presence
+   */
+  _subscribeChannel(extraData) {
+    const channelName = `classroom_room_${this.pin}`;
+    this.channel.subscribe(async (status) => {
+      console.log(`[Debug Network] Channel subscription status change: "${status}" for channel: ${channelName}`);
+      if (status === 'SUBSCRIBED') {
+        console.log(`[Network] Subscribed to Supabase channel: ${channelName}`);
+        
+        // Track presence
+        await this.channel.track({
+          id: this.id,
+          nickname: this.nickname,
+          role: this.role,
+          joinedAt: new Date().toISOString(),
+          ...extraData
+        });
+        
+        if (this._onSubscribeResolve) {
+          this._onSubscribeResolve(true);
         }
-      });
+      } else if (status === 'CLOSED' || status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        console.warn(`[Debug Network] Channel subscription failed or closed with status: ${status}. Attempting to reconnect/rejoin...`);
+        
+        if (this._onSubscribeResolve) {
+          this._onSubscribeResolve(false);
+        }
+
+        // Clean up and attempt reconnect after delay to prevent rapid loops
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+        this.reconnectTimeout = setTimeout(async () => {
+          if (!this.channel || !this.client) return;
+          console.log("[Debug Network] Re-initializing and re-subscribing channel...");
+          try {
+            await this.client.removeChannel(this.channel);
+          } catch (e) {
+            console.warn("[Debug Network] Error removing channel for re-subscription:", e);
+          }
+          this._initChannel(extraData);
+        }, 3000);
+      }
     });
   }
 
@@ -345,6 +389,10 @@ export class ClassroomNetwork {
    * Unsubscribe and leave the channel
    */
   disconnect() {
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
     if (this.channel) {
       this.channel.unsubscribe();
       this.channel = null;
@@ -354,6 +402,25 @@ export class ClassroomNetwork {
     this.role = null;
     this.id = null;
     this.nickname = null;
+    this.extraData = null;
+  }
+
+  /**
+   * Manually trigger re-initialization and re-subscription of the channel
+   */
+  async reconnect() {
+    if (!this.client || !this.channel || !this.pin) return;
+    console.log("[Debug Network] Reconnect manually triggered...");
+    if (this.reconnectTimeout) {
+      clearTimeout(this.reconnectTimeout);
+      this.reconnectTimeout = null;
+    }
+    try {
+      await this.client.removeChannel(this.channel);
+    } catch (e) {
+      console.warn("[Debug Network] Error removing channel for manual reconnect:", e);
+    }
+    this._initChannel(this.extraData || {});
   }
 
   /**
