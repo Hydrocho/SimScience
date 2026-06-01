@@ -224,7 +224,7 @@ export class ClassroomNetwork {
     };
 
     if (this.channel.state !== 'joined' && typeof this.channel.httpSend === 'function') {
-      return this.channel.httpSend(message);
+      return this.channel.httpSend(event, payload);
     }
     return this.channel.send(message);
   }

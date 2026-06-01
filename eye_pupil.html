@@ -1473,6 +1473,9 @@
                                 <button id="btn-teacher-next-round-detail" class="start-btn" style="display: none; width: 100%; margin: 0;" onclick="resetForNextRoundDetail()">
                                     🔄 다음 라운드 준비
                                 </button>
+                                <button id="btn-teacher-cumulative-ranking-detail" class="start-btn" style="display: none; width: 100%; margin: 0; background: linear-gradient(135deg, var(--primary), var(--neon-blue));" onclick="openTeacherCumulativeRankingPopup()">
+                                    🏆 누적 순위 보기
+                                </button>
                             </div>
                         </div>
                     </aside>
@@ -1739,6 +1742,33 @@
         </div>
     </div>
 
+    <div id="teacher-cumulative-ranking-popup" class="modal-overlay">
+        <div class="eval-panel" style="width: min(920px, 92vw); max-height: 82vh; overflow-y: auto;">
+            <div class="rank-badge-row">
+                <h2 class="result-title">누적 순위</h2>
+            </div>
+            <p style="color: var(--slate-400); margin: 0.35rem 0 1rem;">완료된 라운드의 총점이 높고, 누적 노출 편차가 작은 학생이 우선입니다.</p>
+            <div class="leaderboard-container">
+                <table class="ranking-table-detail">
+                    <thead>
+                        <tr>
+                            <th>순위</th>
+                            <th>학생 닉네임</th>
+                            <th>제출 라운드</th>
+                            <th>누적 편차</th>
+                            <th>총점</th>
+                            <th>미제출</th>
+                        </tr>
+                    </thead>
+                    <tbody id="teacher-cumulative-ranking-popup-rows"></tbody>
+                </table>
+            </div>
+            <div class="action-buttons" style="margin-top: 1rem;">
+                <button class="action-btn primary" onclick="closeTeacherCumulativeRankingPopup()">확인</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast-notify" class="toast-notification">
         <i class="fa-solid fa-circle-info" style="color:var(--primary)"></i>
@@ -1912,7 +1942,12 @@
         let teacherRoundStatus = 'waiting';
         let teacherRoundFinalizing = false;
         let activeStudentRoundId = null;
+        let latestStudentRoundId = 0;
         let pendingRoundReset = false;
+        let resultModalShowTimeout = null;
+        let lastStudentResult = null;
+        let studentResultRetryTimeouts = [];
+        const teacherRoundResults = new Map();
 
         // DOM elements
         const lobbyScreen = document.getElementById('lobby-screen');
@@ -2447,7 +2482,7 @@
                 nextRoundBtn.disabled = true;
 
                 // Send results back to teacher
-                classroomNetwork.sendResult(earned, {
+                sendStudentResult(earned, {
                     roundId: activeStudentRoundId,
                     currentLux,
                     pupilDiameter,
@@ -2465,7 +2500,10 @@
             }
 
             // Open result modal
-            setTimeout(() => {
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = setTimeout(() => {
+                resultModalShowTimeout = null;
+                if (gameMode !== 'result') return;
                 resultModal.classList.add('show');
             }, 600);
         }
@@ -2505,7 +2543,7 @@
                 nextRoundBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 교사 대기 신호 받는 중...';
                 nextRoundBtn.disabled = true;
 
-                classroomNetwork.sendResult(0, {
+                sendStudentResult(0, {
                     roundId: activeStudentRoundId,
                     currentLux,
                     pupilDiameter,
@@ -2522,7 +2560,10 @@
                 }
             }
 
-            setTimeout(() => {
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = setTimeout(() => {
+                resultModalShowTimeout = null;
+                if (gameMode !== 'result') return;
                 resultModal.classList.add('show');
             }, 600);
         }
@@ -2532,9 +2573,7 @@
             resultModal.classList.remove('show');
 
             if (isMultiplayer) {
-                // Return to student lobby waiting overlay
-                document.getElementById('student-waiting-overlay').style.display = 'flex';
-                gameMode = 'lobby';
+                executeReturnToWaitingRoom();
             } else {
                 if (currentRound >= maxRounds) {
                     alert(`축하합니다! 동공 크기 조절 게임을 완료했습니다.\n최종 총 점수: ${score}점`);
@@ -2578,7 +2617,7 @@
 
             hasSubmittedCurrentRound = true;
             gameMode = 'result';
-            classroomNetwork.sendResult(earned, {
+            sendStudentResult(earned, {
                 roundId: activeStudentRoundId,
                 currentLux,
                 pupilDiameter: currentPupilDiameter,
@@ -2590,6 +2629,10 @@
         }
 
         function exitToLobby() {
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = null;
+            clearStudentResultRetries();
+            lastStudentResult = null;
             resultModal.classList.remove('show');
             if (gameTimerInterval) clearInterval(gameTimerInterval);
             
@@ -2621,14 +2664,52 @@
             shutterWaitTime = Number(payload.shutterWaitTime) || shutterWaitTime;
         }
 
-        function returnStudentToWaitingRoom() {
+        function clearStudentResultRetries() {
+            studentResultRetryTimeouts.forEach(timeout => clearTimeout(timeout));
+            studentResultRetryTimeouts = [];
+        }
+
+        function transmitCachedStudentResult() {
+            if (!lastStudentResult || !classroomNetwork) return;
+            if (lastStudentResult.details.roundId !== activeStudentRoundId) return;
+            classroomNetwork.sendResult(lastStudentResult.score, lastStudentResult.details);
+        }
+
+        function sendStudentResult(score, details) {
+            clearStudentResultRetries();
+            lastStudentResult = { score, details };
+            transmitCachedStudentResult();
+            [500, 1500, 3500, 6000].forEach(delay => {
+                studentResultRetryTimeouts.push(setTimeout(transmitCachedStudentResult, delay));
+            });
+        }
+
+        function getNumericRoundId(payload = {}) {
+            if (payload.roundId === undefined || payload.roundId === null || payload.roundId === '') return null;
+            const roundId = Number(payload.roundId);
+            return Number.isFinite(roundId) ? roundId : null;
+        }
+
+        function isStaleStudentRound(payload = {}) {
+            const roundId = getNumericRoundId(payload);
+            return roundId !== null && roundId < latestStudentRoundId;
+        }
+
+        function rememberStudentRound(payload = {}) {
+            const roundId = getNumericRoundId(payload);
+            if (roundId !== null) latestStudentRoundId = Math.max(latestStudentRoundId, roundId);
+        }
+
+        function returnStudentToWaitingRoom(payload = {}) {
+            if (isStaleStudentRound(payload)) return;
+            rememberStudentRound(payload);
             if (gameTimerInterval) clearInterval(gameTimerInterval);
             gameTimerInterval = null;
 
             countdownHud.style.display = 'none';
             countdownHud.classList.remove('urgent');
 
-            if (resultModal.classList.contains('show')) {
+            if (gameMode === 'result') {
                 pendingRoundReset = true;
                 nextRoundBtn.disabled = false;
                 nextRoundBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 확인 (대기실로 이동)';
@@ -2639,6 +2720,9 @@
         }
 
         function executeReturnToWaitingRoom() {
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = null;
+            pendingRoundReset = false;
             resultModal.classList.remove('show');
             countdownHud.style.display = 'none';
             countdownHud.classList.remove('urgent');
@@ -2650,12 +2734,16 @@
             gameMode = 'lobby';
             activeStudentRoundId = null;
             hasSubmittedCurrentRound = false;
+            lastStudentResult = null;
+            clearStudentResultRetries();
         }
 
         function launchStudentRound(payload = {}) {
             applyMultiplayerSettings(payload);
 
-            const roundId = payload.roundId;
+            const numericRoundId = getNumericRoundId(payload);
+            const roundId = numericRoundId ?? payload.roundId;
+            if (isStaleStudentRound(payload)) return;
             if (roundId !== undefined && roundId !== null && roundId === activeStudentRoundId) return;
 
             const elapsedSeconds = payload.startedAt
@@ -2663,6 +2751,11 @@
                 : 0;
             if (elapsedSeconds >= shutterWaitTime) return;
 
+            rememberStudentRound(payload);
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = null;
+            pendingRoundReset = false;
+            resultModal.classList.remove('show');
             activeStudentRoundId = roundId ?? `legacy-${Date.now()}`;
             document.getElementById('student-waiting-overlay').style.display = 'none';
             lobbyScreen.style.display = 'none';
@@ -2692,8 +2785,8 @@
 
             if (teacherState.status === 'playing') {
                 launchStudentRound(teacherState);
-            } else if (teacherState.status === 'waiting' && gameMode !== 'lobby') {
-                returnStudentToWaitingRoom();
+            } else if (teacherState.status === 'waiting') {
+                returnStudentToWaitingRoom(teacherState);
             }
         }
 
@@ -2737,7 +2830,11 @@
                 classroomNetwork.on('onGameStart', launchStudentRound);
 
                 classroomNetwork.on('onForceSubmit', () => {
-                    submitCurrentStateOnTeacherRequest();
+                    if (gameMode === 'active' && !hasSubmittedCurrentRound) {
+                        submitCurrentStateOnTeacherRequest();
+                    } else {
+                        transmitCachedStudentResult();
+                    }
                 });
 
                 classroomNetwork.on('onRoundReset', returnStudentToWaitingRoom);
@@ -2846,6 +2943,9 @@
 
                         // Rank by smallest exposure error, then by fastest capture time.
                         sortStudentResults();
+                        if (teacherRoundResults.has(teacherRoundId)) {
+                            snapshotTeacherRoundResults();
+                        }
 
                         // Render table
                         renderTeacherRankingsTableDetail();
@@ -3029,6 +3129,7 @@
             document.getElementById('teacher-active-view').style.display = 'flex';
             document.getElementById('btn-teacher-finish-detail').style.display = 'block';
             document.getElementById('btn-teacher-next-round-detail').style.display = 'none';
+            document.getElementById('btn-teacher-cumulative-ranking-detail').style.display = 'none';
             teacherTriggerLaunch();
         }
 
@@ -3045,15 +3146,17 @@
             await waitForStudentResults(3500);
 
             fillMissingStudentResults();
+            snapshotTeacherRoundResults();
             renderTeacherRankingsTableDetail();
             openTeacherRankingPopup();
             classroomNetwork.broadcastRankings({ rankings: studentResults });
-            classroomNetwork.broadcastRoundReset();
+            classroomNetwork.broadcastRoundReset(getTeacherRoundPayload('results'));
             updateTeacherPresence('results');
             finishButton.disabled = false;
             finishButton.textContent = '종료 (랭킹 보기)';
             finishButton.style.display = 'none';
             document.getElementById('btn-teacher-next-round-detail').style.display = 'block';
+            document.getElementById('btn-teacher-cumulative-ranking-detail').style.display = 'block';
             teacherRoundFinalizing = false;
             showToast(isAutomatic
                 ? "제한 시간이 종료되어 결과를 수집했습니다."
@@ -3107,6 +3210,77 @@
             document.getElementById('teacher-ranking-popup').classList.remove('show');
         }
 
+        function snapshotTeacherRoundResults() {
+            teacherRoundResults.set(
+                teacherRoundId,
+                studentResults.map(result => ({ ...result }))
+            );
+        }
+
+        function getTeacherCumulativeRankings() {
+            const totals = new Map();
+            teacherRoundResults.forEach(results => {
+                results.forEach(result => {
+                    const current = totals.get(result.studentId) || {
+                        studentId: result.studentId,
+                        nickname: result.nickname,
+                        totalScore: 0,
+                        totalError: 0,
+                        submittedRounds: 0,
+                        unsubmittedRounds: 0,
+                        totalRounds: 0
+                    };
+                    current.nickname = result.nickname || current.nickname;
+                    current.totalRounds += 1;
+                    if (result.unsubmitted) {
+                        current.unsubmittedRounds += 1;
+                    } else {
+                        current.submittedRounds += 1;
+                        current.totalScore += Number(result.score) || 0;
+                        current.totalError += Number(result.errorOffset) || 0;
+                    }
+                    totals.set(result.studentId, current);
+                });
+            });
+
+            return [...totals.values()].sort((a, b) =>
+                b.totalScore - a.totalScore ||
+                a.totalError - b.totalError ||
+                a.unsubmittedRounds - b.unsubmittedRounds ||
+                a.nickname.localeCompare(b.nickname, 'ko')
+            );
+        }
+
+        function openTeacherCumulativeRankingPopup() {
+            const tbody = document.getElementById('teacher-cumulative-ranking-popup-rows');
+            const rankings = getTeacherCumulativeRankings();
+            if (rankings.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: var(--slate-400); padding: 2rem 0;">
+                            완료된 라운드 결과가 없습니다.
+                        </td>
+                    </tr>
+                `;
+            } else {
+                tbody.innerHTML = rankings.map((result, index) => `
+                    <tr>
+                        <td class="rank-cell">${index + 1}</td>
+                        <td style="font-weight: 800; color: var(--slate-50);">${result.nickname}</td>
+                        <td>${result.submittedRounds}/${result.totalRounds}</td>
+                        <td>${result.totalError.toFixed(3)}</td>
+                        <td style="color: var(--primary); font-weight: 800;">${result.totalScore}점</td>
+                        <td>${result.unsubmittedRounds || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+            document.getElementById('teacher-cumulative-ranking-popup').classList.add('show');
+        }
+
+        function closeTeacherCumulativeRankingPopup() {
+            document.getElementById('teacher-cumulative-ranking-popup').classList.remove('show');
+        }
+
         function resetForNextRoundDetail() {
             if (!isMultiplayer || userRole !== 'teacher' || !classroomNetwork) return;
 
@@ -3120,9 +3294,10 @@
             document.getElementById('teacher-active-view').style.display = 'none';
             document.getElementById('btn-teacher-finish-detail').style.display = 'block';
             document.getElementById('btn-teacher-next-round-detail').style.display = 'none';
+            document.getElementById('btn-teacher-cumulative-ranking-detail').style.display = 'none';
             studentResults = [];
             renderTeacherRankingsTableDetail();
-            classroomNetwork.broadcastRoundReset();
+            classroomNetwork.broadcastRoundReset(getTeacherRoundPayload('waiting'));
             updateTeacherPresence('waiting', { startedAt: null });
             teacherSyncSettingsDetail();
             showToast("다음 라운드 준비가 완료되었습니다.");
@@ -3295,6 +3470,8 @@
         window.triggerLaunchAllDetail = triggerLaunchAllDetail;
         window.finishRoundDetail = finishRoundDetail;
         window.closeTeacherRankingPopup = closeTeacherRankingPopup;
+        window.openTeacherCumulativeRankingPopup = openTeacherCumulativeRankingPopup;
+        window.closeTeacherCumulativeRankingPopup = closeTeacherCumulativeRankingPopup;
         window.resetForNextRoundDetail = resetForNextRoundDetail;
         window.teacherTriggerLaunch = teacherTriggerLaunch;
         window.capturePhoto = capturePhoto;
