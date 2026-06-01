@@ -2037,6 +2037,8 @@
         let quizTeacherQuestionCursor = 0;
         let quizTeacherSessionCompleted = false;
         let quizTeacherCumulativeResults = new Map();
+        let teacherHeartbeatInterval = null;
+        let lastSyncedQuestionIndex = -1;
 
         function shuffled(values) {
             const copy = [...values];
@@ -2357,6 +2359,14 @@
                 if (Array.isArray(payload.quizQuestions)) quizQuestions = payload.quizQuestions;
             });
             quizNetwork.on('onGameStart', payload => {
+                const qIndex = payload.questionIndex;
+                if (qIndex !== undefined) {
+                    if (qIndex === lastSyncedQuestionIndex) {
+                        return; // Ignore heartbeat for already processed question
+                    }
+                    lastSyncedQuestionIndex = qIndex;
+                }
+
                 if (Array.isArray(payload.quizQuestions)) quizQuestions = payload.quizQuestions;
                 
                 // Clear any previous student overlays
@@ -2374,6 +2384,7 @@
             quizNetwork.on('onRoundReset', () => {
                 clearInterval(quizQuestionTimer);
                 quizRunning = false;
+                lastSyncedQuestionIndex = -1; // Reset tracking index
                 document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
                 document.getElementById('quiz-student-result-overlay').classList.remove('show');
                 document.getElementById('arena-screen').style.display = 'none';
@@ -2444,6 +2455,40 @@
                     alert("교사에 의해 강제 퇴장되었습니다.");
                 }
                 location.reload();
+            });
+            quizNetwork.on('onTeacherStateSync', teacherState => {
+                const teacherStatus = teacherState.status;
+                const teacherQuestionIndex = teacherState.questionIndex;
+                
+                // 1. If teacher is currently playing, and we haven't processed this question yet:
+                if (teacherStatus === 'playing' && teacherQuestionIndex !== undefined) {
+                    if (teacherQuestionIndex !== lastSyncedQuestionIndex) {
+                        console.log("[Presence Sync] Catching up to teacher's question: " + teacherQuestionIndex);
+                        lastSyncedQuestionIndex = teacherQuestionIndex;
+                        
+                        if (Array.isArray(teacherState.quizQuestions)) {
+                            quizQuestions = teacherState.quizQuestions;
+                        }
+                        
+                        document.getElementById('quiz-student-waiting-overlay').classList.remove('show');
+                        document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
+                        document.getElementById('quiz-student-result-overlay').classList.remove('show');
+                        
+                        prepareQuizRun(quizQuestions, 'student');
+                    }
+                }
+                
+                // 2. If teacher returned to lobby (waiting), return to lobby
+                if (teacherStatus === 'waiting' && quizMode === 'student' && quizRunning) {
+                    console.log("[Presence Sync] Teacher reset the session. Returning to lobby.");
+                    clearInterval(quizQuestionTimer);
+                    quizRunning = false;
+                    lastSyncedQuestionIndex = -1;
+                    document.getElementById('quiz-student-submitting-overlay').classList.remove('show');
+                    document.getElementById('quiz-student-result-overlay').classList.remove('show');
+                    document.getElementById('arena-screen').style.display = 'none';
+                    document.getElementById('quiz-student-waiting-overlay').classList.add('show');
+                }
             });
         }
 
@@ -2578,10 +2623,33 @@
 
             renderQuizRankings();
 
+            if (teacherHeartbeatInterval) clearInterval(teacherHeartbeatInterval);
+
+            // Update teacher presence metadata state to 'playing'
+            quizNetwork.updatePresenceState({
+                status: 'playing',
+                quizQuestions: [question],
+                questionIndex: quizTeacherQuestionCursor
+            });
+
             quizNetwork.broadcastSettings({ quizQuestions: [question] });
-            setTimeout(() => quizNetwork.broadcastStart({ quizQuestions: [question] }), 120);
+            setTimeout(() => {
+                quizNetwork.broadcastStart({ 
+                    quizQuestions: [question], 
+                    questionIndex: quizTeacherQuestionCursor 
+                });
+            }, 120);
 
-
+            // Set heartbeat intervals of 3 seconds to keep sync
+            teacherHeartbeatInterval = setInterval(() => {
+                if (quizQuestions.length && !quizTeacherRoundFinalized) {
+                    quizNetwork.broadcastStart({
+                        quizQuestions: quizQuestions,
+                        questionIndex: quizTeacherQuestionCursor,
+                        isHeartbeat: true
+                    });
+                }
+            }, 3000);
         }
 
 
@@ -2592,6 +2660,14 @@
             
             quizTeacherRoundFinalized = true;
             if (teacherTimerInterval) clearInterval(teacherTimerInterval);
+            if (teacherHeartbeatInterval) clearInterval(teacherHeartbeatInterval);
+
+            // Update presence metadata state to 'results'
+            quizNetwork.updatePresenceState({
+                status: 'results',
+                quizQuestions: quizQuestions,
+                questionIndex: quizTeacherQuestionCursor
+            });
             
             // Broadcast force submit to any student who hasn't submitted yet
             quizNetwork.broadcastForceSubmit();
@@ -2657,6 +2733,15 @@
                 quizTeacherSessionCompleted = false;
                 quizTeacherCumulativeResults = new Map();
                 if (teacherTimerInterval) clearInterval(teacherTimerInterval);
+                if (teacherHeartbeatInterval) clearInterval(teacherHeartbeatInterval);
+
+                // Update presence metadata state to 'waiting'
+                quizNetwork.updatePresenceState({
+                    status: 'waiting',
+                    quizQuestions: [],
+                    questionIndex: 0
+                });
+
                 closeQuizTeacherRankingPopup();
                 renderQuizRankings();
             }

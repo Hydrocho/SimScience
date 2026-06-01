@@ -25,6 +25,7 @@ export class ClassroomNetwork {
       onResultReported: () => {},  // Occurs when teacher receives result from student
       onRankingUpdate: () => {},   // Occurs when student receives leaderboard from teacher
       onKick: () => {},            // Occurs if kicked (e.g. duplicate nickname)
+      onTeacherStateSync: () => {}, // Occurs when teacher's presence state is synced/updated
     };
 
     // Initialize client
@@ -140,6 +141,13 @@ export class ClassroomNetwork {
       const uniqueStudents = Array.from(uniqueStudentsMap.values());
 
       this.callbacks.onStudentSync(uniqueStudents);
+
+      if (this.role === 'student') {
+        const teacher = rawUsers.find(u => u.role === 'teacher');
+        if (teacher) {
+          this.callbacks.onTeacherStateSync(teacher);
+        }
+      }
     });
 
     // 2. Setup Broadcast Listeners
