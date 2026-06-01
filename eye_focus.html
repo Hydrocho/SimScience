@@ -1884,6 +1884,14 @@
         let classroomNetwork = null;
         let activeStudents = [];
         let studentResults = []; // Aggregated scores in teacher dashboard
+        let teacherHeartbeatInterval = null;
+        let teacherForceSubmitTimeout = null;
+        let teacherMissingResultsTimeout = null;
+        let teacherDisconnectTimeout = null;
+        let teacherRoundId = 0;
+        let teacherRoundStatus = 'waiting';
+        let activeStudentRoundId = null;
+        let submittedStudentRoundId = null;
 
         // Target Objects List
         const objectsConfig = [
@@ -2617,7 +2625,7 @@
         }
 
         // --- Start round specifically synced by teacher ---
-        function startNewRoundMultiplayer() {
+        function startNewRoundMultiplayer(secondsRemaining = shutterWaitTime) {
             resetFocusForRound();
 
             // Target is already synced by teacher's broadcast
@@ -2628,7 +2636,7 @@
             targetDot.style.color = targetCfg.color;
             targetDesc.textContent = `이번 타겟: ${targetCfg.name}`;
 
-            roundTimeLeft = shutterWaitTime;
+            roundTimeLeft = Math.max(0, secondsRemaining);
             countdownHud.style.display = 'block';
             updateTimeWarning(roundTimeLeft);
 
@@ -2651,6 +2659,10 @@
 
         // --- The "찰칵" camera capture event ---
         function takePhotoAction() {
+            if (gameMode !== 'active') return;
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
+
             gameMode = 'result';
             countdownHud.style.display = 'none';
             countdownHud.classList.remove('urgent');
@@ -2741,10 +2753,12 @@
                 
                 // Transmit score details back to teacher
                 classroomNetwork.sendResult(earned, {
+                    roundId: activeStudentRoundId,
                     targetDistance: actualDist,
                     focusDistance: focalDistance,
                     errorOffset: errOffset
                 });
+                submittedStudentRoundId = activeStudentRoundId;
             } else {
                 nextRoundBtn.disabled = false;
                 if (currentRound >= maxRounds) {
@@ -2798,6 +2812,97 @@
             }
         }
 
+        function applyMultiplayerSettings(payload = {}) {
+            const targetSettings = getTargetObjectSettings(payload.targetObjectIndex);
+            targetDistance = targetSettings.targetDistance;
+            shutterWaitTime = Number(payload.shutterWaitTime) || shutterWaitTime;
+            targetObjectIndex = targetSettings.objectIdx;
+
+            document.getElementById('wait-target-display').textContent = targetSettings.label;
+            document.getElementById('wait-timer-display').textContent = `${shutterWaitTime}초`;
+        }
+
+        function returnStudentToWaitingRoom() {
+            if (gameTimerInterval) clearInterval(gameTimerInterval);
+            if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
+            gameTimerInterval = null;
+            photoCaptureTimeout = null;
+            resultModal.classList.remove('show');
+            countdownHud.style.display = 'none';
+            countdownHud.classList.remove('urgent');
+            timeWarningOverlay.className = 'time-warning-overlay';
+            arenaScreen.style.display = 'none';
+            lobbyScreen.style.display = 'block';
+            document.getElementById('student-waiting-overlay').style.display = 'flex';
+            nextRoundBtn.disabled = true;
+            nextRoundBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> 교사 신호 대기 중...';
+            gameMode = 'lobby';
+            activeStudentRoundId = null;
+            submittedStudentRoundId = null;
+        }
+
+        function launchStudentRound(payload = {}) {
+            applyMultiplayerSettings(payload);
+
+            const roundId = payload.roundId;
+            if (roundId !== undefined && roundId !== null && roundId === activeStudentRoundId) return;
+            if (payload.startedAt) {
+                const elapsedSeconds = (Date.now() - new Date(payload.startedAt).getTime()) / 1000;
+                if (elapsedSeconds >= shutterWaitTime) return;
+            }
+
+            activeStudentRoundId = roundId ?? `legacy-${Date.now()}`;
+            submittedStudentRoundId = null;
+            document.getElementById('student-waiting-overlay').style.display = 'none';
+            lobbyScreen.style.display = 'none';
+            arenaScreen.style.display = 'grid';
+            gameMode = 'active';
+
+            if (!isThreeInitialized) {
+                initThreeJS();
+            }
+
+            if (meshes[targetObjectIndex]) {
+                meshes[targetObjectIndex].position.z = targetDistance;
+            }
+
+            const elapsedSeconds = payload.startedAt
+                ? Math.max(0, (Date.now() - new Date(payload.startedAt).getTime()) / 1000)
+                : 0;
+            startNewRoundMultiplayer(Math.max(0, shutterWaitTime - elapsedSeconds));
+            animate();
+        }
+
+        function syncStudentFromTeacherPresence(teacherState) {
+            if (!teacherState) {
+                if (userRole === 'student' && !teacherDisconnectTimeout) {
+                    teacherDisconnectTimeout = setTimeout(() => {
+                        alert("교사와의 연결이 끊어졌습니다. 대기실로 돌아갑니다.");
+                        location.reload();
+                    }, 8000);
+                }
+                return;
+            }
+
+            if (teacherDisconnectTimeout) {
+                clearTimeout(teacherDisconnectTimeout);
+                teacherDisconnectTimeout = null;
+            }
+
+            if (teacherState.status === 'playing') {
+                launchStudentRound(teacherState);
+            } else if (teacherState.status === 'waiting' && gameMode !== 'lobby') {
+                returnStudentToWaitingRoom();
+            }
+        }
+
+        function syncStudentFromCurrentPresence() {
+            if (!classroomNetwork?.channel) return;
+            const state = classroomNetwork.channel.presenceState();
+            const users = Object.values(state).flat();
+            syncStudentFromTeacherPresence(users.find(user => user.role === 'teacher') || null);
+        }
+
         // --- Student Join Action ---
         async function joinAsStudent() {
             const pin = FIXED_SESSION_PIN;
@@ -2827,37 +2932,14 @@
                 document.getElementById('wait-nick-display').textContent = nickname;
 
                 // Listen for settings and start signals
-                classroomNetwork.on('onReceiveSettings', (payload) => {
-                    const targetSettings = getTargetObjectSettings(payload.targetObjectIndex);
-                    targetDistance = targetSettings.targetDistance;
-                    shutterWaitTime = payload.shutterWaitTime;
-                    difficulty = 'easy';
-                    targetObjectIndex = targetSettings.objectIdx;
-
-                    // Update waiting HUD
-                    document.getElementById('wait-target-display').textContent = targetSettings.label;
-                    document.getElementById('wait-timer-display').textContent = `${shutterWaitTime}초`;
-                });
-
-                classroomNetwork.on('onGameStart', () => {
-                    // Hide waiting overlay
-                    document.getElementById('student-waiting-overlay').style.display = 'none';
-                    lobbyScreen.style.display = 'none';
-                    arenaScreen.style.display = 'grid';
-                    gameMode = 'active';
-
-                    if (!isThreeInitialized) {
-                        initThreeJS();
+                classroomNetwork.on('onReceiveSettings', applyMultiplayerSettings);
+                classroomNetwork.on('onGameStart', launchStudentRound);
+                classroomNetwork.on('onForceSubmit', () => {
+                    if (gameMode === 'active' && submittedStudentRoundId !== activeStudentRoundId) {
+                        takePhotoAction();
                     }
-
-                    // Position the target mesh exactly at the distance set by teacher
-                    if (meshes[targetObjectIndex]) {
-                        meshes[targetObjectIndex].position.z = targetDistance;
-                    }
-
-                    startNewRoundMultiplayer();
-                    animate();
                 });
+                classroomNetwork.on('onRoundReset', returnStudentToWaitingRoom);
 
                 classroomNetwork.on('onRankingUpdate', (payload) => {
                     const rankings = payload.rankings || [];
@@ -2868,10 +2950,14 @@
                     document.getElementById('res-rank-txt').textContent = `${myRank}위 / ${rankings.length}명`;
                 });
 
-                classroomNetwork.on('onKick', () => {
-                    alert("중복 로그인으로 인해 접속이 해제되었습니다.");
+                classroomNetwork.on('onKick', (reason) => {
+                    alert(reason === 'duplicate_nickname'
+                        ? "중복 로그인으로 인해 접속이 해제되었습니다."
+                        : "교사에 의해 퇴장되었습니다.");
                     location.reload();
                 });
+                classroomNetwork.on('onTeacherStateSync', syncStudentFromTeacherPresence);
+                setTimeout(syncStudentFromCurrentPresence, 0);
             } else {
                 alert("가상실험 접속에 실패했습니다. PIN 번호를 확인해 주세요.");
             }
@@ -2953,6 +3039,8 @@
 
                     // Student result reporting listener
                     classroomNetwork.on('onResultReported', (payload) => {
+                        if (payload.roundId !== teacherRoundId) return;
+
                         const index = studentResults.findIndex(r => r.studentId === payload.studentId);
                         if (index !== -1) {
                             studentResults[index] = payload;
@@ -2969,10 +3057,15 @@
 
                         // Sync leaderboard rankings to all students
                         classroomNetwork.broadcastRankings({ rankings: studentResults });
+
+                        if (studentResults.length >= activeStudents.length && activeStudents.length > 0) {
+                            finishTeacherRound();
+                        }
                     });
 
                     // Initialize slider sync
                     teacherSyncSettings();
+                    updateTeacherPresence('waiting');
 
                 } else {
                     alert(`교사 권한이 없는 계정입니다.\n이메일: ${email}`);
@@ -3030,6 +3123,108 @@
                 difficulty: 'easy',
                 targetObjectIndex: targetSettings.objectIdx
             });
+            if (teacherRoundStatus === 'waiting') updateTeacherPresence('waiting');
+        }
+
+        function getTeacherRoundPayload(status = teacherRoundStatus) {
+            const waitVal = parseInt(document.getElementById('teacher-wait-slider').value);
+            const targetSettings = getTargetObjectSettings(document.getElementById('teacher-target-object-select').value);
+            return {
+                status,
+                roundId: teacherRoundId,
+                targetDistance: targetSettings.targetDistance,
+                shutterWaitTime: waitVal,
+                difficulty: 'easy',
+                targetObjectIndex: targetSettings.objectIdx
+            };
+        }
+
+        function updateTeacherPresence(status, extraData = {}) {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            teacherRoundStatus = status;
+            classroomNetwork.updatePresenceState({
+                ...getTeacherRoundPayload(status),
+                ...extraData
+            });
+        }
+
+        function clearTeacherRoundTimers() {
+            if (teacherHeartbeatInterval) clearInterval(teacherHeartbeatInterval);
+            if (teacherForceSubmitTimeout) clearTimeout(teacherForceSubmitTimeout);
+            if (teacherMissingResultsTimeout) clearTimeout(teacherMissingResultsTimeout);
+            teacherHeartbeatInterval = null;
+            teacherForceSubmitTimeout = null;
+            teacherMissingResultsTimeout = null;
+        }
+
+        function finishTeacherRound() {
+            if (teacherRoundStatus !== 'playing' || !classroomNetwork) return;
+            clearTeacherRoundTimers();
+            classroomNetwork.broadcastForceSubmit();
+            updateTeacherPresence('results');
+            teacherMissingResultsTimeout = setTimeout(fillMissingStudentResults, 750);
+        }
+
+        function fillMissingStudentResults() {
+            if (!classroomNetwork) return;
+            const submittedIds = new Set(studentResults.map(result => result.studentId));
+            const roundSettings = getTeacherRoundPayload('results');
+            activeStudents.forEach(student => {
+                if (!submittedIds.has(student.id)) {
+                    studentResults.push({
+                        studentId: student.id,
+                        nickname: student.nickname,
+                        roundId: teacherRoundId,
+                        targetDistance: roundSettings.targetDistance,
+                        focusDistance: null,
+                        errorOffset: Number.POSITIVE_INFINITY,
+                        score: 0,
+                        unsubmitted: true
+                    });
+                }
+            });
+            studentResults.sort((a, b) => a.errorOffset - b.errorOffset);
+            renderTeacherRankingsTable();
+            renderTeacherRankingsTableDetail();
+            classroomNetwork.broadcastRankings({ rankings: studentResults });
+        }
+
+        function launchTeacherRound() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            teacherRoundId += 1;
+            teacherRoundStatus = 'playing';
+            studentResults = [];
+
+            const startedAt = new Date().toISOString();
+            const payload = {
+                ...getTeacherRoundPayload('playing'),
+                startedAt
+            };
+
+            updateTeacherPresence('playing', { startedAt });
+            classroomNetwork.broadcastSettings(payload);
+            classroomNetwork.broadcastStart(payload);
+
+            clearTeacherRoundTimers();
+            teacherHeartbeatInterval = setInterval(() => {
+                if (teacherRoundStatus === 'playing') {
+                    classroomNetwork.broadcastStart(payload);
+                }
+            }, 3000);
+            teacherForceSubmitTimeout = setTimeout(
+                finishTeacherRound,
+                payload.shutterWaitTime * 1000 + 750
+            );
+        }
+
+        function resetTeacherRound() {
+            if (userRole !== 'teacher' || !classroomNetwork) return;
+            clearTeacherRoundTimers();
+            teacherRoundId += 1;
+            studentResults = [];
+            classroomNetwork.broadcastRoundReset();
+            updateTeacherPresence('waiting', { startedAt: null });
+            classroomNetwork.broadcastSettings(getTeacherRoundPayload('waiting'));
         }
 
         function lockSessionSettingsDetail() {
@@ -3114,7 +3309,7 @@
             renderTeacherRankingsTableDetail();
 
             // Triggers start on all student screens
-            classroomNetwork.broadcastStart();
+            launchTeacherRound();
             showToast("모든 학생 화면에 실험이 개시되었습니다!");
         }
 
@@ -3211,9 +3406,9 @@
                     <tr ${rowStyle}>
                         <td style="font-weight: 800;">${medal}</td>
                         <td>${r.nickname}</td>
-                        <td>${r.focusDistance.toFixed(1)}m</td>
-                        <td>${r.errorOffset.toFixed(1)}m</td>
-                        <td style="font-weight: 700; color: var(--primary);">${r.score}점</td>
+                        <td>${r.unsubmitted ? '-' : `${r.focusDistance.toFixed(1)}m`}</td>
+                        <td>${r.unsubmitted ? '미제출' : `${r.errorOffset.toFixed(1)}m`}</td>
+                        <td style="font-weight: 700; color: var(--primary);">${r.unsubmitted ? '-' : `${r.score}점`}</td>
                     </tr>
                 `;
             }).join('');
@@ -3255,6 +3450,7 @@
                 difficulty: 'easy',
                 targetObjectIndex: targetSettings.objectIdx
             });
+            if (teacherRoundStatus === 'waiting') updateTeacherPresence('waiting');
         }
 
         function teacherTriggerLaunch() {
@@ -3273,23 +3469,15 @@
             `;
 
             // Triggers start on all student screens
-            classroomNetwork.broadcastStart();
+            launchTeacherRound();
             showToast("모든 학생 화면에 실험이 개시되었습니다!");
         }
 
         function teacherResetRound() {
             if (userRole !== 'teacher' || !classroomNetwork) return;
             
-            // Broadcasts settings (forcing kids back to waiting overlay)
-            const waitVal = parseInt(document.getElementById('teacher-wait-slider').value);
-            const targetSettings = getTargetObjectSettings(document.getElementById('teacher-target-object-select').value);
-
-            classroomNetwork.broadcastSettings({
-                targetDistance: targetSettings.targetDistance,
-                shutterWaitTime: waitVal,
-                difficulty: 'easy',
-                targetObjectIndex: targetSettings.objectIdx
-            });
+            // Broadcasts a dedicated reset and the current waiting-room settings.
+            resetTeacherRound();
             showToast("모든 학생 화면을 대기실로 리셋했습니다.");
         }
 
@@ -3311,9 +3499,9 @@
                     <tr class="${isTop ? 'top-rank' : ''}">
                         <td>${isTop ? '★ 1' : rank}</td>
                         <td>${r.nickname}</td>
-                        <td>${r.focusDistance.toFixed(1)}m</td>
-                        <td>${r.errorOffset.toFixed(1)}m</td>
-                        <td>${r.score}점</td>
+                        <td>${r.unsubmitted ? '-' : `${r.focusDistance.toFixed(1)}m`}</td>
+                        <td>${r.unsubmitted ? '미제출' : `${r.errorOffset.toFixed(1)}m`}</td>
+                        <td>${r.unsubmitted ? '-' : `${r.score}점`}</td>
                     </tr>
                 `;
             }).join('');
@@ -3702,6 +3890,13 @@
         window.triggerLaunchAllDetail = triggerLaunchAllDetail;
         window.resetForNextRoundDetail = resetForNextRoundDetail;
         window.kickStudentDetail = kickStudentDetail;
+
+        window.addEventListener('beforeunload', (event) => {
+            if (classroomNetwork?.role === 'teacher' && teacherRoundStatus === 'playing') {
+                event.preventDefault();
+                event.returnValue = '';
+            }
+        });
 
     </script>
 </body>
