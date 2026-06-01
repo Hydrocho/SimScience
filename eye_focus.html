@@ -1909,6 +1909,8 @@
         let studentResultRetryTimeouts = [];
         const teacherRoundResults = new Map();
         let pendingRoundReset = false;
+        let resultModalShowTimeout = null;
+        let studentWaitingRoomAutoTimeout = null;
 
         // Target Objects List
         const objectsConfig = [
@@ -2789,13 +2791,16 @@
             }
 
             // Show results modal
-            setTimeout(() => {
+            resultModalShowTimeout = setTimeout(() => {
+                resultModalShowTimeout = null;
+                if (gameMode !== 'result') return;
                 resultModal.classList.add('show');
             }, 600);
         }
 
         // --- Next round progression ---
         function proceedToNextRound() {
+            clearStudentWaitingRoomAutoTransition();
             resultModal.classList.remove('show');
 
             if (isMultiplayer) {
@@ -2821,6 +2826,9 @@
         }
 
         function exitToLobby() {
+            clearStudentWaitingRoomAutoTransition();
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = null;
             resultModal.classList.remove('show');
             if (gameTimerInterval) clearInterval(gameTimerInterval);
             if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
@@ -2841,6 +2849,19 @@
         function clearStudentResultRetries() {
             studentResultRetryTimeouts.forEach(timeout => clearTimeout(timeout));
             studentResultRetryTimeouts = [];
+        }
+
+        function clearStudentWaitingRoomAutoTransition() {
+            if (studentWaitingRoomAutoTimeout) clearTimeout(studentWaitingRoomAutoTimeout);
+            studentWaitingRoomAutoTimeout = null;
+        }
+
+        function scheduleStudentWaitingRoomAutoTransition() {
+            clearStudentWaitingRoomAutoTransition();
+            studentWaitingRoomAutoTimeout = setTimeout(() => {
+                studentWaitingRoomAutoTimeout = null;
+                if (pendingRoundReset) executeReturnToWaitingRoom();
+            }, 3000);
         }
 
         function transmitCachedStudentResult() {
@@ -2881,7 +2902,8 @@
             if (resultModal.classList.contains('show')) {
                 pendingRoundReset = true;
                 nextRoundBtn.disabled = false;
-                nextRoundBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 확인 (대기실로 이동)';
+                nextRoundBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 확인 (3초 후 대기실로 자동 이동)';
+                scheduleStudentWaitingRoomAutoTransition();
             } else {
                 pendingRoundReset = false;
                 executeReturnToWaitingRoom();
@@ -2889,6 +2911,10 @@
         }
 
         function executeReturnToWaitingRoom() {
+            clearStudentWaitingRoomAutoTransition();
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = null;
+            pendingRoundReset = false;
             resultModal.classList.remove('show');
             countdownHud.style.display = 'none';
             countdownHud.classList.remove('urgent');
@@ -2915,6 +2941,11 @@
                 if (elapsedSeconds >= shutterWaitTime) return;
             }
 
+            clearStudentWaitingRoomAutoTransition();
+            if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
+            resultModalShowTimeout = null;
+            pendingRoundReset = false;
+            resultModal.classList.remove('show');
             activeStudentRoundId = roundId ?? `legacy-${Date.now()}`;
             submittedStudentRoundId = null;
             lastStudentResult = null;
