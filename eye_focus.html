@@ -2859,17 +2859,29 @@
         }
 
         function transmitCachedStudentResult() {
-            if (!lastStudentResult || !classroomNetwork) return;
-            if (lastStudentResult.details.roundId !== activeStudentRoundId) return;
+            console.log("[Debug Student] transmitCachedStudentResult called. lastStudentResult:", lastStudentResult, "activeStudentRoundId:", activeStudentRoundId);
+            if (!lastStudentResult || !classroomNetwork) {
+                console.warn("[Debug Student] transmitCachedStudentResult early exit: no lastStudentResult or classroomNetwork");
+                return;
+            }
+            if (lastStudentResult.details.roundId !== activeStudentRoundId) {
+                console.warn("[Debug Student] transmitCachedStudentResult early exit: roundId mismatch. details.roundId:", lastStudentResult.details.roundId, "activeStudentRoundId:", activeStudentRoundId);
+                return;
+            }
+            console.log("[Debug Student] Calling sendResult with:", lastStudentResult.score, lastStudentResult.details);
             classroomNetwork.sendResult(lastStudentResult.score, lastStudentResult.details);
         }
 
         function sendStudentResult(score, details) {
+            console.log("[Debug Student] sendStudentResult called. score:", score, "details:", details);
             clearStudentResultRetries();
             lastStudentResult = { score, details };
             transmitCachedStudentResult();
-            [500, 1500, 3500, 6000].forEach(delay => {
-                studentResultRetryTimeouts.push(setTimeout(transmitCachedStudentResult, delay));
+            [500, 1500, 3500, 6000].forEach((delay, index) => {
+                studentResultRetryTimeouts.push(setTimeout(() => {
+                    console.log(`[Debug Student] Retry timer #${index + 1} (${delay}ms) triggered`);
+                    transmitCachedStudentResult();
+                }, delay));
             });
         }
 
@@ -2890,16 +2902,26 @@
 
         function isStaleStudentRound(payload = {}) {
             const roundId = getNumericRoundId(payload);
-            return roundId !== null && roundId < latestStudentRoundId;
+            const isStale = roundId !== null && roundId < latestStudentRoundId;
+            console.log(`[Debug Student] isStaleStudentRound check. roundId: ${roundId}, latestStudentRoundId: ${latestStudentRoundId}, isStale: ${isStale}`);
+            return isStale;
         }
 
         function rememberStudentRound(payload = {}) {
             const roundId = getNumericRoundId(payload);
-            if (roundId !== null) latestStudentRoundId = Math.max(latestStudentRoundId, roundId);
+            if (roundId !== null) {
+                const oldLatest = latestStudentRoundId;
+                latestStudentRoundId = Math.max(latestStudentRoundId, roundId);
+                console.log(`[Debug Student] rememberStudentRound: latestStudentRoundId updated ${oldLatest} -> ${latestStudentRoundId}`);
+            }
         }
 
         function returnStudentToWaitingRoom(payload = {}) {
-            if (isStaleStudentRound(payload)) return;
+            console.log("[Debug Student] returnStudentToWaitingRoom invoked. payload:", payload);
+            if (isStaleStudentRound(payload)) {
+                console.warn("[Debug Student] returnStudentToWaitingRoom aborted: stale round. payload:", payload);
+                return;
+            }
             rememberStudentRound(payload);
             if (gameTimerInterval) clearInterval(gameTimerInterval);
             if (photoCaptureTimeout) clearTimeout(photoCaptureTimeout);
@@ -2911,16 +2933,19 @@
             timeWarningOverlay.className = 'time-warning-overlay';
 
             if (gameMode === 'result') {
+                console.log("[Debug Student] returnStudentToWaitingRoom: gameMode is 'result'. Setting pendingRoundReset to true");
                 pendingRoundReset = true;
                 nextRoundBtn.disabled = false;
                 nextRoundBtn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> 확인 (대기실로 이동)';
             } else {
+                console.log("[Debug Student] returnStudentToWaitingRoom: Returning to lobby immediately");
                 pendingRoundReset = false;
                 executeReturnToWaitingRoom();
             }
         }
 
         function executeReturnToWaitingRoom() {
+            console.log("[Debug Student] executeReturnToWaitingRoom executed");
             if (resultModalShowTimeout) clearTimeout(resultModalShowTimeout);
             resultModalShowTimeout = null;
             pendingRoundReset = false;
@@ -2941,14 +2966,25 @@
         }
 
         function launchStudentRound(payload = {}) {
+            console.log("[Debug Student] launchStudentRound invoked. payload:", payload, "activeStudentRoundId:", activeStudentRoundId);
             applyMultiplayerSettings(payload);
 
             const roundId = payload.roundId;
-            if (isStaleStudentRound(payload)) return;
-            if (roundId !== undefined && roundId !== null && roundId === activeStudentRoundId) return;
+            if (isStaleStudentRound(payload)) {
+                console.warn("[Debug Student] launchStudentRound aborted: round is stale. payload.roundId:", roundId);
+                return;
+            }
+            if (roundId !== undefined && roundId !== null && roundId === activeStudentRoundId) {
+                console.warn("[Debug Student] launchStudentRound aborted: round already active. roundId:", roundId);
+                return;
+            }
             if (payload.startedAt) {
                 const elapsedSeconds = (Date.now() - new Date(payload.startedAt).getTime()) / 1000;
-                if (elapsedSeconds >= shutterWaitTime) return;
+                console.log("[Debug Student] launchStudentRound: elapsed seconds since round started:", elapsedSeconds);
+                if (elapsedSeconds >= shutterWaitTime) {
+                    console.warn("[Debug Student] launchStudentRound aborted: shutter wait time exceeded. elapsed:", elapsedSeconds, "limit:", shutterWaitTime);
+                    return;
+                }
             }
 
             rememberStudentRound(payload);
@@ -3039,16 +3075,26 @@
                 document.getElementById('wait-nick-display').textContent = nickname;
 
                 // Listen for settings and start signals
-                classroomNetwork.on('onReceiveSettings', applyMultiplayerSettings);
-                classroomNetwork.on('onGameStart', launchStudentRound);
+                classroomNetwork.on('onReceiveSettings', (payload) => {
+                    console.log("[Debug Student] classroomNetwork onReceiveSettings triggered. payload:", payload);
+                    applyMultiplayerSettings(payload);
+                });
+                classroomNetwork.on('onGameStart', (payload) => {
+                    console.log("[Debug Student] classroomNetwork onGameStart triggered. payload:", payload);
+                    launchStudentRound(payload);
+                });
                 classroomNetwork.on('onForceSubmit', () => {
+                    console.log("[Debug Student] classroomNetwork onForceSubmit triggered. gameMode:", gameMode, "submittedStudentRoundId:", submittedStudentRoundId, "activeStudentRoundId:", activeStudentRoundId);
                     if (gameMode === 'active' && submittedStudentRoundId !== activeStudentRoundId) {
                         takePhotoAction();
                     } else {
                         transmitCachedStudentResult();
                     }
                 });
-                classroomNetwork.on('onRoundReset', returnStudentToWaitingRoom);
+                classroomNetwork.on('onRoundReset', (payload) => {
+                    console.log("[Debug Student] classroomNetwork onRoundReset triggered. payload:", payload);
+                    returnStudentToWaitingRoom(payload);
+                });
 
                 classroomNetwork.on('onRankingUpdate', (payload) => {
                     const rankings = payload.rankings || [];
@@ -3148,12 +3194,18 @@
 
                     // Student result reporting listener
                     classroomNetwork.on('onResultReported', (payload) => {
-                        if (Number(payload.roundId) !== Number(teacherRoundId)) return;
+                        console.log("[Debug Teacher] onResultReported callback. payload.roundId:", payload.roundId, "teacherRoundId:", teacherRoundId, "payload:", payload);
+                        if (Number(payload.roundId) !== Number(teacherRoundId)) {
+                            console.warn("[Debug Teacher] Result ignored: roundId mismatch. payload.roundId:", payload.roundId, "teacherRoundId:", teacherRoundId);
+                            return;
+                        }
 
                         const index = studentResults.findIndex(r => r.studentId === payload.studentId);
                         if (index !== -1) {
+                            console.log(`[Debug Teacher] Updating existing student result for studentId: ${payload.studentId}`);
                             studentResults[index] = payload;
                         } else {
+                            console.log(`[Debug Teacher] Adding new student result for studentId: ${payload.studentId}`);
                             studentResults.push(payload);
                         }
 
@@ -3168,10 +3220,14 @@
                         renderTeacherRankingsTableDetail();
 
                         // Sync leaderboard rankings to all students
+                        console.log("[Debug Teacher] Broadcasting rankings update:", studentResults);
                         classroomNetwork.broadcastRankings({ rankings: studentResults });
 
                         if (studentResults.length >= activeStudents.length && activeStudents.length > 0) {
+                            console.log(`[Debug Teacher] Received all results (${studentResults.length}/${activeStudents.length}). Finishing round.`);
                             finishTeacherRound();
+                        } else {
+                            console.log(`[Debug Teacher] Pending results: ${studentResults.length}/${activeStudents.length} received.`);
                         }
                     });
 
@@ -3394,6 +3450,7 @@
 
         function launchTeacherRound() {
             if (userRole !== 'teacher' || !classroomNetwork) return;
+            const oldRoundId = teacherRoundId;
             teacherRoundId += 1;
             teacherRoundStatus = 'playing';
             studentResults = [];
@@ -3403,6 +3460,7 @@
                 ...getTeacherRoundPayload('playing'),
                 startedAt
             };
+            console.log(`[Debug Teacher] launchTeacherRound called. teacherRoundId: ${oldRoundId} -> ${teacherRoundId}. payload:`, payload);
 
             updateTeacherPresence('playing', { startedAt });
             classroomNetwork.broadcastSettings(payload);
@@ -3411,23 +3469,28 @@
             clearTeacherRoundTimers();
             teacherHeartbeatInterval = setInterval(() => {
                 if (teacherRoundStatus === 'playing') {
+                    console.log("[Debug Teacher] Sending heartbeat start signal broadcast. teacherRoundId:", teacherRoundId);
                     classroomNetwork.broadcastStart(payload);
                 }
             }, 3000);
-            teacherForceSubmitTimeout = setTimeout(
-                finishTeacherRound,
-                payload.shutterWaitTime * 1000 + 750
-            );
+            teacherForceSubmitTimeout = setTimeout(() => {
+                console.log("[Debug Teacher] Force-submit timer triggered. Calling finishTeacherRound()");
+                finishTeacherRound();
+            }, payload.shutterWaitTime * 1000 + 750);
         }
 
         function resetTeacherRound() {
             if (userRole !== 'teacher' || !classroomNetwork) return;
             clearTeacherRoundTimers();
+            const oldRoundId = teacherRoundId;
             teacherRoundId += 1;
             studentResults = [];
-            classroomNetwork.broadcastRoundReset(getTeacherRoundPayload('waiting'));
+            const payload = getTeacherRoundPayload('waiting');
+            console.log(`[Debug Teacher] resetTeacherRound called. teacherRoundId: ${oldRoundId} -> ${teacherRoundId}. payload:`, payload);
+
+            classroomNetwork.broadcastRoundReset(payload);
             updateTeacherPresence('waiting', { startedAt: null });
-            classroomNetwork.broadcastSettings(getTeacherRoundPayload('waiting'));
+            classroomNetwork.broadcastSettings(payload);
         }
 
         function lockSessionSettingsDetail() {

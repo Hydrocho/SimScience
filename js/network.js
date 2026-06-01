@@ -104,6 +104,8 @@ export class ClassroomNetwork {
         });
       });
 
+      console.log("[Debug Network] Presence sync event. Users in room:", rawUsers);
+
       // Filter and format students
       const rawStudents = rawUsers.filter(u => u.role === 'student');
       
@@ -153,41 +155,49 @@ export class ClassroomNetwork {
     // 2. Setup Broadcast Listeners
     this.channel
       .on('broadcast', { event: 'settings-change' }, ({ payload }) => {
+        console.log("[Debug Network] Received settings-change. payload:", payload);
         if (this.role === 'student') {
           this.callbacks.onReceiveSettings(payload);
         }
       })
       .on('broadcast', { event: 'start-game' }, ({ payload }) => {
+        console.log("[Debug Network] Received start-game. payload:", payload);
         if (this.role === 'student') {
           this.callbacks.onGameStart(payload);
         }
       })
       .on('broadcast', { event: 'force-submit' }, () => {
+        console.log("[Debug Network] Received force-submit signal");
         if (this.role === 'student') {
           this.callbacks.onForceSubmit();
         }
       })
       .on('broadcast', { event: 'round-reset' }, ({ payload }) => {
+        console.log("[Debug Network] Received round-reset. payload:", payload);
         if (this.role === 'student') {
           this.callbacks.onRoundReset(payload || {});
         }
       })
       .on('broadcast', { event: 'report-result' }, ({ payload }) => {
+        console.log("[Debug Network] Received report-result. payload:", payload);
         if (this.role === 'teacher') {
           this.callbacks.onResultReported(payload);
         }
       })
       .on('broadcast', { event: 'result-ack' }, ({ payload }) => {
+        console.log("[Debug Network] Received result-ack. payload:", payload);
         if (this.role === 'student' && payload.studentId === this.id) {
           this.callbacks.onResultAcknowledged(payload);
         }
       })
       .on('broadcast', { event: 'ranking-update' }, ({ payload }) => {
+        console.log("[Debug Network] Received ranking-update. payload:", payload);
         if (this.role === 'student') {
           this.callbacks.onRankingUpdate(payload);
         }
       })
       .on('broadcast', { event: 'kick-student' }, ({ payload }) => {
+        console.log("[Debug Network] Received kick-student. payload:", payload);
         if (this.role === 'student' && payload.targetId === this.id) {
           this.callbacks.onKick(payload.reason);
           this.disconnect();
@@ -197,6 +207,7 @@ export class ClassroomNetwork {
     // 3. Subscribe and Track presence
     return new Promise((resolve) => {
       this.channel.subscribe(async (status) => {
+        console.log(`[Debug Network] Channel subscription status change: "${status}" for channel: ${channelName}`);
         if (status === 'SUBSCRIBED') {
           console.log(`[Network] Subscribed to Supabase channel: ${channelName}`);
           
@@ -222,17 +233,25 @@ export class ClassroomNetwork {
    * Supabase is deprecating the implicit send() REST fallback.
    */
   sendBroadcast(event, payload = {}) {
-    if (!this.channel) return Promise.resolve('error');
+    if (!this.channel) {
+      console.warn(`[Debug Network] sendBroadcast failed: no channel for event "${event}"`);
+      return Promise.resolve('error');
+    }
     const message = {
       type: 'broadcast',
       event,
       payload
     };
 
+    console.log(`[Debug Network] sendBroadcast. Event: "${event}", Payload:`, payload, "Channel state:", this.channel.state);
+
     if (this.channel.state !== 'joined' && typeof this.channel.httpSend === 'function') {
+      console.log(`[Debug Network] Channel state is "${this.channel.state}" (not 'joined'). Invoking httpSend for event "${event}"`);
       return this.channel.httpSend(event, payload);
     }
-    return this.channel.send(message);
+    const res = this.channel.send(message);
+    console.log(`[Debug Network] Channel.send returned:`, res);
+    return res;
   }
 
   /**
