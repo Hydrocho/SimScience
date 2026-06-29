@@ -22,3 +22,6 @@ Desktop.ini
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Superpowers brainstorming workspace
+.superpowers/
