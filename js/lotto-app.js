@@ -11,7 +11,7 @@ import {
   toggleSelection,
 } from './lotto-core.mjs';
 
-void [canSubmitSelection, createRoundId, drawRandomNumbers, evaluateTicket, formatTimer, normalizeNumbers, sortRanking, toggleSelection];
+void [canSubmitSelection, createRoundId, drawRandomNumbers, evaluateTicket, normalizeNumbers, sortRanking, toggleSelection];
 
 const SUPABASE_URL = 'https://vdyvpsteofvhbvvrilxe.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU';
@@ -64,7 +64,7 @@ function readRoomFromUrl() {
 }
 
 function generatePin() {
-  return String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+  return String(Math.floor(100000 + Math.random() * 900000));
 }
 
 function buildStudentUrl(pin) {
@@ -81,19 +81,17 @@ async function ensureTeacherAllowed() {
   }
 
   const { data, error } = await supabaseClient.auth.getSession();
-  if (error) {
-    throw error;
-  }
+  if (error) throw error;
 
   const session = data?.session;
   if (!session) {
     await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: window.location.href,
+        redirectTo: window.location.origin + window.location.pathname,
       },
     });
-    throw new Error('Google 로그인으로 이동합니다.');
+    return null;
   }
 
   const email = session.user?.email || '';
@@ -127,12 +125,13 @@ async function createTeacherRoom() {
     state.creatingRoom = true;
     if (startButton) startButton.disabled = true;
 
-    setStatus('교사 계정을 확인하고 있습니다.', 'neutral');
+    setStatus('교사 계정을 확인하고 있습니다.');
     const teacherEmail = await ensureTeacherAllowed();
+    if (!teacherEmail) return;
+
     const pin = generatePin();
     const network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const joined = await network.joinSession(pin, teacherEmail, 'teacher', { game: 'lotto' });
+    const joined = await network.joinSession(pin, 'Teacher', 'teacher', { game: 'lotto' });
     if (!joined) {
       throw new Error('로또 방을 만들지 못했습니다. 잠시 후 다시 시도하세요.');
     }
@@ -140,15 +139,17 @@ async function createTeacherRoom() {
     state.mode = 'teacher';
     state.pin = pin;
     state.network = network;
+    state.students = [];
+    state.submissions = new Map();
     roomCreated = true;
 
-    const pinDisplay = $('teacher-room-code');
-    if (pinDisplay) pinDisplay.textContent = pin;
-
-    const urlDisplay = $('student-room-url');
-    if (urlDisplay) urlDisplay.textContent = buildStudentUrl(pin);
+    state.network.on('onStudentSync', (students) => {
+      state.students = students.filter((student) => student.game === 'lotto' || !student.game);
+      renderTeacherRoom();
+    });
 
     showScreen('teacher-screen');
+    renderTeacherRoom();
     setStatus('교사용 로또 방이 준비되었습니다.', 'success');
   } catch (error) {
     console.error('[Lotto] Failed to create teacher room:', error);
@@ -161,9 +162,128 @@ async function createTeacherRoom() {
   }
 }
 
-function joinStudentRoom(event) {
+async function joinStudentRoom(event) {
   event.preventDefault();
-  setStatus('학생 참여 기능은 다음 작업에서 연결됩니다.', 'neutral');
+
+  const form = event.currentTarget;
+  const room = (
+    form.querySelector('[name="room"]')?.value ||
+    $('student-room-code')?.value ||
+    state.pin ||
+    ''
+  ).trim();
+  const nickname = (
+    form.querySelector('[name="name"]')?.value ||
+    $('student-name')?.value ||
+    $('student-name-active')?.value ||
+    ''
+  ).trim();
+
+  if (!/^\d{6}$/.test(room)) {
+    setStatus('6자리 방 코드를 입력하세요.', 'error');
+    return;
+  }
+  if (!nickname) {
+    setStatus('이름 또는 별명을 입력하세요.', 'error');
+    return;
+  }
+  if (!isConnected()) {
+    setStatus('Supabase 연결을 사용할 수 없습니다.', 'error');
+    return;
+  }
+
+  state.mode = 'student';
+  state.pin = room;
+  state.network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
+  setStudentRoomFields(room);
+  showScreen('student-screen');
+  setStatus('방에 접속하는 중입니다.');
+
+  const joined = await state.network.joinSession(room, nickname, 'student', {
+    game: 'lotto',
+    submitted: false,
+  });
+  if (!joined) {
+    setStatus('방 접속에 실패했습니다. 방 코드를 확인하세요.', 'error');
+    return;
+  }
+
+  setStatus('접속 완료. 교사의 시작을 기다리세요.', 'success');
+}
+
+function setStudentRoomFields(room) {
+  const roomInput = $('student-room-code');
+  if (roomInput) roomInput.value = room;
+  const activeRoomInput = $('student-room-code-active');
+  if (activeRoomInput) activeRoomInput.value = room;
+  const activeRoomLabel = $('student-room-code-label');
+  if (activeRoomLabel) activeRoomLabel.textContent = room;
+}
+
+function renderTeacherRoom() {
+  const studentUrl = buildStudentUrl(state.pin);
+  const roomCode = $('teacher-room-code');
+  if (roomCode) roomCode.textContent = state.pin || '------';
+
+  const url = $('student-room-url');
+  if (url) url.textContent = studentUrl;
+
+  const studentCount = $('student-count');
+  if (studentCount) studentCount.textContent = String(state.students.length);
+
+  const submittedCount = $('submitted-count');
+  if (submittedCount) submittedCount.textContent = String(state.submissions.size);
+
+  const unsubmittedCount = $('unsubmitted-count');
+  if (unsubmittedCount) {
+    unsubmittedCount.textContent = String(Math.max(0, state.students.length - state.submissions.size));
+  }
+
+  const timerDisplay = $('timer-display');
+  if (timerDisplay) timerDisplay.textContent = formatTimer(state.timer.remainingSeconds);
+
+  renderQrCode(studentUrl);
+  renderStudentList();
+}
+
+function renderQrCode(studentUrl) {
+  const qr = $('qr-code');
+  if (!qr) return;
+  qr.innerHTML = '';
+
+  if (window.QRCode) {
+    new window.QRCode(qr, {
+      text: studentUrl,
+      width: 196,
+      height: 196,
+      correctLevel: window.QRCode.CorrectLevel.M,
+    });
+  } else {
+    qr.textContent = 'QR 라이브러리를 불러오지 못했습니다.';
+  }
+}
+
+function renderStudentList() {
+  const list = $('student-list');
+  if (!list) return;
+
+  if (!state.students.length) {
+    list.textContent = '학생 접속 대기 중...';
+    return;
+  }
+
+  list.innerHTML = state.students
+    .map((student) => `<div class="student-chip">${escapeHtml(student.nickname)}</div>`)
+    .join('');
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
 }
 
 function boot() {
@@ -181,15 +301,10 @@ function boot() {
   if (room) {
     state.mode = 'student';
     state.pin = room;
-    const roomInput = $('student-room-code');
-    if (roomInput) roomInput.value = room;
-    const activeRoomInput = $('student-room-code-active');
-    if (activeRoomInput) activeRoomInput.value = room;
-    const activeRoomLabel = $('student-room-code-label');
-    if (activeRoomLabel) activeRoomLabel.textContent = room;
+    setStudentRoomFields(room);
     showScreen('student-screen');
     if (supabaseReady) {
-      setStatus('학생 참여 화면이 열렸습니다. 실제 참여 기능은 다음 작업에서 연결됩니다.', 'neutral');
+      setStatus('이름을 입력하고 참여하세요.');
     }
     return;
   }

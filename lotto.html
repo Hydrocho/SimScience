@@ -53,6 +53,11 @@
       cursor: pointer;
     }
 
+    button:disabled {
+      cursor: wait;
+      opacity: 0.7;
+    }
+
     .app-shell {
       width: min(1120px, calc(100% - 32px));
       margin: 0 auto;
@@ -162,6 +167,7 @@
     }
 
     h1,
+    h2,
     h3 {
       margin: 0;
       letter-spacing: 0;
@@ -174,8 +180,13 @@
       font-weight: 900;
     }
 
+    h2 {
+      font-size: clamp(1.7rem, 4vw, 2.7rem);
+      font-weight: 900;
+    }
+
     h3 {
-      font-size: clamp(1.45rem, 3vw, 2.15rem);
+      font-size: clamp(1.25rem, 2.6vw, 1.8rem);
       font-weight: 900;
     }
 
@@ -307,18 +318,31 @@
       align-items: start;
     }
 
+    .teacher-layout {
+      display: grid;
+      gap: 18px;
+      align-content: start;
+    }
+
+    .room-board {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 18px;
+      align-items: center;
+    }
+
     .room-code {
       display: inline-flex;
       align-items: center;
       min-height: 56px;
-      margin-top: 18px;
+      margin-top: 8px;
       padding: 0 16px;
       border: 2px dashed rgba(217, 119, 6, 0.4);
       border-radius: 12px;
       color: #7c2d12;
       background: #fff7d6;
       font-family: "Outfit", sans-serif;
-      font-size: 1.8rem;
+      font-size: clamp(3rem, 10vw, 7rem);
       font-weight: 800;
       letter-spacing: 0.12em;
     }
@@ -333,32 +357,66 @@
       font-size: 0.92rem;
     }
 
-    .feature-list {
+    .qr-box {
       display: grid;
-      gap: 12px;
-      margin-top: 20px;
-    }
-
-    .feature-item {
-      display: flex;
-      gap: 10px;
-      align-items: flex-start;
+      width: 220px;
+      min-height: 220px;
+      place-items: center;
       padding: 12px;
       border: 1px solid var(--line);
-      border-radius: 12px;
-      background: rgba(255, 253, 245, 0.78);
+      border-radius: 16px;
+      background: #ffffff;
+    }
+
+    .teacher-stats {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .teacher-stats div {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: rgba(255, 255, 255, 0.88);
+    }
+
+    .teacher-stats strong {
+      display: block;
+      font-family: "Outfit", sans-serif;
+      font-size: 2rem;
+      line-height: 1;
+    }
+
+    .teacher-stats span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .student-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 8px;
+      min-height: 48px;
       color: var(--muted);
     }
 
-    .feature-item i {
-      margin-top: 4px;
-      color: var(--orange);
+    .student-chip {
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 8px 10px;
+      color: var(--text);
+      background: #fffdf5;
+      font-weight: 800;
     }
 
     @media (max-width: 860px) {
       .topbar,
       .hero,
-      .placeholder-layout {
+      .placeholder-layout,
+      .room-board {
         grid-template-columns: 1fr;
       }
 
@@ -368,6 +426,14 @@
 
       .hero {
         display: grid;
+      }
+
+      .teacher-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .qr-box {
+        width: min(100%, 260px);
       }
     }
 
@@ -404,7 +470,7 @@
           <div class="hero-copy">
             <p class="eyebrow"><i class="fa-solid fa-bolt" aria-hidden="true"></i> 실시간 교실 활동</p>
             <h1>실시간 로또 게임</h1>
-            <p class="subtitle">학생들은 휴대폰에서 로또 번호를 고르고, 교사는 화면에서 당첨 번호를 추첨합니다. 다음 작업에서 QR 입장, 학생 목록, 라운드 진행 기능이 연결됩니다.</p>
+            <p class="subtitle">학생들은 휴대폰에서 로또 번호를 고르고, 교사는 화면에서 당첨 번호를 추첨합니다. QR 코드와 방 코드로 빠르게 접속할 수 있습니다.</p>
             <div class="lotto-balls" aria-label="로또 번호 예시">
               <span class="ball">7</span>
               <span class="ball">12</span>
@@ -422,7 +488,7 @@
                 <h3 id="teacher-start-title">교사용 시작</h3>
               </div>
               <p>교사 계정으로 로그인한 뒤 실시간 로또 활동 방을 만듭니다.</p>
-              <div class="stack" style="margin-top: 18px;">
+              <div class="stack">
                 <button id="teacher-start-btn" class="primary-btn" type="button">
                   <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
                   교사 로그인 후 방 만들기
@@ -447,7 +513,7 @@
                 </div>
                 <button class="secondary-btn" type="submit">
                   <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                  참여 준비
+                  참여하기
                 </button>
               </form>
             </section>
@@ -455,26 +521,34 @@
         </div>
       </section>
 
-      <section id="teacher-screen" class="screen" data-screen hidden>
-        <div class="placeholder-layout">
-          <section class="panel" aria-labelledby="teacher-room-title">
+      <section id="teacher-screen" class="screen teacher-layout" data-screen hidden>
+        <section class="panel room-board" aria-labelledby="teacher-room-title">
+          <div>
             <div class="panel-header">
               <span class="panel-icon"><i class="fa-solid fa-crown" aria-hidden="true"></i></span>
-              <h3 id="teacher-room-title">교사용 로또 방</h3>
+              <h2 id="teacher-room-title">교사용 로또 방</h2>
             </div>
-            <p>다음 작업에서 QR 코드, 학생 목록, 라운드 시작과 당첨 번호 추첨 컨트롤을 이 화면에 연결합니다.</p>
+            <p class="eyebrow">방 코드</p>
             <div id="teacher-room-code" class="room-code" aria-label="방 코드">------</div>
             <div id="student-room-url" class="url-box" aria-label="학생 입장 주소"></div>
-          </section>
+          </div>
+          <div id="qr-code" class="qr-box" aria-label="학생 접속 QR 코드"></div>
+        </section>
 
-          <aside class="panel" aria-label="연결 예정 기능">
-            <div class="feature-list">
-              <div class="feature-item"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><span>학생 휴대폰 입장을 위한 QR 코드</span></div>
-              <div class="feature-item"><i class="fa-solid fa-users" aria-hidden="true"></i><span>실시간 학생 목록과 제출 현황</span></div>
-              <div class="feature-item"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i><span>선택 시간, 당첨 번호 추첨, 결과 표시</span></div>
-            </div>
-          </aside>
-        </div>
+        <section class="teacher-stats" aria-label="방 현황">
+          <div><strong id="student-count">0</strong><span>접속</span></div>
+          <div><strong id="submitted-count">0</strong><span>제출</span></div>
+          <div><strong id="unsubmitted-count">0</strong><span>미제출</span></div>
+          <div><strong id="timer-display">02:00</strong><span>남은 시간</span></div>
+        </section>
+
+        <section class="panel" aria-labelledby="student-list-title">
+          <div class="panel-header">
+            <span class="panel-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+            <h3 id="student-list-title">참가 학생</h3>
+          </div>
+          <div id="student-list" class="student-list">학생 접속 대기 중...</div>
+        </section>
       </section>
 
       <section id="student-screen" class="screen" data-screen hidden>
@@ -484,7 +558,7 @@
               <span class="panel-icon"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i></span>
               <h3 id="student-room-title">학생 참여 화면</h3>
             </div>
-            <p>다음 작업에서 방 접속, 번호 선택, 제출 상태가 이 화면에 연결됩니다.</p>
+            <p>방에 접속하면 교사가 라운드를 시작할 때까지 대기합니다. 번호 선택 화면은 다음 단계에서 연결됩니다.</p>
           </section>
 
           <section class="panel" aria-labelledby="student-active-title">
@@ -504,7 +578,7 @@
               </div>
               <button class="secondary-btn" type="submit">
                 <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                참여 준비
+                참여하기
               </button>
             </form>
           </section>
