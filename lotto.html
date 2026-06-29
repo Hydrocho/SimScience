@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     :root {
       --bg: #fff8df;
@@ -467,7 +468,9 @@
       place-items: center;
       color: #111827;
       font-weight: 900;
-      box-shadow: inset 0 -4px 8px rgba(15, 23, 42, 0.15);
+      font-size: clamp(3.2rem, 6.5vw, 4.8rem);
+      box-shadow: inset 0 -8px 16px rgba(15, 23, 42, 0.18), 0 12px 28px rgba(0, 0, 0, 0.14);
+      position: relative;
     }
 
     .ball-empty {
@@ -512,8 +515,15 @@
 
     .lotto-ball small {
       display: block;
-      font-size: 0.58rem;
+      font-size: 1.1rem;
       line-height: 1;
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-weight: 800;
+      color: rgba(17, 24, 39, 0.85);
+      letter-spacing: -0.05em;
     }
 
     .draw-panel {
@@ -948,16 +958,12 @@
               <h3 id="draw-panel-title">당첨 번호 추첨</h3>
             </div>
             <div id="winning-balls" class="ball-row" style="margin-bottom: 24px;"></div>
-            <div class="draw-actions">
-              <button id="random-draw-btn" class="primary-btn" type="button">
-                <i class="fa-solid fa-shuffle" aria-hidden="true"></i> 랜덤 자동 추첨
-              </button>
-              <button id="reveal-results-btn" class="secondary-btn" type="button" disabled style="margin-left: auto;">
-                <i class="fa-solid fa-square-poll-vertical" aria-hidden="true"></i> 결과 공개
+             <div class="draw-actions">
+              <button id="random-draw-btn" class="primary-btn" type="button" style="width: 100%;">
+                <i class="fa-solid fa-shuffle" aria-hidden="true"></i> 랜덤 자동 추첨 & 결과 공개
               </button>
             </div>
-            <div id="manual-winning-grid" class="number-grid"></div>
-            <p class="subtitle" style="margin-top: 16px;"><i class="fa-solid fa-info-circle" aria-hidden="true"></i> 번호판에서 당첨 번호 6개를 차례로 고른 뒤 보너스 번호 1개를 고르거나, 랜덤 자동 추첨을 사용하세요.</p>
+
           </section>
         </div>
 

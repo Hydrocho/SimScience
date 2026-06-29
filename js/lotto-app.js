@@ -136,7 +136,6 @@ function bindTeacherRoundControls() {
   $('start-round-btn')?.addEventListener('click', startTeacherRound);
   $('close-round-btn')?.addEventListener('click', closeTeacherRound);
   $('random-draw-btn')?.addEventListener('click', useRandomDraw);
-  $('reveal-results-btn')?.addEventListener('click', revealResults);
   $('next-round-btn')?.addEventListener('click', goToLobby);
   $('qr-code')?.addEventListener('click', openLargeQr);
   renderWinningBalls();
@@ -400,17 +399,16 @@ function renderStudentList() {
   }
 }
 
-function renderWinningBalls(revealedCount = 7) {
+function renderWinningBallsRaw(ballsArray) {
   const winningBalls = $('winning-balls');
   const winningBallsResult = $('winning-balls-result');
 
-  const balls = [...state.draw.winning, state.draw.bonus].filter(Boolean);
-  const visible = balls.slice(0, revealedCount);
+  const visible = [...ballsArray];
   while (visible.length < 7) visible.push(null);
 
   const html = visible.map((number, index) => {
     if (!number) return '<span class="lotto-ball ball-empty">-</span>';
-    const label = index === 6 ? `${number}<small>보너스</small>` : number;
+    const label = index === 6 ? `<span style="transform: translateY(-8px); display: inline-block;">${number}</span><small>보너스</small>` : number;
     return `<span class="lotto-ball" style="background:${getBallColor(number)}">${label}</span>`;
   }).join('');
 
@@ -420,6 +418,12 @@ function renderWinningBalls(revealedCount = 7) {
   if (winningBallsResult) {
     winningBallsResult.innerHTML = html;
   }
+}
+
+function renderWinningBalls(revealedCount = 7) {
+  const balls = [...state.draw.winning, state.draw.bonus].filter(Boolean);
+  const visible = balls.slice(0, revealedCount);
+  renderWinningBallsRaw(visible);
 }
 
 function renderManualWinningGrid() {
@@ -462,12 +466,73 @@ function chooseWinningNumber(number) {
   renderManualWinningGrid();
 }
 
-function useRandomDraw() {
+async function useRandomDraw() {
+  const drawBtn = $('random-draw-btn');
+  if (drawBtn) drawBtn.disabled = true;
+
   state.draw = drawRandomNumbers();
   manualDrawStep = 'complete';
-  renderWinningBalls();
-  renderManualWinningGrid();
-  playTeacherTone(660, 0.08);
+
+  setStatus('당첨 번호를 추첨하고 있습니다...');
+  
+  const finalBalls = [...state.draw.winning, state.draw.bonus];
+  const currentDisplay = [null, null, null, null, null, null, null];
+
+  // 1개씩 순서대로 롤링 연출 진행 (드르륵 통통통 탕!)
+  for (let i = 0; i < 7; i++) {
+    const finalNum = finalBalls[i];
+    
+    // 10번 롤링하며 속도가 점점 느려지게 연출
+    const rollingTicks = 10;
+    for (let tick = 0; tick < rollingTicks; tick++) {
+      const tempNum = Math.floor(Math.random() * 45) + 1;
+      currentDisplay[i] = tempNum;
+      
+      renderWinningBallsRaw(currentDisplay);
+      playTeacherTone(320 + Math.random() * 280, 0.04);
+      
+      // 감속 연출 (50ms에서 시작해서 130ms까지 서서히 감속)
+      const delay = 50 + (tick * 8);
+      await wait(delay);
+    }
+    
+    // 최종 번호 확정
+    currentDisplay[i] = finalNum;
+    renderWinningBallsRaw(currentDisplay);
+    
+    // 확정 효과음 (청량하게 피치 상승)
+    playTeacherTone(520 + (i + 1) * 55, 0.2);
+    await wait(400); // 0.4초 멈춤
+  }
+
+  // 7개 공 확정 피날레 폭죽!
+  triggerConfetti();
+  playTeacherTone(880, 0.3);
+
+  // 1.5초 폭죽 감상 대기 후 자동으로 결과 화면 전환 및 공개
+  await wait(1500);
+
+  state.roundState = 'results';
+  const entries = Array.from(state.submissions.values()).map((submission) => ({
+    ...submission,
+    result: evaluateTicket(submission.numbers, state.draw),
+  }));
+  state.ranking = sortRanking(entries);
+  renderRanking();
+  
+  if (state.network) {
+    state.network.broadcastRankings({
+      game: 'lotto',
+      roundId: state.roundId,
+      draw: state.draw,
+      ranking: state.ranking,
+    });
+  }
+  
+  renderTeacherRoom(); // 4단계 결과 화면으로 갱신 전환
+  setStatus('라운드 결과가 공개되었습니다.', 'success');
+
+  if (drawBtn) drawBtn.disabled = false;
 }
 
 function getBallColor(number) {
@@ -549,33 +614,40 @@ function submitStudentTicket(autoSubmitted = false) {
   return true;
 }
 
-async function revealResults() {
-  if (state.draw.winning.length !== 6 || !state.draw.bonus) return;
+// revealResults is deprecated and replaced by unified useRandomDraw animation flow.
 
-  state.roundState = 'drawing';
-  setStatus('당첨 번호를 공개합니다.');
-  for (let count = 1; count <= 7; count += 1) {
-    renderWinningBalls(count);
-    playTeacherTone(520 + count * 40, 0.08);
-    await wait(650);
-  }
-
-  state.roundState = 'results';
-  const entries = Array.from(state.submissions.values()).map((submission) => ({
-    ...submission,
-    result: evaluateTicket(submission.numbers, state.draw),
-  }));
-  state.ranking = sortRanking(entries);
-  renderRanking();
-  if (state.network) {
-    state.network.broadcastRankings({
-      game: 'lotto',
-      roundId: state.roundId,
-      draw: state.draw,
-      ranking: state.ranking,
+function triggerConfetti() {
+  if (window.confetti) {
+    // 1. 사방으로 터지는 중심 폭죽
+    window.confetti({
+      particleCount: 150,
+      spread: 85,
+      origin: { y: 0.6 }
     });
+
+    // 2. 좌우 하단에서 위로 솟아오르는 축제 연출
+    const duration = 2.5 * 1000;
+    const end = Date.now() + duration;
+
+    (function frame() {
+      window.confetti({
+        particleCount: 6,
+        angle: 60,
+        spread: 55,
+        origin: { x: 0, y: 0.8 }
+      });
+      window.confetti({
+        particleCount: 6,
+        angle: 120,
+        spread: 55,
+        origin: { x: 1, y: 0.8 }
+      });
+
+      if (Date.now() < end) {
+        requestAnimationFrame(frame);
+      }
+    }());
   }
-  setStatus('결과가 공개되었습니다.', 'success');
 }
 
 function renderRanking() {
