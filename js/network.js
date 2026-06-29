@@ -186,10 +186,10 @@ export class ClassroomNetwork {
           this.callbacks.onGameStart(payload);
         }
       })
-      .on('broadcast', { event: 'force-submit' }, () => {
-        console.log("[Debug Network] Received force-submit signal");
+      .on('broadcast', { event: 'force-submit' }, ({ payload }) => {
+        console.log("[Debug Network] Received force-submit signal", payload);
         if (this.role === 'student') {
-          this.callbacks.onForceSubmit();
+          this.callbacks.onForceSubmit(payload || {});
         }
       })
       .on('broadcast', { event: 'round-reset' }, ({ payload }) => {
@@ -317,10 +317,11 @@ export class ClassroomNetwork {
 
   /**
    * [Teacher] Request an immediate result from unfinished students
+   * @param {object} payload Optional close payload such as game and roundId
    */
-  broadcastForceSubmit() {
+  broadcastForceSubmit(payload = {}) {
     if (this.role !== 'teacher' || !this.channel) return;
-    this.sendBroadcast('force-submit');
+    this.sendBroadcast('force-submit', payload);
   }
 
   /**
