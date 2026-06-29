@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="교실에서 함께 진행하는 실시간 로또 번호 선택 게임">
+  <title>실시간 로또 게임</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #fff8e1;
+      --panel: #ffffff;
+      --panel-warm: #fff3c4;
+      --line: rgba(131, 92, 11, 0.18);
+      --text: #2d1d05;
+      --muted: #72551b;
+      --gold: #ffc928;
+      --gold-dark: #e59400;
+      --orange: #f97316;
+      --red: #dc2626;
+      --green: #16834a;
+      --shadow: 0 18px 45px rgba(148, 91, 9, 0.18);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(255, 201, 40, 0.28), transparent 34%),
+        repeating-linear-gradient(90deg, rgba(229, 148, 0, 0.08) 0 1px, transparent 1px 84px),
+        var(--bg);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+    }
+
+    .app-shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 32px 0;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "Outfit", "Noto Sans KR", sans-serif;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border: 2px solid #fef3c7;
+      border-radius: 50%;
+      color: #7c2d12;
+      background: radial-gradient(circle at 30% 24%, #ffffff 0 10%, var(--gold) 11% 62%, var(--gold-dark) 63% 100%);
+      box-shadow: inset -4px -7px 0 rgba(124, 45, 18, 0.14), 0 8px 18px rgba(217, 119, 6, 0.2);
+    }
+
+    .status {
+      min-height: 28px;
+      margin: 0;
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.72);
+      font-size: 0.92rem;
+    }
+
+    .status:empty::before {
+      content: "준비됨";
+    }
+
+    .status[data-tone="success"] {
+      border-color: rgba(22, 131, 74, 0.26);
+      color: var(--green);
+      background: rgba(236, 253, 245, 0.9);
+    }
+
+    .status[data-tone="error"] {
+      border-color: rgba(220, 38, 38, 0.28);
+      color: var(--red);
+      background: rgba(254, 242, 242, 0.94);
+    }
+
+    main {
+      display: block;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    .screen {
+      min-height: calc(100vh - 150px);
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.08fr) minmax(320px, 0.92fr);
+      gap: 24px;
+      align-items: stretch;
+    }
+
+    .hero-copy,
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.86);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: clamp(28px, 5vw, 54px);
+      overflow: hidden;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 18px;
+      padding: 7px 11px;
+      border: 1px solid rgba(217, 119, 6, 0.24);
+      border-radius: 999px;
+      color: #9a3412;
+      background: #fff7d6;
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    h1,
+    h2 {
+      margin: 0;
+      letter-spacing: 0;
+      line-height: 1.12;
+    }
+
+    h1 {
+      max-width: 9em;
+      font-size: clamp(2.45rem, 7vw, 5.4rem);
+      font-weight: 900;
+    }
+
+    h2 {
+      font-size: clamp(1.55rem, 3vw, 2.35rem);
+      font-weight: 900;
+    }
+
+    .subtitle {
+      max-width: 620px;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: clamp(1rem, 2vw, 1.22rem);
+      line-height: 1.7;
+    }
+
+    .lotto-balls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 34px;
+    }
+
+    .ball {
+      display: grid;
+      width: clamp(42px, 7vw, 64px);
+      height: clamp(42px, 7vw, 64px);
+      place-items: center;
+      border-radius: 50%;
+      color: #3b2500;
+      background: radial-gradient(circle at 32% 26%, #ffffff 0 12%, var(--gold) 13% 62%, var(--gold-dark) 63% 100%);
+      box-shadow: inset -5px -8px 0 rgba(120, 53, 15, 0.16), 0 8px 18px rgba(217, 119, 6, 0.2);
+      font-family: "Outfit", sans-serif;
+      font-weight: 800;
+    }
+
+    .panel {
+      padding: 24px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 18px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      margin-bottom: 16px;
+    }
+
+    .panel-icon {
+      display: grid;
+      width: 40px;
+      height: 40px;
+      place-items: center;
+      border-radius: 12px;
+      color: #7c2d12;
+      background: var(--panel-warm);
+    }
+
+    .panel p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .field-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    label {
+      color: #593d08;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    input {
+      width: 100%;
+      min-height: 48px;
+      border: 1px solid rgba(131, 92, 11, 0.22);
+      border-radius: 12px;
+      padding: 0 14px;
+      color: var(--text);
+      background: #fffdf5;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--orange);
+      box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.14);
+    }
+
+    .primary-btn,
+    .secondary-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      min-height: 50px;
+      border: 0;
+      border-radius: 12px;
+      padding: 0 18px;
+      font-weight: 800;
+    }
+
+    .primary-btn {
+      color: #3b2500;
+      background: linear-gradient(180deg, #ffe066, var(--gold));
+      box-shadow: 0 12px 20px rgba(217, 119, 6, 0.22);
+    }
+
+    .primary-btn:hover {
+      background: linear-gradient(180deg, #ffed93, #ffd33d);
+    }
+
+    .secondary-btn {
+      color: #7c2d12;
+      border: 1px solid rgba(217, 119, 6, 0.24);
+      background: #fff7d6;
+    }
+
+    .teacher-note {
+      min-height: 24px;
+      font-size: 0.94rem;
+    }
+
+    .placeholder-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .room-code {
+      display: inline-flex;
+      align-items: center;
+      min-height: 56px;
+      margin-top: 18px;
+      padding: 0 16px;
+      border: 2px dashed rgba(217, 119, 6, 0.4);
+      border-radius: 12px;
+      color: #7c2d12;
+      background: #fff7d6;
+      font-family: "Outfit", sans-serif;
+      font-size: 1.8rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+
+    .url-box {
+      overflow-wrap: anywhere;
+      margin-top: 14px;
+      padding: 12px;
+      border-radius: 12px;
+      color: var(--muted);
+      background: rgba(255, 247, 214, 0.8);
+      font-size: 0.92rem;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 12px;
+      margin-top: 20px;
+    }
+
+    .feature-item {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(255, 253, 245, 0.76);
+      color: var(--muted);
+    }
+
+    .feature-item i {
+      margin-top: 4px;
+      color: var(--orange);
+    }
+
+    @media (max-width: 860px) {
+      .topbar,
+      .hero,
+      .placeholder-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .topbar {
+        align-items: stretch;
+      }
+
+      .status {
+        border-radius: 12px;
+      }
+
+      .hero {
+        display: grid;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .app-shell {
+        width: min(100% - 20px, 1120px);
+        padding: 18px 0;
+      }
+
+      .hero-copy,
+      .panel {
+        padding: 18px;
+      }
+
+      h1 {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand" aria-label="실시간 로또 게임">
+        <span class="brand-mark"><i class="fa-solid fa-clover" aria-hidden="true"></i></span>
+        <span>Classroom Lotto</span>
+      </div>
+      <p id="app-status" class="status" data-tone="neutral" aria-live="polite"></p>
+    </header>
+
+    <main>
+      <section id="start-screen" class="screen" data-screen hidden>
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow"><i class="fa-solid fa-ticket" aria-hidden="true"></i> 실시간 교실 활동</p>
+            <h1>실시간 로또 게임</h1>
+            <p class="subtitle">학생들은 휴대폰으로 번호를 고르고, 교사는 화면에서 당첨 번호를 추첨합니다. 다음 작업에서 QR 입장, 학생 목록, 라운드 진행 기능이 연결됩니다.</p>
+            <div class="lotto-balls" aria-label="로또 번호 예시">
+              <span class="ball">7</span>
+              <span class="ball">12</span>
+              <span class="ball">19</span>
+              <span class="ball">28</span>
+              <span class="ball">34</span>
+              <span class="ball">41</span>
+            </div>
+          </div>
+
+          <div class="stack">
+            <section class="panel" aria-labelledby="teacher-start-title">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+                <h2 id="teacher-start-title">교사용 방</h2>
+              </div>
+              <p>교사 계정으로 로그인한 뒤 로또 활동 방을 만듭니다.</p>
+              <div class="stack" style="margin-top: 18px;">
+                <button id="teacher-start-btn" class="primary-btn" type="button">
+                  <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
+                  교사 로그인 후 방 만들기
+                </button>
+                <p id="teacher-email" class="teacher-note">로그인 전입니다.</p>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="student-start-title">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i></span>
+                <h2 id="student-start-title">학생 입장</h2>
+              </div>
+              <form id="student-join-form" class="stack">
+                <div class="field-group">
+                  <label for="student-room-code">방 코드</label>
+                  <input id="student-room-code" name="room" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="예: 123456">
+                </div>
+                <div class="field-group">
+                  <label for="student-name">이름</label>
+                  <input id="student-name" name="name" autocomplete="name" maxlength="20" placeholder="이름을 입력하세요">
+                </div>
+                <button class="secondary-btn" type="submit">
+                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                  참여 준비
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section id="teacher-screen" class="screen" data-screen hidden>
+        <div class="placeholder-layout">
+          <section class="panel" aria-labelledby="teacher-room-title">
+            <div class="panel-header">
+              <span class="panel-icon"><i class="fa-solid fa-crown" aria-hidden="true"></i></span>
+              <h2 id="teacher-room-title">교사용 로또 방</h2>
+            </div>
+            <p>다음 작업에서 QR 코드, 학생 목록, 라운드 시작과 추첨 조작이 이 화면에 연결됩니다.</p>
+            <div id="teacher-room-code" class="room-code" aria-label="방 코드">------</div>
+            <div id="student-room-url" class="url-box" aria-label="학생 입장 주소"></div>
+          </section>
+
+          <aside class="panel" aria-label="연결 예정 기능">
+            <div class="feature-list">
+              <div class="feature-item"><i class="fa-solid fa-qrcode" aria-hidden="true"></i><span>학생 휴대폰 입장을 위한 QR 코드</span></div>
+              <div class="feature-item"><i class="fa-solid fa-users" aria-hidden="true"></i><span>실시간 학생 목록과 제출 현황</span></div>
+              <div class="feature-item"><i class="fa-solid fa-stopwatch" aria-hidden="true"></i><span>선택 시간, 당첨 번호 추첨, 결과 표시</span></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="student-screen" class="screen" data-screen hidden>
+        <div class="placeholder-layout">
+          <section class="panel" aria-labelledby="student-room-title">
+            <div class="panel-header">
+              <span class="panel-icon"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i></span>
+              <h2 id="student-room-title">학생 참여 화면</h2>
+            </div>
+            <p>다음 작업에서 방 접속, 번호 선택판, 제출 상태가 이 화면에 연결됩니다.</p>
+          </section>
+
+          <section class="panel" aria-labelledby="student-active-title">
+            <div class="panel-header">
+              <span class="panel-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></span>
+              <h2 id="student-active-title">이름 입력</h2>
+            </div>
+            <form id="student-join-form-active" class="stack">
+              <div class="field-group">
+                <label for="student-name-active">이름</label>
+                <input id="student-name-active" name="name" autocomplete="name" maxlength="20" placeholder="이름을 입력하세요">
+              </div>
+              <button class="secondary-btn" type="submit">
+                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                참여 준비
+              </button>
+            </form>
+          </section>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./js/lotto-app.js"></script>
+</body>
+</html>
