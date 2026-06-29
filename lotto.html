@@ -412,6 +412,19 @@
       font-weight: 800;
     }
 
+    .round-controls {
+      display: grid;
+      grid-template-columns: minmax(110px, 160px) minmax(0, 1fr) auto auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .preset-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
     .student-layout {
       max-width: 520px;
       width: 100%;
@@ -508,6 +521,10 @@
 
       .teacher-stats {
         grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .round-controls {
+        grid-template-columns: 1fr;
       }
 
       .qr-box {
@@ -618,6 +635,21 @@
           <div><strong id="submitted-count">0</strong><span>제출</span></div>
           <div><strong id="unsubmitted-count">0</strong><span>미제출</span></div>
           <div><strong id="timer-display">02:00</strong><span>남은 시간</span></div>
+        </section>
+
+        <section class="panel round-controls" aria-label="라운드 제어">
+          <div class="field-group">
+            <label for="timer-seconds">제한 시간</label>
+            <input id="timer-seconds" type="number" min="10" max="600" step="10" value="120">
+          </div>
+          <div class="preset-row">
+            <button class="secondary-btn timer-preset" type="button" data-seconds="30">30초</button>
+            <button class="secondary-btn timer-preset" type="button" data-seconds="60">1분</button>
+            <button class="secondary-btn timer-preset" type="button" data-seconds="120">2분</button>
+            <button class="secondary-btn timer-preset" type="button" data-seconds="180">3분</button>
+          </div>
+          <button id="start-round-btn" class="primary-btn" type="button">라운드 시작</button>
+          <button id="close-round-btn" class="secondary-btn" type="button" disabled>제출 마감</button>
         </section>
 
         <section class="panel" aria-labelledby="student-list-title">

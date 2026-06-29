@@ -115,6 +115,27 @@ function bindStartEvents() {
   $('student-join-form-active')?.addEventListener('submit', joinStudentRoom);
 }
 
+function bindTeacherRoundControls() {
+  $('timer-seconds')?.addEventListener('input', (event) => {
+    state.timer.totalSeconds = Math.max(10, Math.min(600, Number(event.target.value) || 120));
+    state.timer.remainingSeconds = state.timer.totalSeconds;
+    renderTeacherRoom();
+  });
+
+  document.querySelectorAll('.timer-preset').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.timer.totalSeconds = Number(button.dataset.seconds);
+      state.timer.remainingSeconds = state.timer.totalSeconds;
+      const input = $('timer-seconds');
+      if (input) input.value = String(state.timer.totalSeconds);
+      renderTeacherRoom();
+    });
+  });
+
+  $('start-round-btn')?.addEventListener('click', startTeacherRound);
+  $('close-round-btn')?.addEventListener('click', closeTeacherRound);
+}
+
 async function createTeacherRoom() {
   if (state.creatingRoom) return;
 
@@ -393,6 +414,77 @@ function escapeHtml(value) {
     .replaceAll("'", '&#039;');
 }
 
+function resetRoundState() {
+  state.roundId = createRoundId();
+  state.roundState = 'selecting';
+  state.submissions = new Map();
+  state.draw = { winning: [], bonus: null };
+  state.ranking = [];
+  state.timer.remainingSeconds = state.timer.totalSeconds;
+}
+
+function startTeacherRound() {
+  if (!state.network) {
+    setStatus('먼저 교사용 방을 만들어 주세요.', 'error');
+    return;
+  }
+
+  resetRoundState();
+  state.network.broadcastRoundReset({ game: 'lotto', roundId: state.roundId });
+  state.network.broadcastSettings({
+    game: 'lotto',
+    roundId: state.roundId,
+    state: 'selecting',
+    timerSeconds: state.timer.totalSeconds,
+  });
+  state.network.broadcastStart({ game: 'lotto', roundId: state.roundId });
+
+  const startButton = $('start-round-btn');
+  if (startButton) startButton.disabled = true;
+  const closeButton = $('close-round-btn');
+  if (closeButton) closeButton.disabled = false;
+
+  startTimer();
+  renderTeacherRoom();
+  setStatus('라운드가 시작되었습니다.');
+}
+
+function startTimer() {
+  stopTimer();
+  state.timer.remainingSeconds = state.timer.totalSeconds;
+  state.timer.intervalId = window.setInterval(() => {
+    state.timer.remainingSeconds = Math.max(0, state.timer.remainingSeconds - 1);
+    renderTeacherRoom();
+    if (state.timer.remainingSeconds <= 0) {
+      closeTeacherRound();
+    }
+  }, 1000);
+}
+
+function stopTimer() {
+  if (!state.timer.intervalId) return;
+  window.clearInterval(state.timer.intervalId);
+  state.timer.intervalId = null;
+}
+
+function closeTeacherRound() {
+  if (state.roundState !== 'selecting') return;
+
+  state.roundState = 'closed';
+  stopTimer();
+  if (state.network) {
+    state.network.broadcastForceSubmit({ game: 'lotto', roundId: state.roundId });
+  }
+
+  const startButton = $('start-round-btn');
+  if (startButton) startButton.disabled = false;
+  const closeButton = $('close-round-btn');
+  if (closeButton) closeButton.disabled = true;
+
+  renderTeacherRoom();
+  setStatus('제출이 마감되었습니다. 당첨 번호를 설정하세요.');
+}
+
 function boot() {
   if (booted) return;
   booted = true;
@@ -403,6 +495,7 @@ function boot() {
   }
 
   bindStartEvents();
+  bindTeacherRoundControls();
   $('submit-ticket-btn')?.addEventListener('click', () => submitStudentTicket(false));
 
   const room = readRoomFromUrl();
