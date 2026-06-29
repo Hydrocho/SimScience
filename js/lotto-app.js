@@ -21,6 +21,7 @@ const state = {
   pin: '',
   roundId: '',
   roundState: 'lobby',
+  creatingRoom: false,
   network: null,
   students: [],
   submissions: new Map(),
@@ -38,6 +39,8 @@ const state = {
   ranking: [],
   myResult: null,
 };
+
+let booted = false;
 
 const $ = (id) => document.getElementById(id);
 
@@ -115,7 +118,15 @@ function bindStartEvents() {
 }
 
 async function createTeacherRoom() {
+  if (state.creatingRoom) return;
+
+  const startButton = $('teacher-start-btn');
+  let roomCreated = false;
+
   try {
+    state.creatingRoom = true;
+    if (startButton) startButton.disabled = true;
+
     setStatus('교사 계정을 확인하고 있습니다.', 'neutral');
     const teacherEmail = await ensureTeacherAllowed();
     const pin = generatePin();
@@ -129,6 +140,7 @@ async function createTeacherRoom() {
     state.mode = 'teacher';
     state.pin = pin;
     state.network = network;
+    roomCreated = true;
 
     const pinDisplay = $('teacher-room-code');
     if (pinDisplay) pinDisplay.textContent = pin;
@@ -141,6 +153,11 @@ async function createTeacherRoom() {
   } catch (error) {
     console.error('[Lotto] Failed to create teacher room:', error);
     setStatus(error.message || '교사용 방을 만들 수 없습니다.', 'error');
+  } finally {
+    state.creatingRoom = false;
+    if (!roomCreated && startButton) {
+      startButton.disabled = false;
+    }
   }
 }
 
@@ -150,6 +167,9 @@ function joinStudentRoom(event) {
 }
 
 function boot() {
+  if (booted) return;
+  booted = true;
+
   const supabaseReady = isConnected();
   if (!supabaseReady) {
     setStatus('Supabase 연결을 사용할 수 없습니다. CDN 로딩 상태를 확인하세요.', 'error');
@@ -163,6 +183,10 @@ function boot() {
     state.pin = room;
     const roomInput = $('student-room-code');
     if (roomInput) roomInput.value = room;
+    const activeRoomInput = $('student-room-code-active');
+    if (activeRoomInput) activeRoomInput.value = room;
+    const activeRoomLabel = $('student-room-code-label');
+    if (activeRoomLabel) activeRoomLabel.textContent = room;
     showScreen('student-screen');
     if (supabaseReady) {
       setStatus('학생 참여 화면이 열렸습니다. 실제 참여 기능은 다음 작업에서 연결됩니다.', 'neutral');
