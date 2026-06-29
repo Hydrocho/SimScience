@@ -200,6 +200,9 @@
     .portal-card.ear-quiz::before {
       background: linear-gradient(90deg, var(--neon-purple), var(--neon-pink));
     }
+    .portal-card.lotto-game::before {
+      background: linear-gradient(90deg, #f97316, #facc15);
+    }
 
     .portal-card:hover {
       transform: translateY(-8px);
@@ -220,6 +223,9 @@
     }
     .portal-card.ear-quiz:hover {
       box-shadow: 0 15px 40px rgba(124, 58, 237, 0.12);
+    }
+    .portal-card.lotto-game:hover {
+      box-shadow: 0 15px 40px rgba(249, 115, 22, 0.14);
     }
 
     /* Icon badge design */
@@ -254,6 +260,10 @@
     .ear-quiz .icon-badge {
       background: linear-gradient(135deg, var(--neon-purple) 0%, var(--neon-pink) 100%);
       box-shadow: 0 6px 15px rgba(124, 58, 237, 0.2);
+    }
+    .lotto-game .icon-badge {
+      background: linear-gradient(135deg, #f97316 0%, #facc15 100%);
+      box-shadow: 0 6px 15px rgba(249, 115, 22, 0.22);
     }
 
     /* Card text details */
@@ -501,6 +511,27 @@
 
     <!-- Content cards grid -->
     <main class="portal-grid">
+
+      <!-- Card: Lotto Classroom Game -->
+      <a href="lotto.html" class="portal-card lotto-game">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-clover"></i>
+          </div>
+          <h2 class="card-title">
+            실시간 로또 게임
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            학생들이 각자 휴대폰에서 1부터 45까지의 번호 6개를 고르고, 교사가 당첨 번호와 보너스 번호를 추첨해 등수와 맞힌 개수를 확인하는 실시간 수업 게임입니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">실시간 참여</span>
+          <span class="tag-item">로또 번호 선택</span>
+          <span class="tag-item">교사용 추첨</span>
+        </div>
+      </a>
 
       <!-- Card 1: Ear Quiz Racing -->
       <a href="ear.html" class="portal-card ear-quiz">
