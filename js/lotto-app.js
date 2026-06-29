@@ -41,6 +41,7 @@ const state = {
 };
 
 let booted = false;
+let manualDrawStep = 'winning';
 
 const $ = (id) => document.getElementById(id);
 
@@ -134,6 +135,10 @@ function bindTeacherRoundControls() {
 
   $('start-round-btn')?.addEventListener('click', startTeacherRound);
   $('close-round-btn')?.addEventListener('click', closeTeacherRound);
+  $('random-draw-btn')?.addEventListener('click', useRandomDraw);
+  $('reveal-results-btn')?.addEventListener('click', revealResults);
+  renderWinningBalls();
+  renderManualWinningGrid();
 }
 
 async function createTeacherRoom() {
@@ -256,6 +261,16 @@ async function joinStudentRoom(event) {
       renderStudentSelection();
     }
   });
+  state.network.on('onRankingUpdate', (payload) => {
+    if (payload?.game !== 'lotto' || payload.roundId !== state.roundId) return;
+    const myEntry = (payload.ranking || []).find((entry) => entry.studentId === state.network.id);
+    if (!myEntry) {
+      setStatus('이번 라운드는 미제출 처리되었습니다.', 'error');
+      return;
+    }
+    state.myResult = myEntry;
+    renderMyResult();
+  });
 
   setStatus('접속 완료. 교사의 시작을 기다리세요.', 'success');
 }
@@ -324,6 +339,69 @@ function renderStudentList() {
   list.innerHTML = state.students
     .map((student) => `<div class="student-chip">${escapeHtml(student.nickname)}</div>`)
     .join('');
+}
+
+function renderWinningBalls(revealedCount = 7) {
+  const winningBalls = $('winning-balls');
+  if (!winningBalls) return;
+
+  const balls = [...state.draw.winning, state.draw.bonus].filter(Boolean);
+  const visible = balls.slice(0, revealedCount);
+  while (visible.length < 7) visible.push(null);
+
+  winningBalls.innerHTML = visible.map((number, index) => {
+    if (!number) return '<span class="lotto-ball ball-empty">-</span>';
+    const label = index === 6 ? `${number}<small>보너스</small>` : number;
+    return `<span class="lotto-ball" style="background:${getBallColor(number)}">${label}</span>`;
+  }).join('');
+}
+
+function renderManualWinningGrid() {
+  const grid = $('manual-winning-grid');
+  if (!grid) return;
+
+  const selected = [...state.draw.winning, state.draw.bonus].filter(Boolean);
+  grid.innerHTML = Array.from({ length: 45 }, (_, index) => {
+    const number = index + 1;
+    const pressed = selected.includes(number);
+    return `<button class="number-btn" type="button" data-winning-number="${number}" aria-pressed="${pressed}">${number}</button>`;
+  }).join('');
+
+  grid.querySelectorAll('[data-winning-number]').forEach((button) => {
+    button.addEventListener('click', () => chooseWinningNumber(Number(button.dataset.winningNumber)));
+  });
+
+  const revealButton = $('reveal-results-btn');
+  if (revealButton) {
+    revealButton.disabled = !(state.draw.winning.length === 6 && state.draw.bonus);
+  }
+}
+
+function chooseWinningNumber(number) {
+  if (state.draw.winning.includes(number)) {
+    state.draw.winning = state.draw.winning.filter((item) => item !== number);
+    manualDrawStep = 'winning';
+  } else if (state.draw.bonus === number) {
+    state.draw.bonus = null;
+    manualDrawStep = 'bonus';
+  } else if (state.draw.winning.length < 6) {
+    state.draw.winning = normalizeNumbers([...state.draw.winning, number]);
+    manualDrawStep = state.draw.winning.length >= 6 ? 'bonus' : 'winning';
+  } else if (!state.draw.bonus) {
+    state.draw.bonus = number;
+    manualDrawStep = 'complete';
+  }
+
+  renderWinningBalls();
+  renderManualWinningGrid();
+}
+
+function useRandomDraw() {
+  state.draw = drawRandomNumbers();
+  manualDrawStep = 'complete';
+  renderWinningBalls();
+  renderManualWinningGrid();
+  playTeacherTone(660, 0.08);
 }
 
 function getBallColor(number) {
@@ -405,6 +483,89 @@ function submitStudentTicket(autoSubmitted = false) {
   return true;
 }
 
+async function revealResults() {
+  if (state.draw.winning.length !== 6 || !state.draw.bonus) return;
+
+  state.roundState = 'drawing';
+  setStatus('당첨 번호를 공개합니다.');
+  for (let count = 1; count <= 7; count += 1) {
+    renderWinningBalls(count);
+    playTeacherTone(520 + count * 40, 0.08);
+    await wait(650);
+  }
+
+  state.roundState = 'results';
+  const entries = Array.from(state.submissions.values()).map((submission) => ({
+    ...submission,
+    result: evaluateTicket(submission.numbers, state.draw),
+  }));
+  state.ranking = sortRanking(entries);
+  renderRanking();
+  if (state.network) {
+    state.network.broadcastRankings({
+      game: 'lotto',
+      roundId: state.roundId,
+      draw: state.draw,
+      ranking: state.ranking,
+    });
+  }
+  setStatus('결과가 공개되었습니다.', 'success');
+}
+
+function renderRanking() {
+  const list = $('ranking-list');
+  if (!list) return;
+
+  if (!state.ranking.length) {
+    list.textContent = '제출 결과가 없습니다.';
+    return;
+  }
+
+  list.innerHTML = state.ranking.map((entry, index) => `
+    <div class="ranking-row">
+      <strong>${index + 1}위</strong>
+      <span>${escapeHtml(entry.nickname)} · ${entry.result.rankLabel} · ${entry.result.matchCount}개 일치</span>
+      <span>${entry.numbers.join(', ')}</span>
+    </div>
+  `).join('');
+}
+
+function renderMyResult() {
+  const result = $('student-result');
+  if (!result || !state.myResult) return;
+
+  result.hidden = false;
+  result.innerHTML = `
+    <h3>${state.myResult.result.rankLabel}</h3>
+    <p>${state.myResult.result.matchCount}개 일치</p>
+    <p>맞힌 번호: ${state.myResult.result.matchedNumbers.join(', ') || '없음'}</p>
+    <p>보너스 번호: ${state.myResult.result.bonusMatched ? '일치' : '불일치'}</p>
+  `;
+  setStatus('내 결과가 공개되었습니다.', 'success');
+}
+
+function wait(ms) {
+  return new Promise((resolve) => window.setTimeout(resolve, ms));
+}
+
+function playTeacherTone(frequency = 600, duration = 0.08) {
+  if (state.mode !== 'teacher') return;
+  const AudioContext = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContext) return;
+
+  const context = new AudioContext();
+  const oscillator = context.createOscillator();
+  const gain = context.createGain();
+  oscillator.frequency.value = frequency;
+  oscillator.type = 'sine';
+  gain.gain.setValueAtTime(0.08, context.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + duration);
+  oscillator.connect(gain);
+  gain.connect(context.destination);
+  oscillator.start();
+  oscillator.stop(context.currentTime + duration);
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -421,6 +582,11 @@ function resetRoundState() {
   state.draw = { winning: [], bonus: null };
   state.ranking = [];
   state.timer.remainingSeconds = state.timer.totalSeconds;
+  manualDrawStep = 'winning';
+  state.myResult = null;
+  renderWinningBalls();
+  renderManualWinningGrid();
+  renderRanking();
 }
 
 function startTeacherRound() {

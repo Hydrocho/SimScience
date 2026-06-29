@@ -503,6 +503,43 @@
       background: #fffdf5;
     }
 
+    .lotto-ball small {
+      display: block;
+      font-size: 0.58rem;
+      line-height: 1;
+    }
+
+    .draw-panel {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 16px;
+      background: rgba(255, 255, 255, 0.88);
+      box-shadow: var(--shadow);
+    }
+
+    .draw-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 12px 0;
+    }
+
+    .ranking-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .ranking-row {
+      display: grid;
+      grid-template-columns: 80px minmax(120px, 1fr) auto;
+      gap: 10px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #ffffff;
+    }
+
     @media (max-width: 860px) {
       .topbar,
       .hero,
@@ -650,6 +687,25 @@
           </div>
           <button id="start-round-btn" class="primary-btn" type="button">라운드 시작</button>
           <button id="close-round-btn" class="secondary-btn" type="button" disabled>제출 마감</button>
+        </section>
+
+        <section class="draw-panel" aria-labelledby="draw-panel-title">
+          <h3 id="draw-panel-title">당첨 번호</h3>
+          <div id="winning-balls" class="ball-row"></div>
+          <div class="draw-actions">
+            <button id="random-draw-btn" class="primary-btn" type="button">랜덤 추첨</button>
+            <button id="reveal-results-btn" class="secondary-btn" type="button" disabled>결과 공개</button>
+          </div>
+          <div id="manual-winning-grid" class="number-grid"></div>
+          <p class="subtitle">먼저 당첨 번호 6개를 고른 뒤 보너스 번호 1개를 고르거나, 랜덤 추첨을 사용하세요.</p>
+        </section>
+
+        <section class="panel" aria-labelledby="ranking-list-title">
+          <div class="panel-header">
+            <span class="panel-icon"><i class="fa-solid fa-ranking-star" aria-hidden="true"></i></span>
+            <h3 id="ranking-list-title">결과 순위</h3>
+          </div>
+          <div id="ranking-list" class="ranking-list">결과 대기 중...</div>
         </section>
 
         <section class="panel" aria-labelledby="student-list-title">
