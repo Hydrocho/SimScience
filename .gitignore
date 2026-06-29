@@ -25,3 +25,6 @@ Desktop.ini
 
 # Superpowers brainstorming workspace
 .superpowers/
+
+# Local git worktrees
+.worktrees/
