@@ -137,6 +137,7 @@ function bindTeacherRoundControls() {
   $('close-round-btn')?.addEventListener('click', closeTeacherRound);
   $('random-draw-btn')?.addEventListener('click', useRandomDraw);
   $('reveal-results-btn')?.addEventListener('click', revealResults);
+  $('next-round-btn')?.addEventListener('click', goToLobby);
   renderWinningBalls();
   renderManualWinningGrid();
 }
@@ -308,6 +309,48 @@ function renderTeacherRoom() {
 
   renderQrCode(studentUrl);
   renderStudentList();
+  updateTeacherSteps();
+}
+
+function updateTeacherSteps() {
+  const roundState = state.roundState;
+
+  const lobbyPanel = $('teacher-step-panel-lobby');
+  const selectingPanel = $('teacher-step-panel-selecting');
+  const drawingPanel = $('teacher-step-panel-drawing');
+  const resultsPanel = $('teacher-step-panel-results');
+
+  if (lobbyPanel) lobbyPanel.hidden = roundState !== 'lobby';
+  if (selectingPanel) selectingPanel.hidden = roundState !== 'selecting';
+  if (drawingPanel) drawingPanel.hidden = roundState !== 'closed' && roundState !== 'drawing';
+  if (resultsPanel) resultsPanel.hidden = roundState !== 'results';
+
+  const stepLobby = $('step-lobby');
+  const stepSelecting = $('step-selecting');
+  const stepDrawing = $('step-drawing');
+  const stepResults = $('step-results');
+
+  const steps = [
+    { el: stepLobby, key: 'lobby' },
+    { el: stepSelecting, key: 'selecting' },
+    { el: stepDrawing, keys: ['closed', 'drawing'] },
+    { el: stepResults, key: 'results' },
+  ];
+
+  let currentStepIdx = 0;
+  if (roundState === 'selecting') currentStepIdx = 1;
+  else if (roundState === 'closed' || roundState === 'drawing') currentStepIdx = 2;
+  else if (roundState === 'results') currentStepIdx = 3;
+
+  steps.forEach((step, idx) => {
+    if (!step.el) return;
+    step.el.classList.remove('active', 'completed');
+    if (idx === currentStepIdx) {
+      step.el.classList.add('active');
+    } else if (idx < currentStepIdx) {
+      step.el.classList.add('completed');
+    }
+  });
 }
 
 function renderQrCode(studentUrl) {
@@ -328,32 +371,54 @@ function renderQrCode(studentUrl) {
 }
 
 function renderStudentList() {
-  const list = $('student-list');
-  if (!list) return;
+  const lobbyList = $('student-list-lobby');
+  const selectingList = $('student-list-selecting');
 
-  if (!state.students.length) {
-    list.textContent = '학생 접속 대기 중...';
-    return;
+  if (lobbyList) {
+    if (!state.students.length) {
+      lobbyList.textContent = '학생 접속 대기 중...';
+    } else {
+      lobbyList.innerHTML = state.students
+        .map((student) => `<div class="student-chip">${escapeHtml(student.nickname)}</div>`)
+        .join('');
+    }
   }
 
-  list.innerHTML = state.students
-    .map((student) => `<div class="student-chip">${escapeHtml(student.nickname)}</div>`)
-    .join('');
+  if (selectingList) {
+    if (!state.students.length) {
+      selectingList.textContent = '학생 접속 대기 중...';
+    } else {
+      selectingList.innerHTML = state.students
+        .map((student) => {
+          const hasSubmitted = state.submissions.has(student.id);
+          const submittedClass = hasSubmitted ? 'submitted' : '';
+          return `<div class="student-chip ${submittedClass}">${escapeHtml(student.nickname)}</div>`;
+        })
+        .join('');
+    }
+  }
 }
 
 function renderWinningBalls(revealedCount = 7) {
   const winningBalls = $('winning-balls');
-  if (!winningBalls) return;
+  const winningBallsResult = $('winning-balls-result');
 
   const balls = [...state.draw.winning, state.draw.bonus].filter(Boolean);
   const visible = balls.slice(0, revealedCount);
   while (visible.length < 7) visible.push(null);
 
-  winningBalls.innerHTML = visible.map((number, index) => {
+  const html = visible.map((number, index) => {
     if (!number) return '<span class="lotto-ball ball-empty">-</span>';
     const label = index === 6 ? `${number}<small>보너스</small>` : number;
     return `<span class="lotto-ball" style="background:${getBallColor(number)}">${label}</span>`;
   }).join('');
+
+  if (winningBalls) {
+    winningBalls.innerHTML = html;
+  }
+  if (winningBallsResult) {
+    winningBallsResult.innerHTML = html;
+  }
 }
 
 function renderManualWinningGrid() {
@@ -573,6 +638,21 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function goToLobby() {
+  state.roundState = 'lobby';
+  state.submissions = new Map();
+  state.draw = { winning: [], bonus: null };
+  state.ranking = [];
+  state.timer.remainingSeconds = state.timer.totalSeconds;
+  manualDrawStep = 'winning';
+  state.myResult = null;
+  renderWinningBalls();
+  renderManualWinningGrid();
+  renderRanking();
+  renderTeacherRoom();
+  setStatus('다음 라운드 준비를 위해 대기방으로 이동했습니다.');
 }
 
 function resetRoundState() {
