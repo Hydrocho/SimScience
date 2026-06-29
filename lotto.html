@@ -366,6 +366,13 @@
       border: 1px solid var(--line);
       border-radius: 16px;
       background: #ffffff;
+      cursor: pointer;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .qr-box:hover {
+      transform: scale(1.04);
+      box-shadow: 0 10px 25px rgba(217, 119, 6, 0.15);
     }
 
     .teacher-stats {
@@ -703,6 +710,41 @@
       gap: 24px;
     }
 
+    .round-controls-lobby {
+      display: grid;
+      grid-template-columns: minmax(110px, 160px) minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+    }
+
+    .round-settings-grid {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 20px;
+      align-items: end;
+    }
+
+    .student-list-card {
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .student-list-container {
+      flex-grow: 1;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+      align-content: start;
+      padding: 16px;
+      border: 2px dashed rgba(132, 92, 10, 0.18);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.38);
+      color: var(--muted);
+      font-weight: 500;
+      min-height: 200px;
+    }
+
     @media (max-width: 860px) {
       .teacher-stepper {
         flex-direction: column;
@@ -714,6 +756,16 @@
       }
       .step-lobby-layout {
         grid-template-columns: 1fr;
+      }
+      .round-controls-lobby {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .round-settings-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
       }
     }
   </style>
@@ -811,48 +863,54 @@
 
         <!-- STEP 1: 학생 대기방 (Lobby) -->
         <div class="teacher-step-panel step-lobby-layout" id="teacher-step-panel-lobby">
+          <!-- 왼쪽 스택 (넓은 영역): 라운드 설정 및 학생 목록 -->
           <div class="stack">
-            <section class="panel room-board" aria-labelledby="teacher-room-title">
-              <div>
-                <div class="panel-header">
-                  <span class="panel-icon"><i class="fa-solid fa-crown" aria-hidden="true"></i></span>
-                  <h2 id="teacher-room-title">교사용 로또 방</h2>
-                </div>
-                <p class="eyebrow">방 코드</p>
-                <div id="teacher-room-code" class="room-code" aria-label="방 코드">------</div>
-                <div id="student-room-url" class="url-box" aria-label="학생 입장 주소"></div>
+            <section class="panel stack" aria-label="라운드 제어">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-gear" aria-hidden="true"></i></span>
+                <h3>라운드 설정</h3>
               </div>
-              <div id="qr-code" class="qr-box" aria-label="학생 접속 QR 코드"></div>
+              <div class="round-settings-grid">
+                <div class="field-group">
+                  <label for="timer-seconds">제한 시간 (초)</label>
+                  <input id="timer-seconds" type="number" min="10" max="600" step="10" value="120">
+                </div>
+                <div class="field-group">
+                  <label>빠른 시간 선택</label>
+                  <div class="preset-row">
+                    <button class="secondary-btn timer-preset" type="button" data-seconds="30">30초</button>
+                    <button class="secondary-btn timer-preset" type="button" data-seconds="60">1분</button>
+                    <button class="secondary-btn timer-preset" type="button" data-seconds="120">2분</button>
+                    <button class="secondary-btn timer-preset" type="button" data-seconds="180">3분</button>
+                  </div>
+                </div>
+              </div>
+              <button id="start-round-btn" class="primary-btn" type="button" style="width: 100%; margin-top: 8px;">
+                <i class="fa-solid fa-play" aria-hidden="true"></i> 라운드 시작
+              </button>
             </section>
 
-            <section class="panel" aria-labelledby="student-list-title-lobby">
+            <section class="panel student-list-card" aria-labelledby="student-list-title-lobby">
               <div class="panel-header">
                 <span class="panel-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
                 <h3 id="student-list-title-lobby">참가 학생 목록</h3>
               </div>
-              <div id="student-list-lobby" class="student-list">학생 접속 대기 중...</div>
+              <div id="student-list-lobby" class="student-list-container">학생 접속 대기 중...</div>
             </section>
           </div>
 
+          <!-- 오른쪽 스택 (좁은 영역): QR코드 및 방 코드 -->
           <div class="stack">
-            <section class="panel round-controls" aria-label="라운드 제어">
-              <div class="panel-header">
-                <span class="panel-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
-                <h3>라운드 설정</h3>
+            <section class="panel stack" aria-labelledby="teacher-room-title" style="align-items: center; text-align: center;">
+              <div class="panel-header" style="align-self: flex-start; text-align: left;">
+                <span class="panel-icon"><i class="fa-solid fa-crown" aria-hidden="true"></i></span>
+                <h2 id="teacher-room-title">교사용 로또 방</h2>
               </div>
-              <div class="field-group">
-                <label for="timer-seconds">제한 시간</label>
-                <input id="timer-seconds" type="number" min="10" max="600" step="10" value="120">
+              <div>
+                <div id="teacher-room-code" class="room-code" aria-label="방 코드" style="margin-top: 8px; font-size: clamp(2.5rem, 8vw, 4.5rem); min-height: auto; padding: 4px 16px;">------</div>
               </div>
-              <div class="preset-row" style="margin-top: 10px; margin-bottom: 20px;">
-                <button class="secondary-btn timer-preset" type="button" data-seconds="30">30초</button>
-                <button class="secondary-btn timer-preset" type="button" data-seconds="60">1분</button>
-                <button class="secondary-btn timer-preset" type="button" data-seconds="120">2분</button>
-                <button class="secondary-btn timer-preset" type="button" data-seconds="180">3분</button>
-              </div>
-              <button id="start-round-btn" class="primary-btn" type="button" style="width: 100%;">
-                <i class="fa-solid fa-play" aria-hidden="true"></i> 라운드 시작
-              </button>
+              <div id="qr-code" class="qr-box" title="클릭하면 새 창으로 크게 봅니다" aria-label="학생 접속 QR 코드" style="width: 100%; display: grid; place-content: center;"></div>
+              <div id="student-room-url" class="url-box" aria-label="학생 입장 주소" style="width: 100%;"></div>
             </section>
           </div>
         </div>
@@ -873,12 +931,12 @@
             </button>
           </section>
 
-          <section class="panel" aria-labelledby="student-list-title-selecting">
+          <section class="panel student-list-card" aria-labelledby="student-list-title-selecting">
             <div class="panel-header">
               <span class="panel-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
               <h3 id="student-list-title-selecting">실시간 제출 현황</h3>
             </div>
-            <div id="student-list-selecting" class="student-list">학생 접속 대기 중...</div>
+            <div id="student-list-selecting" class="student-list-container">학생 접속 대기 중...</div>
           </section>
         </div>
 

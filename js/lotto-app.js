@@ -138,6 +138,7 @@ function bindTeacherRoundControls() {
   $('random-draw-btn')?.addEventListener('click', useRandomDraw);
   $('reveal-results-btn')?.addEventListener('click', revealResults);
   $('next-round-btn')?.addEventListener('click', goToLobby);
+  $('qr-code')?.addEventListener('click', openLargeQr);
   renderWinningBalls();
   renderManualWinningGrid();
 }
@@ -638,6 +639,80 @@ function escapeHtml(value) {
     .replaceAll('>', '&gt;')
     .replaceAll('"', '&quot;')
     .replaceAll("'", '&#039;');
+}
+
+function openLargeQr() {
+  const qrImg = document.querySelector('#qr-code img');
+  if (!qrImg || !qrImg.src) {
+    setStatus('QR 코드가 아직 생성되지 않았습니다.', 'error');
+    return;
+  }
+  const src = qrImg.src;
+  const qrWin = window.open('', '_blank', 'width=600,height=650,menubar=no,toolbar=no,location=no,status=no');
+  if (!qrWin) {
+    alert('팝업 차단이 설정되어 있습니다. 팝업 차단을 해제해주세요.');
+    return;
+  }
+  qrWin.document.write(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+      <title>Classroom Lotto - QR Code</title>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          font-family: system-ui, -apple-system, sans-serif;
+          background: #fff8df;
+          color: #2f2106;
+          text-align: center;
+        }
+        .container {
+          padding: 32px;
+          background: #ffffff;
+          border: 1px solid rgba(132, 92, 10, 0.2);
+          border-radius: 24px;
+          box-shadow: 0 15px 35px rgba(148, 91, 9, 0.15);
+          max-width: 90%;
+        }
+        h1 {
+          font-size: 24px;
+          margin-top: 0;
+          margin-bottom: 8px;
+          font-weight: 800;
+        }
+        p {
+          font-size: 15px;
+          color: #72551b;
+          margin-bottom: 24px;
+        }
+        img {
+          width: 420px;
+          height: 420px;
+          max-width: 100%;
+          height: auto;
+          border: 1px solid #f3ebe1;
+          border-radius: 16px;
+          padding: 8px;
+          background: #ffffff;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>Classroom Lotto</h1>
+        <p>휴대폰 카메라로 QR 코드를 스캔하여 게임에 참여하세요!</p>
+        <img src="${src}" alt="QR Code">
+      </div>
+    </body>
+    </html>
+  `);
+  qrWin.document.close();
 }
 
 function goToLobby() {
