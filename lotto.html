@@ -779,15 +779,17 @@
       }
     }
     #selected-balls {
-      grid-template-columns: repeat(6, 1fr);
-      gap: 8px;
-      max-width: 320px;
-      margin: 8px auto 0;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      width: 100%;
+      max-width: 240px;
+      margin: 8px 0 0;
+      justify-self: center;
     }
     #selected-balls .lotto-ball {
-      font-size: clamp(1.2rem, 4vw, 1.8rem);
-      width: 100%;
-      max-width: 48px;
+      width: clamp(48px, 12vw, 64px);
+      height: clamp(48px, 12vw, 64px);
+      font-size: clamp(1.5rem, 4vw, 2.2rem);
       justify-self: center;
     }
   </style>
