@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="교실에서 함께 진행하는 실시간 로또 번호 선택 게임">
+  <meta name="description" content="교실에서 학생들이 휴대폰으로 번호를 고르고 교사가 당첨 번호를 추첨하는 실시간 로또 게임">
   <title>실시간 로또 게임</title>
   <link rel="icon" href="data:,">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -11,21 +11,21 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
-      --bg: #fff8e1;
+      --bg: #fff8df;
       --panel: #ffffff;
-      --panel-warm: #fff3c4;
-      --line: rgba(131, 92, 11, 0.18);
-      --text: #2d1d05;
+      --panel-warm: #fff0b8;
+      --line: rgba(132, 92, 10, 0.2);
+      --text: #2f2106;
       --muted: #72551b;
       --gold: #ffc928;
       --gold-dark: #e59400;
       --orange: #f97316;
       --red: #dc2626;
       --green: #16834a;
-      --shadow: 0 18px 45px rgba(148, 91, 9, 0.18);
+      --shadow: 0 18px 42px rgba(148, 91, 9, 0.18);
       --radius: 16px;
     }
 
@@ -39,7 +39,7 @@
       font-family: "Noto Sans KR", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       color: var(--text);
       background:
-        linear-gradient(135deg, rgba(255, 201, 40, 0.28), transparent 34%),
+        linear-gradient(135deg, rgba(255, 201, 40, 0.32), transparent 36%),
         repeating-linear-gradient(90deg, rgba(229, 148, 0, 0.08) 0 1px, transparent 1px 84px),
         var(--bg);
     }
@@ -82,10 +82,10 @@
       height: 44px;
       place-items: center;
       border: 2px solid #fef3c7;
-      border-radius: 50%;
+      border-radius: 14px;
       color: #7c2d12;
-      background: radial-gradient(circle at 30% 24%, #ffffff 0 10%, var(--gold) 11% 62%, var(--gold-dark) 63% 100%);
-      box-shadow: inset -4px -7px 0 rgba(124, 45, 18, 0.14), 0 8px 18px rgba(217, 119, 6, 0.2);
+      background: linear-gradient(180deg, #ffe066, var(--gold));
+      box-shadow: 0 8px 18px rgba(217, 119, 6, 0.2);
     }
 
     .status {
@@ -93,9 +93,9 @@
       margin: 0;
       padding: 10px 14px;
       border: 1px solid var(--line);
-      border-radius: 999px;
+      border-radius: 12px;
       color: var(--muted);
-      background: rgba(255, 255, 255, 0.72);
+      background: rgba(255, 255, 255, 0.78);
       font-size: 0.92rem;
     }
 
@@ -106,7 +106,7 @@
     .status[data-tone="success"] {
       border-color: rgba(22, 131, 74, 0.26);
       color: var(--green);
-      background: rgba(236, 253, 245, 0.9);
+      background: rgba(236, 253, 245, 0.92);
     }
 
     .status[data-tone="error"] {
@@ -138,7 +138,7 @@
     .panel {
       border: 1px solid var(--line);
       border-radius: var(--radius);
-      background: rgba(255, 255, 255, 0.86);
+      background: rgba(255, 255, 255, 0.88);
       box-shadow: var(--shadow);
     }
 
@@ -154,7 +154,7 @@
       margin: 0 0 18px;
       padding: 7px 11px;
       border: 1px solid rgba(217, 119, 6, 0.24);
-      border-radius: 999px;
+      border-radius: 12px;
       color: #9a3412;
       background: #fff7d6;
       font-size: 0.9rem;
@@ -162,7 +162,7 @@
     }
 
     h1,
-    h2 {
+    h3 {
       margin: 0;
       letter-spacing: 0;
       line-height: 1.12;
@@ -174,8 +174,8 @@
       font-weight: 900;
     }
 
-    h2 {
-      font-size: clamp(1.55rem, 3vw, 2.35rem);
+    h3 {
+      font-size: clamp(1.45rem, 3vw, 2.15rem);
       font-weight: 900;
     }
 
@@ -329,7 +329,7 @@
       padding: 12px;
       border-radius: 12px;
       color: var(--muted);
-      background: rgba(255, 247, 214, 0.8);
+      background: rgba(255, 247, 214, 0.82);
       font-size: 0.92rem;
     }
 
@@ -346,7 +346,7 @@
       padding: 12px;
       border: 1px solid var(--line);
       border-radius: 12px;
-      background: rgba(255, 253, 245, 0.76);
+      background: rgba(255, 253, 245, 0.78);
       color: var(--muted);
     }
 
@@ -364,10 +364,6 @@
 
       .topbar {
         align-items: stretch;
-      }
-
-      .status {
-        border-radius: 12px;
       }
 
       .hero {
@@ -396,7 +392,7 @@
   <div class="app-shell">
     <header class="topbar">
       <div class="brand" aria-label="실시간 로또 게임">
-        <span class="brand-mark"><i class="fa-solid fa-clover" aria-hidden="true"></i></span>
+        <span class="brand-mark"><i class="fa-solid fa-ticket" aria-hidden="true"></i></span>
         <span>Classroom Lotto</span>
       </div>
       <p id="app-status" class="status" data-tone="neutral" aria-live="polite"></p>
@@ -406,9 +402,9 @@
       <section id="start-screen" class="screen" data-screen hidden>
         <div class="hero">
           <div class="hero-copy">
-            <p class="eyebrow"><i class="fa-solid fa-ticket" aria-hidden="true"></i> 실시간 교실 활동</p>
+            <p class="eyebrow"><i class="fa-solid fa-bolt" aria-hidden="true"></i> 실시간 교실 활동</p>
             <h1>실시간 로또 게임</h1>
-            <p class="subtitle">학생들은 휴대폰으로 번호를 고르고, 교사는 화면에서 당첨 번호를 추첨합니다. 다음 작업에서 QR 입장, 학생 목록, 라운드 진행 기능이 연결됩니다.</p>
+            <p class="subtitle">학생들은 휴대폰에서 로또 번호를 고르고, 교사는 화면에서 당첨 번호를 추첨합니다. 다음 작업에서 QR 입장, 학생 목록, 라운드 진행 기능이 연결됩니다.</p>
             <div class="lotto-balls" aria-label="로또 번호 예시">
               <span class="ball">7</span>
               <span class="ball">12</span>
@@ -423,9 +419,9 @@
             <section class="panel" aria-labelledby="teacher-start-title">
               <div class="panel-header">
                 <span class="panel-icon"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
-                <h2 id="teacher-start-title">교사용 방</h2>
+                <h3 id="teacher-start-title">교사용 시작</h3>
               </div>
-              <p>교사 계정으로 로그인한 뒤 로또 활동 방을 만듭니다.</p>
+              <p>교사 계정으로 로그인한 뒤 실시간 로또 활동 방을 만듭니다.</p>
               <div class="stack" style="margin-top: 18px;">
                 <button id="teacher-start-btn" class="primary-btn" type="button">
                   <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i>
@@ -438,7 +434,7 @@
             <section class="panel" aria-labelledby="student-start-title">
               <div class="panel-header">
                 <span class="panel-icon"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i></span>
-                <h2 id="student-start-title">학생 입장</h2>
+                <h3 id="student-start-title">학생 입장</h3>
               </div>
               <form id="student-join-form" class="stack">
                 <div class="field-group">
@@ -464,9 +460,9 @@
           <section class="panel" aria-labelledby="teacher-room-title">
             <div class="panel-header">
               <span class="panel-icon"><i class="fa-solid fa-crown" aria-hidden="true"></i></span>
-              <h2 id="teacher-room-title">교사용 로또 방</h2>
+              <h3 id="teacher-room-title">교사용 로또 방</h3>
             </div>
-            <p>다음 작업에서 QR 코드, 학생 목록, 라운드 시작과 추첨 조작이 이 화면에 연결됩니다.</p>
+            <p>다음 작업에서 QR 코드, 학생 목록, 라운드 시작과 당첨 번호 추첨 컨트롤을 이 화면에 연결합니다.</p>
             <div id="teacher-room-code" class="room-code" aria-label="방 코드">------</div>
             <div id="student-room-url" class="url-box" aria-label="학생 입장 주소"></div>
           </section>
@@ -486,15 +482,15 @@
           <section class="panel" aria-labelledby="student-room-title">
             <div class="panel-header">
               <span class="panel-icon"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i></span>
-              <h2 id="student-room-title">학생 참여 화면</h2>
+              <h3 id="student-room-title">학생 참여 화면</h3>
             </div>
-            <p>다음 작업에서 방 접속, 번호 선택판, 제출 상태가 이 화면에 연결됩니다.</p>
+            <p>다음 작업에서 방 접속, 번호 선택, 제출 상태가 이 화면에 연결됩니다.</p>
           </section>
 
           <section class="panel" aria-labelledby="student-active-title">
             <div class="panel-header">
               <span class="panel-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></span>
-              <h2 id="student-active-title">이름 입력</h2>
+              <h3 id="student-active-title">이름 입력</h3>
             </div>
             <form id="student-join-form-active" class="stack">
               <div class="field-group">
