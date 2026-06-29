@@ -61,7 +61,7 @@ export function evaluateTicket(selectedNumbers, draw) {
 
   return {
     rank,
-    rankLabel: rank ? `${rank}등` : '낙첨',
+    rankLabel: rank ? `${rank}등` : '꽝!',
     matchCount,
     matchedNumbers,
     bonusMatched,
