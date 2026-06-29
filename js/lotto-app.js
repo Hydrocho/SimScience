@@ -147,6 +147,18 @@ async function createTeacherRoom() {
       state.students = students.filter((student) => student.game === 'lotto' || !student.game);
       renderTeacherRoom();
     });
+    state.network.on('onResultReported', (payload) => {
+      if (payload?.game !== 'lotto' || payload.roundId !== state.roundId) return;
+      if (!canSubmitSelection(payload.numbers || [])) return;
+      state.submissions.set(payload.studentId, {
+        studentId: payload.studentId,
+        nickname: payload.nickname,
+        numbers: normalizeNumbers(payload.numbers),
+        submittedAt: payload.submittedAt || Date.now(),
+        autoSubmitted: Boolean(payload.autoSubmitted),
+      });
+      renderTeacherRoom();
+    });
 
     showScreen('teacher-screen');
     renderTeacherRoom();
@@ -207,6 +219,22 @@ async function joinStudentRoom(event) {
     setStatus('방 접속에 실패했습니다. 방 코드를 확인하세요.', 'error');
     return;
   }
+
+  state.network.on('onGameStart', (payload) => {
+    if (payload?.game !== 'lotto') return;
+    state.roundId = payload.roundId;
+    state.roundState = 'selecting';
+    showStudentGamePanel();
+    setStatus('번호 6개를 선택해 제출하세요.');
+  });
+  state.network.on('onForceSubmit', (payload) => {
+    if (payload?.game !== 'lotto' || payload.roundId !== state.roundId) return;
+    if (!submitStudentTicket(true)) {
+      state.submitted = true;
+      setStatus('6개 번호를 고르지 않아 미제출 처리되었습니다.', 'error');
+      renderStudentSelection();
+    }
+  });
 
   setStatus('접속 완료. 교사의 시작을 기다리세요.', 'success');
 }
@@ -277,6 +305,85 @@ function renderStudentList() {
     .join('');
 }
 
+function getBallColor(number) {
+  if (number <= 10) return '#fbbf24';
+  if (number <= 20) return '#60a5fa';
+  if (number <= 30) return '#f87171';
+  if (number <= 40) return '#a78bfa';
+  return '#34d399';
+}
+
+function renderSelectedBalls() {
+  const values = [...state.selectedNumbers];
+  while (values.length < 6) values.push(null);
+
+  const selectedBalls = $('selected-balls');
+  if (!selectedBalls) return;
+  selectedBalls.innerHTML = values
+    .map((number) => {
+      if (!number) return '<span class="lotto-ball ball-empty">-</span>';
+      return `<span class="lotto-ball" style="background:${getBallColor(number)}">${number}</span>`;
+    })
+    .join('');
+}
+
+function renderNumberGrid() {
+  const grid = $('number-grid');
+  if (!grid) return;
+
+  grid.innerHTML = Array.from({ length: 45 }, (_, index) => {
+    const number = index + 1;
+    const selected = state.selectedNumbers.includes(number);
+    const disabled = state.submitted ? 'disabled' : '';
+    return `<button class="number-btn" type="button" data-number="${number}" aria-pressed="${selected}" ${disabled}>${number}</button>`;
+  }).join('');
+
+  grid.querySelectorAll('.number-btn').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedNumbers = toggleSelection(state.selectedNumbers, Number(button.dataset.number));
+      renderStudentSelection();
+    });
+  });
+}
+
+function renderStudentSelection() {
+  renderSelectedBalls();
+  renderNumberGrid();
+  const submitButton = $('submit-ticket-btn');
+  if (submitButton) {
+    submitButton.disabled = state.submitted || !canSubmitSelection(state.selectedNumbers);
+  }
+}
+
+function showStudentGamePanel() {
+  const joinPanel = $('student-join-panel');
+  if (joinPanel) joinPanel.hidden = true;
+  const gamePanel = $('student-game-panel');
+  if (gamePanel) gamePanel.hidden = false;
+
+  state.selectedNumbers = [];
+  state.submitted = false;
+  renderStudentSelection();
+}
+
+function submitStudentTicket(autoSubmitted = false) {
+  if (state.submitted || !canSubmitSelection(state.selectedNumbers) || !state.network) return false;
+
+  state.submitted = true;
+  const numbers = normalizeNumbers(state.selectedNumbers);
+  state.network.sendResult(0, {
+    game: 'lotto',
+    roundId: state.roundId,
+    numbers,
+    autoSubmitted,
+    submittedAt: Date.now(),
+  });
+  state.network.updatePresenceState({ game: 'lotto', submitted: true });
+  setStatus(autoSubmitted ? '시간 종료로 자동 제출되었습니다.' : '번호가 제출되었습니다.');
+  renderStudentSelection();
+  return true;
+}
+
 function escapeHtml(value) {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -296,6 +403,7 @@ function boot() {
   }
 
   bindStartEvents();
+  $('submit-ticket-btn')?.addEventListener('click', () => submitStudentTicket(false));
 
   const room = readRoomFromUrl();
   if (room) {

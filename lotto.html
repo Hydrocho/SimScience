@@ -412,6 +412,84 @@
       font-weight: 800;
     }
 
+    .student-layout {
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .selected-strip {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: grid;
+      gap: 8px;
+      padding-bottom: 12px;
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    .selected-strip > span {
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .ball-row {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 8px;
+    }
+
+    .lotto-ball {
+      aspect-ratio: 1;
+      border: 0;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      color: #111827;
+      font-weight: 900;
+      box-shadow: inset 0 -4px 8px rgba(15, 23, 42, 0.15);
+    }
+
+    .ball-empty {
+      color: #94a3b8;
+      background: #f1f5f9;
+      box-shadow: none;
+    }
+
+    .number-grid {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+      margin: 14px 0;
+    }
+
+    .number-btn {
+      min-height: 50px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--text);
+      background: #ffffff;
+      font-weight: 900;
+    }
+
+    .number-btn[aria-pressed="true"] {
+      border-color: var(--orange);
+      background: var(--gold);
+    }
+
+    .number-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .student-result {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 14px;
+      background: #fffdf5;
+    }
+
     @media (max-width: 860px) {
       .topbar,
       .hero,
@@ -551,38 +629,38 @@
         </section>
       </section>
 
-      <section id="student-screen" class="screen" data-screen hidden>
-        <div class="placeholder-layout">
-          <section class="panel" aria-labelledby="student-room-title">
-            <div class="panel-header">
-              <span class="panel-icon"><i class="fa-solid fa-user-graduate" aria-hidden="true"></i></span>
-              <h3 id="student-room-title">학생 참여 화면</h3>
+      <section id="student-screen" class="screen student-layout" data-screen hidden>
+        <section id="student-join-panel" class="panel" aria-labelledby="student-active-title">
+          <div class="panel-header">
+            <span class="panel-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></span>
+            <h3 id="student-active-title">이름 입력</h3>
+          </div>
+          <form id="student-join-form-active" class="stack">
+            <div class="field-group">
+              <label>방 코드</label>
+              <div id="student-room-code-label" class="url-box" aria-live="polite">------</div>
+              <input id="student-room-code-active" name="room" type="hidden">
             </div>
-            <p>방에 접속하면 교사가 라운드를 시작할 때까지 대기합니다. 번호 선택 화면은 다음 단계에서 연결됩니다.</p>
-          </section>
+            <div class="field-group">
+              <label for="student-name-active">이름</label>
+              <input id="student-name-active" name="name" autocomplete="name" maxlength="20" placeholder="이름을 입력하세요">
+            </div>
+            <button class="secondary-btn" type="submit">
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              참여하기
+            </button>
+          </form>
+        </section>
 
-          <section class="panel" aria-labelledby="student-active-title">
-            <div class="panel-header">
-              <span class="panel-icon"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i></span>
-              <h3 id="student-active-title">이름 입력</h3>
-            </div>
-            <form id="student-join-form-active" class="stack">
-              <div class="field-group">
-                <label>방 코드</label>
-                <div id="student-room-code-label" class="url-box" aria-live="polite">------</div>
-                <input id="student-room-code-active" name="room" type="hidden">
-              </div>
-              <div class="field-group">
-                <label for="student-name-active">이름</label>
-                <input id="student-name-active" name="name" autocomplete="name" maxlength="20" placeholder="이름을 입력하세요">
-              </div>
-              <button class="secondary-btn" type="submit">
-                <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
-                참여하기
-              </button>
-            </form>
-          </section>
-        </div>
+        <section id="student-game-panel" class="panel" hidden>
+          <div class="selected-strip">
+            <span>내 번호</span>
+            <div id="selected-balls" class="ball-row"></div>
+          </div>
+          <div id="number-grid" class="number-grid" aria-label="1부터 45까지 번호 선택"></div>
+          <button id="submit-ticket-btn" class="primary-btn" type="button" disabled>6개 번호 제출</button>
+          <div id="student-result" class="student-result" hidden></div>
+        </section>
       </section>
     </main>
   </div>
