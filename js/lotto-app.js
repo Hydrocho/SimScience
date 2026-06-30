@@ -231,6 +231,18 @@ async function joinStudentRoom(event) {
     return;
   }
 
+  // --- 버튼 및 입력 필드 피드백 (로딩 상태) ---
+  const submitBtn = form.querySelector('button[type="submit"]');
+  const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+  const formElements = form.querySelectorAll('input, button');
+  if (submitBtn) {
+    submitBtn.classList.add('loading');
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> 접속 중...';
+  }
+  formElements.forEach((el) => {
+    el.disabled = true;
+  });
+
   state.mode = 'student';
   state.pin = room;
   state.network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -244,8 +256,24 @@ async function joinStudentRoom(event) {
   });
   if (!joined) {
     setStatus('방 접속에 실패했습니다. 방 코드를 확인하세요.', 'error');
+    // 실패 시 상태 복원
+    if (submitBtn) {
+      submitBtn.classList.remove('loading');
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+    formElements.forEach((el) => {
+      el.disabled = false;
+    });
     return;
   }
+
+  // --- 버튼 및 입력 필드 피드백 (접속 완료 상태) ---
+  if (submitBtn) {
+    submitBtn.classList.remove('loading');
+    submitBtn.classList.add('success');
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> 접속 완료!';
+  }
+  // 입력 필드는 대기 중인 상태에서 임의로 수정할 수 없도록 disabled 상태를 유지합니다.
 
   state.network.on('onGameStart', (payload) => {
     if (payload?.game !== 'lotto') return;
@@ -509,11 +537,13 @@ async function useRandomDraw() {
   triggerConfetti();
   playTeacherTone(880, 0.3);
 
-  // 1.5초 폭죽 감상 대기 후 자동으로 결과 화면 전환 및 공개
-  await wait(1500);
-
-  // 결과 화면으로 전환하기 전에 당첨 번호를 오름차순으로 정렬합니다.
+  // 0.5초 대기 후 당첨 번호 6개를 오름차순으로 정렬하여 다시 렌더링 (보너스 번호는 마지막에 유지)
+  await wait(500);
   state.draw.winning = normalizeNumbers(state.draw.winning);
+  renderWinningBalls(7);
+
+  // 1초 더 정렬된 결과와 폭죽을 감상한 뒤 자동으로 결과 화면 전환
+  await wait(1000);
 
   state.roundState = 'results';
   const entries = Array.from(state.submissions.values()).map((submission) => ({
@@ -606,6 +636,14 @@ function showStudentGamePanel() {
 
   state.selectedNumbers = [];
   state.submitted = false;
+  state.myResult = null;
+
+  const result = $('student-result');
+  if (result) {
+    result.hidden = true;
+    result.innerHTML = '';
+  }
+
   renderStudentSelection();
 }
 
