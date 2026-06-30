@@ -189,7 +189,7 @@ async function createTeacherRoom() {
 
     showScreen('teacher-screen');
     renderTeacherRoom();
-    setStatus('교사용 로또 방이 준비되었습니다.', 'success');
+    setStatus('명인중 실험실이 준비되었습니다.', 'success');
   } catch (error) {
     console.error('[Lotto] Failed to create teacher room:', error);
     setStatus(error.message || '교사용 방을 만들 수 없습니다.', 'error');
@@ -284,6 +284,7 @@ async function joinStudentRoom(event) {
   });
   state.network.on('onForceSubmit', (payload) => {
     if (payload?.game !== 'lotto' || payload.roundId !== state.roundId) return;
+    if (state.submitted) return; // 이미 번호를 제출한 학생은 추가 처리를 하지 않고 무시합니다.
     if (!submitStudentTicket(true)) {
       state.submitted = true;
       setStatus('6개 번호를 고르지 않아 미제출 처리되었습니다.', 'error');
@@ -780,7 +781,7 @@ function openLargeQr() {
     <!DOCTYPE html>
     <html lang="ko">
     <head>
-      <title>Classroom Lotto - QR Code</title>
+      <title>명인중학교 로또 실험실 - QR Code</title>
       <meta charset="UTF-8">
       <style>
         body {
@@ -828,7 +829,7 @@ function openLargeQr() {
     </head>
     <body>
       <div class="container">
-        <h1>Classroom Lotto</h1>
+        <h1>명인중학교 로또 실험실</h1>
         <p>휴대폰 카메라로 QR 코드를 스캔하여 게임에 참여하세요!</p>
         <img src="${src}" alt="QR Code">
       </div>
