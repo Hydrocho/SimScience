@@ -19,7 +19,7 @@ const PLAYER_LABELS = {
 
 const state = {
   id: getClientId(),
-  mode: 'lobby',
+  mode: 'start',
   nickname: '',
   teacherEmail: '',
   teacherAllowed: false,
@@ -52,6 +52,12 @@ function getClientId() {
   } catch {
     return `gm_${Math.random().toString(36).slice(2, 11)}`;
   }
+}
+
+function showScreen(screenId) {
+  document.querySelectorAll('[data-screen]').forEach((screen) => {
+    screen.classList.toggle('hidden', screen.id !== screenId);
+  });
 }
 
 function setStatus(message, tone = 'neutral') {
@@ -97,6 +103,7 @@ function bindEvents() {
   $('create-room-btn')?.addEventListener('click', createStudentRoom);
   $('reset-game-btn')?.addEventListener('click', resetGame);
   $('leave-room-btn')?.addEventListener('click', leaveRoom);
+  $('teacher-logout-btn')?.addEventListener('click', handleTeacherLogout);
 }
 
 async function initLobbyChannel(trackPayload = null) {
@@ -221,14 +228,33 @@ async function handleTeacherLogin() {
     state.teacherEmail = email;
     await initLobbyChannel(buildTeacherPresence());
     startTeacherHeartbeat();
-    setHidden('teacher-signed-out', true);
-    setHidden('teacher-signed-in', false);
+    
+    state.mode = 'teacher';
+    showScreen('teacher-screen');
+    
     $('teacher-email').textContent = email;
     setStatus('교사 계정 확인 완료. 오목 허용을 켜면 학생들이 방을 만들 수 있습니다.', 'success');
     renderPermissionState();
   } catch (error) {
     console.error('[Gomoku] Teacher login failed:', error);
     setStatus(error.message || '교사 로그인을 완료하지 못했습니다.', 'error');
+  }
+}
+
+async function handleTeacherLogout() {
+  try {
+    if (supabaseClient) {
+      await supabaseClient.auth.signOut();
+    }
+    stopTeacherHeartbeat();
+    state.teacherEmail = '';
+    state.teacherAllowed = false;
+    state.mode = 'start';
+    showScreen('start-screen');
+    setStatus('로그아웃되었습니다.', 'success');
+  } catch (error) {
+    console.error('[Gomoku] Sign out failed:', error);
+    setStatus('로그아웃 중 오류가 발생했습니다.', 'error');
   }
 }
 
@@ -293,7 +319,17 @@ async function handleStudentJoin(event) {
     setStatus('오목 로비에 연결하지 못했습니다.', 'error');
     return;
   }
-  setHidden('student-lobby', false);
+  
+  state.mode = 'student';
+  showScreen('student-screen');
+
+  // Move room-panel to student-game-container
+  const roomPanel = $('room-panel');
+  const studentContainer = $('student-game-container');
+  if (roomPanel && studentContainer) {
+    studentContainer.appendChild(roomPanel);
+  }
+  
   $('student-name-label').textContent = state.nickname;
   setStatus('로비에 입장했습니다. 교사 허가가 켜지면 방을 만들 수 있습니다.', 'success');
   renderPermissionState();
@@ -329,7 +365,7 @@ async function createStudentRoom() {
 }
 
 async function joinRoom(roomId, title = '', asOwner = false) {
-  if (!state.nickname) {
+  if (!state.nickname && state.mode !== 'teacher') {
     setStatus('먼저 닉네임으로 로비에 입장하세요.', 'error');
     return;
   }
@@ -342,6 +378,16 @@ async function joinRoom(roomId, title = '', asOwner = false) {
   state.appliedMoveIds = new Set();
   state.participants = [];
   state.mySeat = 'spectator';
+
+  if (state.mode === 'teacher') {
+    const roomPanel = $('room-panel');
+    const teacherRoomView = $('teacher-room-view');
+    if (roomPanel && teacherRoomView) {
+      teacherRoomView.appendChild(roomPanel);
+    }
+    setHidden('teacher-monitoring-view', true);
+    setHidden('teacher-room-view', false);
+  }
 
   state.roomChannel = supabaseClient.channel(`gomoku_room_${roomId}`, {
     config: { presence: { key: state.id } },
@@ -387,8 +433,8 @@ async function joinRoom(roomId, title = '', asOwner = false) {
 function buildRoomPresence() {
   return {
     id: state.id,
-    nickname: state.nickname,
-    role: 'student',
+    nickname: state.mode === 'teacher' ? '교사' : state.nickname,
+    role: state.mode === 'teacher' ? 'teacher' : 'student',
     game: 'gomoku',
     roomId: state.roomId,
     owner: state.ownerId === state.id,
@@ -425,6 +471,7 @@ function handleRoomPresence() {
     owner: user.id === state.ownerId,
   }));
   state.mySeat = state.participants.find((user) => user.id === state.id)?.seat || 'spectator';
+  renderBoard();
   renderRoomInfo();
   publishRoomSummary();
 }
@@ -487,6 +534,13 @@ function renderBoard() {
   const board = $('gomoku-board');
   if (!board) return;
   board.innerHTML = '';
+
+  // Update turn preview classes on the board container
+  board.classList.remove('my-turn-black', 'my-turn-white');
+  if (state.game.status === 'playing' && state.game.turn === state.mySeat) {
+    board.classList.add(`my-turn-${state.mySeat}`);
+  }
+
   state.game.board.forEach((row, rowIndex) => {
     row.forEach((cell, colIndex) => {
       const button = document.createElement('button');
@@ -494,6 +548,20 @@ function renderBoard() {
       button.className = 'cell';
       button.setAttribute('aria-label', `${rowIndex + 1}행 ${colIndex + 1}열`);
       button.disabled = Boolean(cell) || state.game.status === 'finished';
+
+      // Set boundary line override classes
+      if (rowIndex === 0) button.classList.add('top');
+      if (rowIndex === state.game.board.length - 1) button.classList.add('bottom');
+      if (colIndex === 0) button.classList.add('left');
+      if (colIndex === row.length - 1) button.classList.add('right');
+
+      // Set standard 15x15 board star points
+      const isStar = (rowIndex === 7 && colIndex === 7) ||
+                     ((rowIndex === 3 || rowIndex === 11) && (colIndex === 3 || colIndex === 11));
+      if (isStar) {
+        button.classList.add('star-point');
+      }
+
       if (cell) {
         const stone = document.createElement('span');
         stone.className = `stone ${cell}`;
@@ -571,6 +639,17 @@ async function leaveRoom(removeIfOwner = true) {
   state.mySeat = 'lobby';
   state.game = createGameState();
   state.appliedMoveIds.clear();
+
+  if (state.mode === 'teacher') {
+    const roomPanel = $('room-panel');
+    const studentContainer = $('student-game-container');
+    if (roomPanel && studentContainer) {
+      studentContainer.appendChild(roomPanel);
+    }
+    setHidden('teacher-monitoring-view', false);
+    setHidden('teacher-room-view', true);
+  }
+
   renderBoard();
   renderRoomInfo();
   renderRoomList();
@@ -632,28 +711,55 @@ function renderTeacherMetrics() {
 
 function renderRoomList() {
   pruneRooms();
-  const list = $('room-list');
-  if (!list) return;
   const rooms = [...state.rooms.values()].sort((left, right) => (right.updatedAt || 0) - (left.updatedAt || 0));
-  if (!rooms.length) {
-    list.innerHTML = '<div class="empty">아직 열린 방이 없습니다.</div>';
-    return;
+
+  // 1. Render student room list
+  const list = $('room-list');
+  if (list) {
+    if (!rooms.length) {
+      list.innerHTML = '<div class="empty">아직 열린 방이 없습니다.</div>';
+    } else {
+      list.innerHTML = rooms.map((room) => `
+        <button type="button" class="room-item" data-room-id="${escapeHtml(room.roomId)}">
+          <span class="room-title-line">
+            <span>${escapeHtml(getRoomTitle(room))}</span>
+            <span class="badge">${statusLabel(room.status)}</span>
+          </span>
+          <span class="room-meta">흑 ${escapeHtml(room.blackName || '비어 있음')} · 백 ${escapeHtml(room.whiteName || '비어 있음')} · 관전자 ${room.spectatorCount || 0}명</span>
+        </button>
+      `).join('');
+      list.querySelectorAll('[data-room-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const room = state.rooms.get(button.dataset.roomId || '');
+          if (room) joinRoom(room.roomId, getRoomTitle(room), false);
+        });
+      });
+    }
   }
-  list.innerHTML = rooms.map((room) => `
-    <button type="button" class="room-item" data-room-id="${escapeHtml(room.roomId)}">
-      <span class="room-title-line">
-        <span>${escapeHtml(getRoomTitle(room))}</span>
-        <span class="badge">${statusLabel(room.status)}</span>
-      </span>
-      <span class="room-meta">흑 ${escapeHtml(room.blackName || '비어 있음')} · 백 ${escapeHtml(room.whiteName || '비어 있음')} · 관전자 ${room.spectatorCount || 0}명</span>
-    </button>
-  `).join('');
-  list.querySelectorAll('[data-room-id]').forEach((button) => {
-    button.addEventListener('click', () => {
-      const room = state.rooms.get(button.dataset.roomId || '');
-      if (room) joinRoom(room.roomId, getRoomTitle(room), false);
-    });
-  });
+
+  // 2. Render teacher room list
+  const teacherList = $('teacher-room-list');
+  if (teacherList) {
+    if (!rooms.length) {
+      teacherList.innerHTML = '<div class="empty">아직 진행 중인 방이 없습니다.</div>';
+    } else {
+      teacherList.innerHTML = rooms.map((room) => `
+        <button type="button" class="room-item" data-room-id="${escapeHtml(room.roomId)}">
+          <span class="room-title-line">
+            <span>${escapeHtml(getRoomTitle(room))}</span>
+            <span class="badge">${statusLabel(room.status)}</span>
+          </span>
+          <span class="room-meta">흑 ${escapeHtml(room.blackName || '비어 있음')} · 백 ${escapeHtml(room.whiteName || '비어 있음')} · 관전자 ${room.spectatorCount || 0}명</span>
+        </button>
+      `).join('');
+      teacherList.querySelectorAll('[data-room-id]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const room = state.rooms.get(button.dataset.roomId || '');
+          if (room) joinRoom(room.roomId, getRoomTitle(room), false);
+        });
+      });
+    }
+  }
 }
 
 function statusLabel(status) {
@@ -675,7 +781,7 @@ async function boot() {
     return;
   }
   connectionLabel.textContent = 'Supabase Realtime 사용';
-  setStatus('교사는 허용을 켜고, 학생은 닉네임으로 로비에 입장하세요.');
+  setStatus('교사는 로그인을 하고, 학생은 닉네임을 입력하여 오목에 참여하세요.');
 
   try {
     const { data } = await supabaseClient.auth.getSession();
@@ -684,13 +790,20 @@ async function boot() {
       state.teacherEmail = email;
       await initLobbyChannel(buildTeacherPresence());
       startTeacherHeartbeat();
-      setHidden('teacher-signed-out', true);
-      setHidden('teacher-signed-in', false);
+      
+      state.mode = 'teacher';
+      showScreen('teacher-screen');
+      
       $('teacher-email').textContent = email;
       renderPermissionState();
+    } else {
+      state.mode = 'start';
+      showScreen('start-screen');
     }
   } catch (error) {
     console.warn('[Gomoku] Initial teacher session check failed:', error);
+    state.mode = 'start';
+    showScreen('start-screen');
   }
 }
 

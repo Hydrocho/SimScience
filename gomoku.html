@@ -107,10 +107,89 @@
       max-width: 1280px;
       margin: 0 auto;
       padding: clamp(1rem, 2.5vw, 2rem);
+    }
+
+    .student-layout,
+    .teacher-layout {
       display: grid;
-      gap: 1rem;
+      gap: 1.5rem;
       grid-template-columns: minmax(280px, 360px) 1fr;
       align-items: start;
+    }
+
+    .start-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 60vh;
+      width: 100%;
+    }
+
+    .start-card {
+      width: 100%;
+      max-width: 760px;
+      padding: 2.5rem;
+    }
+
+    .start-card h2 {
+      text-align: center;
+      font-size: 1.8rem;
+      margin: 0 0 0.5rem;
+      font-weight: 800;
+    }
+
+    .start-card > p {
+      text-align: center;
+      color: var(--muted);
+      margin: 0 0 2.5rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .start-grid {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 2rem;
+      align-items: stretch;
+    }
+
+    .start-col {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 1.5rem;
+    }
+
+    .start-col h3 {
+      margin: 0 0 0.5rem;
+      font-size: 1.2rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .start-divider {
+      width: 1px;
+      background: var(--line);
+      margin: 0 1rem;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    @media (max-width: 680px) {
+      .start-grid {
+        grid-template-columns: 1fr;
+      }
+      .start-divider {
+        height: 1px;
+        width: 100%;
+        margin: 1rem 0;
+      }
     }
 
     .panel {
@@ -329,7 +408,7 @@
       overflow: auto;
       padding: 0.75rem;
       border-radius: 8px;
-      background: #c99348;
+      background: var(--board);
       border: 1px solid #b67b2f;
     }
 
@@ -341,16 +420,80 @@
       grid-template-columns: repeat(15, 1fr);
       grid-template-rows: repeat(15, 1fr);
       background: var(--board);
-      border: 2px solid var(--board-line);
       position: relative;
     }
 
     .cell {
       display: grid;
       place-items: center;
-      background:
-        linear-gradient(var(--board-line), var(--board-line)) center / 100% 1px no-repeat,
-        linear-gradient(90deg, var(--board-line), var(--board-line)) center / 1px 100% no-repeat;
+      --h-line: linear-gradient(var(--board-line), var(--board-line)) center / 100% 1px no-repeat;
+      --v-line: linear-gradient(90deg, var(--board-line), var(--board-line)) center / 1px 100% no-repeat;
+      background: var(--h-line), var(--v-line);
+      position: relative;
+    }
+
+    .cell.top {
+      --v-line: linear-gradient(90deg, var(--board-line), var(--board-line)) center bottom / 1px 50% no-repeat;
+    }
+
+    .cell.bottom {
+      --v-line: linear-gradient(90deg, var(--board-line), var(--board-line)) center top / 1px 50% no-repeat;
+    }
+
+    .cell.left {
+      --h-line: linear-gradient(var(--board-line), var(--board-line)) right center / 50% 1px no-repeat;
+    }
+
+    .cell.right {
+      --h-line: linear-gradient(var(--board-line), var(--board-line)) left center / 50% 1px no-repeat;
+    }
+
+    .cell.star-point::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--board-line);
+      border-radius: 50%;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Hover preview for player's stone */
+    .board.my-turn-black .cell:not(:disabled):hover::before {
+      content: '';
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #4b5563, var(--black-stone) 58%);
+      opacity: 0.4;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 2;
+    }
+
+    .board.my-turn-white .cell:not(:disabled):hover::before {
+      content: '';
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 30%, #fff, var(--white-stone) 68%);
+      border: 1px solid #cbd5e1;
+      opacity: 0.5;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+      z-index: 2;
     }
 
     .cell:disabled {
@@ -362,6 +505,7 @@
       height: 72%;
       border-radius: 50%;
       box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.18);
+      z-index: 3;
     }
 
     .stone.black {
@@ -411,7 +555,7 @@
     }
 
     @media (max-width: 920px) {
-      main, .game {
+      .student-layout, .teacher-layout, .game {
         grid-template-columns: 1fr;
       }
 
@@ -450,15 +594,50 @@
     </header>
 
     <main>
-      <section class="stack">
-        <div id="app-status" class="status">준비 중입니다.</div>
+      <div id="app-status" class="status">준비 중입니다.</div>
 
-        <section class="panel" id="teacher-panel">
-          <h2><i class="fa-solid fa-chalkboard-user"></i> 교사 허가</h2>
-          <div id="teacher-signed-out">
-            <button id="teacher-login-btn" class="btn" type="button"><i class="fa-brands fa-google"></i> 교사 로그인</button>
+      <!-- 1. Start Screen -->
+      <section id="start-screen" class="screen" data-screen>
+        <div class="start-container">
+          <div class="start-card panel">
+            <h2>교실 오목 시작하기</h2>
+            <p>교사는 로그인을 하고 오목판 생성을 허가하며, 학생은 닉네임을 입력하고 입장합니다.</p>
+            
+            <div class="start-grid">
+              <!-- Student Entry -->
+              <div class="start-col student-col">
+                <h3><i class="fa-solid fa-graduation-cap"></i> 학생으로 입장</h3>
+                <form id="student-join-form" class="stack">
+                  <div class="field-group">
+                    <input id="nickname-input" class="field" maxlength="16" placeholder="사용할 닉네임 입력" required autocomplete="nickname">
+                  </div>
+                  <button type="submit" class="btn success" style="width: 100%;">오목 로비 입장</button>
+                </form>
+              </div>
+              
+              <div class="start-divider"></div>
+              
+              <!-- Teacher Entry -->
+              <div class="start-col teacher-col">
+                <h3><i class="fa-solid fa-chalkboard-user"></i> 교사로 시작</h3>
+                <p style="margin: 0; color: var(--muted); font-size: 0.9rem; line-height: 1.45;">
+                  Google 계정으로 로그인하여 학생들의 오목 생성을 제어합니다.
+                </p>
+                <button id="teacher-login-btn" class="btn" type="button" style="width: 100%;">
+                  <i class="fa-brands fa-google"></i> 교사 로그인
+                </button>
+              </div>
+            </div>
           </div>
-          <div id="teacher-signed-in" class="stack hidden">
+        </div>
+      </section>
+
+      <!-- 2. Teacher Screen -->
+      <section id="teacher-screen" class="screen teacher-layout hidden" data-screen>
+        <!-- Left Side: Controls & Info -->
+        <aside class="stack">
+          <section class="panel">
+            <h2><i class="fa-solid fa-chalkboard-user"></i> 교사 제어판</h2>
             <div class="permission">
               <div>
                 <strong id="teacher-email">교사 계정</strong>
@@ -466,20 +645,42 @@
               </div>
               <button id="permission-toggle-btn" class="btn success" type="button">허용 켜기</button>
             </div>
-            <div class="metrics">
+            
+            <div class="metrics" style="margin-top: 1rem;">
               <div class="metric"><span>로비 학생</span><strong id="teacher-student-count">0</strong></div>
               <div class="metric"><span>열린 방</span><strong id="teacher-room-count">0</strong></div>
             </div>
+
+            <button id="teacher-logout-btn" class="btn danger" type="button" style="width: 100%; margin-top: 1rem;">
+              <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
+            </button>
+          </section>
+        </aside>
+
+        <!-- Right Side: Classroom Games Monitor or Active Room Spectating -->
+        <section class="panel">
+          <div id="teacher-monitoring-view">
+            <h2><i class="fa-solid fa-desktop"></i> 오목방 실시간 모니터링</h2>
+            <p style="color: var(--muted); margin-bottom: 1rem; font-size: 0.9rem; font-weight: 600;">
+              학생들이 생성한 방 목록과 진행 상태를 모니터링합니다. 대국방을 클릭하여 관전자로 입장할 수도 있습니다.
+            </p>
+            <div id="teacher-room-list" class="room-list">
+              <div class="empty">아직 진행 중인 방이 없습니다.</div>
+            </div>
+          </div>
+          <!-- Placeholder container when teacher is spectating a room -->
+          <div id="teacher-room-view" class="hidden">
+            <!-- Dynamically moved room-panel will be appended here -->
           </div>
         </section>
+      </section>
 
-        <section class="panel" id="student-panel">
-          <h2><i class="fa-solid fa-users"></i> 학생 로비</h2>
-          <form id="student-join-form" class="input-row">
-            <input id="nickname-input" class="field" maxlength="16" placeholder="닉네임" autocomplete="nickname">
-            <button class="btn" type="submit">입장</button>
-          </form>
-          <div id="student-lobby" class="stack hidden">
+      <!-- 3. Student Screen -->
+      <section id="student-screen" class="screen student-layout hidden" data-screen>
+        <!-- Left Column: Student Lobby controls -->
+        <aside class="stack">
+          <section class="panel">
+            <h2><i class="fa-solid fa-users"></i> 학생 로비</h2>
             <div class="permission">
               <div>
                 <strong id="student-name-label">학생</strong>
@@ -487,42 +688,45 @@
               </div>
               <button id="create-room-btn" class="btn" type="button" disabled>방 만들기</button>
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section class="panel">
-          <h2><i class="fa-solid fa-list"></i> 방 목록</h2>
-          <div id="room-list" class="room-list">
-            <div class="empty">아직 열린 방이 없습니다.</div>
-          </div>
-        </section>
-      </section>
+          <section class="panel">
+            <h2><i class="fa-solid fa-list"></i> 방 목록</h2>
+            <div id="room-list" class="room-list">
+              <div class="empty">아직 열린 방이 없습니다.</div>
+            </div>
+          </section>
+        </aside>
 
-      <section class="panel" id="room-panel">
-        <div class="game">
-          <div>
-            <h2 id="room-title">방에 입장하면 오목판이 표시됩니다.</h2>
-            <div class="board-wrap">
-              <div id="gomoku-board" class="board" aria-label="15x15 오목판"></div>
+        <!-- Right Column: Game Room Container -->
+        <div id="student-game-container">
+          <section class="panel" id="room-panel">
+            <div class="game">
+              <div>
+                <h2 id="room-title">방에 입장하면 오목판이 표시됩니다.</h2>
+                <div class="board-wrap">
+                  <div id="gomoku-board" class="board" aria-label="15x15 오목판"></div>
+                </div>
+              </div>
+              <aside class="room-side">
+                <div class="status" id="room-status">로비에서 방을 만들거나 입장하세요.</div>
+                <div class="seat">
+                  <span><span class="dot black"></span> 흑</span>
+                  <small id="black-player">비어 있음</small>
+                </div>
+                <div class="seat">
+                  <span><span class="dot white"></span> 백</span>
+                  <small id="white-player">비어 있음</small>
+                </div>
+                <div class="metrics">
+                  <div class="metric"><span>내 역할</span><strong id="my-seat">로비</strong></div>
+                  <div class="metric"><span>관전자</span><strong id="spectator-count">0</strong></div>
+                </div>
+                <button id="reset-game-btn" class="btn secondary" type="button" disabled><i class="fa-solid fa-rotate-right"></i> 새 판 시작</button>
+                <button id="leave-room-btn" class="btn danger" type="button" disabled><i class="fa-solid fa-door-open"></i> 방 나가기</button>
+              </aside>
             </div>
-          </div>
-          <aside class="room-side">
-            <div class="status" id="room-status">로비에서 방을 만들거나 입장하세요.</div>
-            <div class="seat">
-              <span><span class="dot black"></span> 흑</span>
-              <small id="black-player">비어 있음</small>
-            </div>
-            <div class="seat">
-              <span><span class="dot white"></span> 백</span>
-              <small id="white-player">비어 있음</small>
-            </div>
-            <div class="metrics">
-              <div class="metric"><span>내 역할</span><strong id="my-seat">로비</strong></div>
-              <div class="metric"><span>관전자</span><strong id="spectator-count">0</strong></div>
-            </div>
-            <button id="reset-game-btn" class="btn secondary" type="button" disabled><i class="fa-solid fa-rotate-right"></i> 새 판 시작</button>
-            <button id="leave-room-btn" class="btn danger" type="button" disabled><i class="fa-solid fa-door-open"></i> 방 나가기</button>
-          </aside>
+          </section>
         </div>
       </section>
     </main>
