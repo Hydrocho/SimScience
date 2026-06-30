@@ -8,6 +8,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
   <style>
     :root {
       --ink: #172033;
@@ -654,6 +655,16 @@
             <button id="teacher-logout-btn" class="btn danger" type="button" style="width: 100%; margin-top: 1rem;">
               <i class="fa-solid fa-right-from-bracket"></i> 로그아웃
             </button>
+          </section>
+
+          <!-- 학생 접속 안내 Panel -->
+          <section class="panel stack">
+            <h2><i class="fa-solid fa-qrcode"></i> 학생 접속 안내</h2>
+            <p style="color: var(--muted); font-size: 0.82rem; margin: 0; font-weight: 600;">
+              스마트폰 카메라로 QR 코드를 스캔하거나 아래 주소로 접속해 오목 로비로 들어올 수 있습니다.
+            </p>
+            <div id="teacher-qr-code" class="qr-box" title="클릭하면 크게 봅니다" style="width: 100%; display: grid; place-content: center; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; min-height: 160px;"></div>
+            <div id="student-url-box" class="url-box" style="word-break: break-all; padding: 8px 12px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; font-size: 0.82rem; font-weight: 800; color: var(--muted);"></div>
           </section>
         </aside>
 

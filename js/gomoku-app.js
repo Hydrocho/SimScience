@@ -60,6 +60,109 @@ function showScreen(screenId) {
   });
 }
 
+function renderTeacherQrCode(url) {
+  const qr = $('teacher-qr-code');
+  if (!qr) return;
+  qr.innerHTML = '';
+  
+  if (window.QRCode) {
+    new window.QRCode(qr, {
+      text: url,
+      width: 136,
+      height: 136,
+      correctLevel: window.QRCode.CorrectLevel.M,
+    });
+  } else {
+    qr.textContent = 'QR 라이브러리 로드 실패';
+  }
+}
+
+function openLargeQr() {
+  const qrImg = document.querySelector('#teacher-qr-code img');
+  if (!qrImg || !qrImg.src) {
+    setStatus('QR 코드가 아직 준비되지 않았습니다.', 'error');
+    return;
+  }
+  const src = qrImg.src;
+  const qrWin = window.open('', '_blank', 'width=600,height=650,menubar=no,toolbar=no,location=no,status=no');
+  if (!qrWin) {
+    alert('팝업 차단이 설정되어 있습니다. 팝업 차단을 해제해주세요.');
+    return;
+  }
+  qrWin.document.write(`
+    <!DOCTYPE html>
+    <html lang="ko">
+    <head>
+      <title>교실 오목 대기실 - QR Code</title>
+      <meta charset="UTF-8">
+      <style>
+        body {
+          margin: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          min-height: 100vh;
+          font-family: system-ui, -apple-system, sans-serif;
+          background: #eef4fb;
+          color: #172033;
+          text-align: center;
+        }
+        .container {
+          padding: 32px;
+          background: #ffffff;
+          border: 1px solid #d9e2ef;
+          border-radius: 24px;
+          box-shadow: 0 15px 35px rgba(23, 32, 51, 0.1);
+          max-width: 90%;
+        }
+        h1 {
+          font-size: 24px;
+          margin-top: 0;
+          margin-bottom: 8px;
+          font-weight: 800;
+        }
+        p {
+          font-size: 15px;
+          color: #607089;
+          margin-bottom: 24px;
+          font-weight: 600;
+        }
+        img {
+          width: 420px;
+          height: 420px;
+          max-width: 100%;
+          height: auto;
+          border: 1px solid #d9e2ef;
+          border-radius: 16px;
+          padding: 8px;
+          background: #ffffff;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <h1>교실 오목 대기실</h1>
+        <p>휴대폰 카메라로 QR 코드를 스캔하여 게임에 참여하세요!</p>
+        <img src="${src}" alt="QR Code">
+      </div>
+    </body>
+    </html>
+  `);
+  qrWin.document.close();
+}
+
+function setupTeacherDashboard() {
+  state.mode = 'teacher';
+  showScreen('teacher-screen');
+  
+  // Set up student entry URL and QR Code
+  const studentUrl = window.location.origin + window.location.pathname;
+  const urlBox = $('student-url-box');
+  if (urlBox) urlBox.textContent = studentUrl;
+  renderTeacherQrCode(studentUrl);
+}
+
 function setStatus(message, tone = 'neutral') {
   const status = $('app-status');
   if (!status) return;
@@ -104,6 +207,7 @@ function bindEvents() {
   $('reset-game-btn')?.addEventListener('click', resetGame);
   $('leave-room-btn')?.addEventListener('click', leaveRoom);
   $('teacher-logout-btn')?.addEventListener('click', handleTeacherLogout);
+  $('teacher-qr-code')?.addEventListener('click', openLargeQr);
 }
 
 async function initLobbyChannel(trackPayload = null) {
@@ -229,8 +333,7 @@ async function handleTeacherLogin() {
     await initLobbyChannel(buildTeacherPresence());
     startTeacherHeartbeat();
     
-    state.mode = 'teacher';
-    showScreen('teacher-screen');
+    setupTeacherDashboard();
     
     $('teacher-email').textContent = email;
     setStatus('교사 계정 확인 완료. 오목 허용을 켜면 학생들이 방을 만들 수 있습니다.', 'success');
@@ -791,8 +894,7 @@ async function boot() {
       await initLobbyChannel(buildTeacherPresence());
       startTeacherHeartbeat();
       
-      state.mode = 'teacher';
-      showScreen('teacher-screen');
+      setupTeacherDashboard();
       
       $('teacher-email').textContent = email;
       renderPermissionState();
