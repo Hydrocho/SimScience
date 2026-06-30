@@ -174,7 +174,13 @@ async function askGemini(body: RequestBody) {
 
   await insertMessage(room.id, studentId, nickname, 'student', message);
   const prompt = buildPrompt(nickname, message, history);
-  const reply = await callGemini(prompt);
+  let reply = '';
+  try {
+    reply = await callGemini(prompt);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Gemini 응답 생성에 실패했습니다.';
+    return json({ error: message }, 502);
+  }
   await insertMessage(room.id, studentId, 'AI', 'ai', reply);
 
   return json({ reply });
@@ -295,7 +301,7 @@ async function callGemini(prompt: string) {
   if (!response.ok) {
     const errorText = await response.text();
     console.error('[gemini-debate] Gemini API failed:', response.status, errorText);
-    throw new Error('Gemini API 응답을 받을 수 없습니다.');
+    throw new Error(toGeminiErrorMessage(response.status, errorText));
   }
 
   const payload = await response.json();
@@ -305,11 +311,37 @@ async function callGemini(prompt: string) {
     .join('')
     .trim();
 
-  if (!text) throw new Error('Gemini 응답이 비어 있습니다.');
+  if (!text) {
+    if (finishReason === 'SAFETY') {
+      return '안전 기준 때문에 이 질문에는 답변을 생성하지 못했습니다. 표현을 조금 바꾸어 다시 질문해 주세요.';
+    }
+    throw new Error(`Gemini 응답이 비어 있습니다. 종료 사유: ${finishReason || 'UNKNOWN'}`);
+  }
   if (finishReason === 'MAX_TOKENS') {
     return `${text}\n\n(응답이 길어 일부가 잘렸습니다. 더 짧게 다시 질문해 보세요.)`.slice(0, 2000);
   }
   return text.slice(0, 2000);
+}
+
+function toGeminiErrorMessage(status: number, errorText: string) {
+  let upstreamMessage = '';
+  try {
+    const payload = JSON.parse(errorText);
+    upstreamMessage = payload?.error?.message || '';
+  } catch {
+    upstreamMessage = errorText.slice(0, 220);
+  }
+
+  if (status === 400) {
+    return `Gemini 요청 형식 오류입니다. ${upstreamMessage}`;
+  }
+  if (status === 403) {
+    return `Gemini API 키 권한 또는 사용 설정을 확인하세요. ${upstreamMessage}`;
+  }
+  if (status === 429) {
+    return `Gemini 사용량 한도 또는 요청 제한에 걸렸습니다. 잠시 후 다시 시도하세요. ${upstreamMessage}`;
+  }
+  return `Gemini API 오류(${status})가 발생했습니다. ${upstreamMessage}`;
 }
 
 function json(payload: unknown, status = 200) {

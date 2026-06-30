@@ -94,7 +94,16 @@ async function ensureTeacherSession() {
 async function invokeDebateFunction(body) {
   if (!supabaseClient) throw new Error('Supabase 연결을 사용할 수 없습니다.');
   const { data, error } = await supabaseClient.functions.invoke('gemini-debate', { body });
-  if (error) throw error;
+  if (error) {
+    let detail = error.message || 'Edge Function 호출에 실패했습니다.';
+    try {
+      const payload = await error.context?.clone?.().json?.();
+      if (payload?.error) detail = payload.error;
+    } catch (parseError) {
+      console.warn('[Debate] Failed to parse function error response:', parseError);
+    }
+    throw new Error(detail);
+  }
   if (data?.error) throw new Error(data.error);
   return data;
 }
