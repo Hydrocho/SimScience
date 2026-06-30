@@ -507,11 +507,16 @@ async function joinRoom(roomId, title = '', asOwner = false) {
     })
     .on('broadcast', { event: 'game-reset' }, ({ payload }) => {
       state.game = createGameState();
+      state.game.blackPlayerId = payload?.blackPlayerId || '';
+      state.game.whitePlayerId = payload?.whitePlayerId || '';
       state.appliedMoveIds.clear();
       setRoomStatus(payload?.message || '새 판이 시작됐습니다.', 'success');
-      renderBoard();
-      renderRoomInfo();
-      publishRoomSummary();
+      handleRoomPresence();
+    })
+    .on('broadcast', { event: 'roles-assigned' }, ({ payload }) => {
+      state.game.blackPlayerId = payload?.blackPlayerId || '';
+      state.game.whitePlayerId = payload?.whitePlayerId || '';
+      handleRoomPresence();
     })
     .on('broadcast', { event: 'request-state' }, ({ payload }) => {
       if (state.ownerId === state.id) {
@@ -525,6 +530,8 @@ async function joinRoom(roomId, title = '', asOwner = false) {
             status: state.game.status,
             winner: state.game.winner,
             lastMove: state.game.lastMove,
+            blackPlayerId: state.game.blackPlayerId,
+            whitePlayerId: state.game.whitePlayerId,
             appliedMoveIds: Array.from(state.appliedMoveIds),
           },
         });
@@ -539,9 +546,10 @@ async function joinRoom(roomId, title = '', asOwner = false) {
           winner: payload.winner,
           lastMove: payload.lastMove,
         });
+        state.game.blackPlayerId = payload.blackPlayerId || '';
+        state.game.whitePlayerId = payload.whitePlayerId || '';
         state.appliedMoveIds = new Set(payload.appliedMoveIds || []);
-        renderBoard();
-        renderRoomInfo();
+        handleRoomPresence();
       }
     });
 
@@ -613,12 +621,50 @@ function handleRoomPresence() {
     state.ownerId = unique[0]?.id || '';
   }
 
-  state.participants = unique.map((user, index) => ({
-    ...user,
-    seat: index === 0 ? 'black' : index === 1 ? 'white' : 'spectator',
-    owner: user.id === state.ownerId,
-  }));
+  // Clear role assignments if room has less than 2 players
+  if (unique.length < 2) {
+    state.game.blackPlayerId = '';
+    state.game.whitePlayerId = '';
+  }
+
+  // Random draw by room owner when second player joins
+  if (state.ownerId === state.id && unique.length >= 2) {
+    if (!state.game.blackPlayerId || !state.game.whitePlayerId) {
+      const isOwnerBlack = Math.random() < 0.5;
+      const playerA = unique[0];
+      const playerB = unique[1];
+      state.game.blackPlayerId = isOwnerBlack ? playerA.id : playerB.id;
+      state.game.whitePlayerId = isOwnerBlack ? playerB.id : playerA.id;
+
+      // Broadcast roles to the room
+      state.roomChannel?.send({
+        type: 'broadcast',
+        event: 'roles-assigned',
+        payload: {
+          blackPlayerId: state.game.blackPlayerId,
+          whitePlayerId: state.game.whitePlayerId,
+        },
+      });
+    }
+  }
+
+  state.participants = unique.map((user, index) => {
+    let seat = 'spectator';
+    if (state.game.blackPlayerId && state.game.whitePlayerId) {
+      if (user.id === state.game.blackPlayerId) seat = 'black';
+      else if (user.id === state.game.whitePlayerId) seat = 'white';
+    } else {
+      seat = index === 0 ? 'black' : index === 1 ? 'white' : 'spectator';
+    }
+    return {
+      ...user,
+      seat,
+      owner: user.id === state.ownerId,
+    };
+  });
+
   state.mySeat = state.participants.find((user) => user.id === state.id)?.seat || 'spectator';
+
   renderBoard();
   renderRoomInfo();
   publishRoomSummary();
@@ -754,16 +800,43 @@ function canResetGame() {
 
 function resetGame() {
   if (!canResetGame()) return;
-  state.game = createGameState();
-  state.appliedMoveIds.clear();
+
+  const users = flattenPresence(state.roomChannel?.presenceState())
+    .filter((user) => user.role === 'student' && user.game === 'gomoku')
+    .sort((left, right) => {
+      const leftTime = Date.parse(left.joinedAt || '') || 0;
+      const rightTime = Date.parse(right.joinedAt || '') || 0;
+      return leftTime - rightTime;
+    });
+  const uniqueByNickname = new Map();
+  users.forEach((user) => uniqueByNickname.set(user.nickname, user));
+  const unique = [...uniqueByNickname.values()];
+
+  let nextBlackPlayerId = state.game.blackPlayerId || unique[0]?.id || '';
+  let nextWhitePlayerId = state.game.whitePlayerId || unique[1]?.id || '';
+
+  // If the game was finished, the loser gets to play as Black next (starts first)
+  if (state.game.status === 'finished' && state.game.winner) {
+    if (state.game.winner === 'black') {
+      // Black won, so White (the loser) plays as Black next (swap roles)
+      nextBlackPlayerId = state.game.whitePlayerId || unique[1]?.id || '';
+      nextWhitePlayerId = state.game.blackPlayerId || unique[0]?.id || '';
+    } else if (state.game.winner === 'white') {
+      // White won, so Black (the loser) plays as Black next (roles remain the same)
+      nextBlackPlayerId = state.game.blackPlayerId || unique[0]?.id || '';
+      nextWhitePlayerId = state.game.whitePlayerId || unique[1]?.id || '';
+    }
+  }
+
   state.roomChannel?.send({
     type: 'broadcast',
     event: 'game-reset',
-    payload: { message: `${state.nickname}님이 새 판을 시작했습니다.` },
+    payload: {
+      message: `${state.nickname}님이 새 판을 시작했습니다.`,
+      blackPlayerId: nextBlackPlayerId,
+      whitePlayerId: nextWhitePlayerId,
+    },
   });
-  renderBoard();
-  renderRoomInfo();
-  publishRoomSummary();
 }
 
 async function leaveRoom(removeIfOwner = true) {
