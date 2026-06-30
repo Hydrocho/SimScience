@@ -508,12 +508,51 @@ async function joinRoom(roomId, title = '', asOwner = false) {
       renderBoard();
       renderRoomInfo();
       publishRoomSummary();
+    })
+    .on('broadcast', { event: 'request-state' }, ({ payload }) => {
+      if (state.ownerId === state.id) {
+        state.roomChannel?.send({
+          type: 'broadcast',
+          event: 'sync-state',
+          payload: {
+            targetId: payload?.requesterId,
+            board: state.game.board,
+            turn: state.game.turn,
+            status: state.game.status,
+            winner: state.game.winner,
+            lastMove: state.game.lastMove,
+            appliedMoveIds: Array.from(state.appliedMoveIds),
+          },
+        });
+      }
+    })
+    .on('broadcast', { event: 'sync-state' }, ({ payload }) => {
+      if (payload?.targetId === state.id) {
+        state.game = createGameState({
+          board: payload.board,
+          turn: payload.turn,
+          status: payload.status,
+          winner: payload.winner,
+          lastMove: payload.lastMove,
+        });
+        state.appliedMoveIds = new Set(payload.appliedMoveIds || []);
+        renderBoard();
+        renderRoomInfo();
+      }
     });
 
   const joined = await new Promise((resolve) => {
     state.roomChannel.subscribe(async (status) => {
       if (status === 'SUBSCRIBED') {
         await state.roomChannel.track(buildRoomPresence());
+        // Request current game state from active players/owner after a tiny delay
+        setTimeout(() => {
+          state.roomChannel?.send({
+            type: 'broadcast',
+            event: 'request-state',
+            payload: { requesterId: state.id },
+          });
+        }, 150);
         resolve(true);
       }
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
@@ -658,9 +697,9 @@ function renderBoard() {
       if (colIndex === 0) button.classList.add('left');
       if (colIndex === row.length - 1) button.classList.add('right');
 
-      // Set standard 15x15 board star points
-      const isStar = (rowIndex === 7 && colIndex === 7) ||
-                     ((rowIndex === 3 || rowIndex === 11) && (colIndex === 3 || colIndex === 11));
+      // Set standard 9 star points for 15x15 board
+      const isStar = (rowIndex === 3 || rowIndex === 7 || rowIndex === 11) &&
+                     (colIndex === 3 || colIndex === 7 || colIndex === 11);
       if (isStar) {
         button.classList.add('star-point');
       }
