@@ -483,6 +483,8 @@ async function joinRoom(roomId, title = '', asOwner = false) {
   state.appliedMoveIds = new Set();
   state.participants = [];
   state.mySeat = 'spectator';
+  
+  renderPermissionState();
 
   if (state.mode === 'teacher') {
     const roomPanel = $('room-panel');
@@ -571,6 +573,8 @@ async function joinRoom(roomId, title = '', asOwner = false) {
   startRoomHeartbeat();
   renderBoard();
   renderRoomInfo();
+  renderRoomList();
+  renderPermissionState();
   setStatus('오목방에 입장했습니다.', 'success');
 }
 
@@ -797,6 +801,7 @@ async function leaveRoom(removeIfOwner = true) {
   renderBoard();
   renderRoomInfo();
   renderRoomList();
+  renderPermissionState();
 }
 
 function startRoomHeartbeat() {
@@ -843,9 +848,15 @@ function renderPermissionState() {
     toggle.classList.toggle('success', !state.teacherAllowed);
   }
   const studentLabel = $('student-permission-label');
-  if (studentLabel) studentLabel.textContent = state.teacherAllowed ? '방을 만들 수 있습니다.' : '교사 허가 대기 중';
+  if (studentLabel) {
+    if (state.roomId) {
+      studentLabel.textContent = '이미 방에 입장했습니다.';
+    } else {
+      studentLabel.textContent = state.teacherAllowed ? '방을 만들 수 있습니다.' : '교사 허가 대기 중';
+    }
+  }
   const createButton = $('create-room-btn');
-  if (createButton) createButton.disabled = !state.nickname || !state.teacherAllowed;
+  if (createButton) createButton.disabled = !state.nickname || !state.teacherAllowed || !!state.roomId;
 }
 
 function renderTeacherMetrics() {
