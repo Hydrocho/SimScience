@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from 'jsr:@supabase/supabase-js@2';
 
 const TOPIC = '지구 온난화 대응을 위해 개발을 제한해야 하는가?';
 const MAX_MESSAGE_LENGTH = 700;
