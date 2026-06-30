@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>교실 오목</title>
+  <link rel="icon" href="data:,">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --ink: #172033;
+      --muted: #607089;
+      --line: #d9e2ef;
+      --surface: #ffffff;
+      --surface-soft: #f5f8fc;
+      --blue: #2563eb;
+      --green: #059669;
+      --orange: #d97706;
+      --red: #dc2626;
+      --black-stone: #111827;
+      --white-stone: #f8fafc;
+      --board: #d7aa63;
+      --board-line: #704b1f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: 'Noto Sans KR', sans-serif;
+      color: var(--ink);
+      background: #eef4fb;
+      overflow-x: hidden;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1rem clamp(1rem, 3vw, 2rem);
+      background: rgba(255, 255, 255, 0.92);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 5;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      min-width: 0;
+    }
+
+    .brand-icon {
+      width: 2.5rem;
+      height: 2.5rem;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      background: #172033;
+      color: #fff;
+      flex: 0 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-family: 'Outfit', 'Noto Sans KR', sans-serif;
+      font-size: clamp(1.25rem, 3vw, 1.8rem);
+      letter-spacing: 0;
+    }
+
+    .nav-link {
+      color: var(--muted);
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+
+    main {
+      width: 100%;
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: clamp(1rem, 2.5vw, 2rem);
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(280px, 360px) 1fr;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 1rem;
+      box-shadow: 0 12px 30px rgba(23, 32, 51, 0.06);
+    }
+
+    .stack {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .panel h2, .panel h3 {
+      margin: 0 0 0.8rem;
+      font-size: 1rem;
+    }
+
+    .status {
+      min-height: 2.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0.75rem 0.9rem;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 800;
+      line-height: 1.35;
+    }
+
+    .status[data-tone="success"] {
+      color: #047857;
+      background: #ecfdf5;
+      border-color: #bbf7d0;
+    }
+
+    .status[data-tone="error"] {
+      color: #b91c1c;
+      background: #fef2f2;
+      border-color: #fecaca;
+    }
+
+    .status[data-tone="warn"] {
+      color: #a16207;
+      background: #fffbeb;
+      border-color: #fde68a;
+    }
+
+    .input-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem;
+    }
+
+    .field {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.72rem 0.8rem;
+      color: var(--ink);
+      background: #fff;
+      outline: none;
+    }
+
+    .field:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 2.75rem;
+      border-radius: 8px;
+      padding: 0 0.95rem;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 900;
+      white-space: nowrap;
+    }
+
+    .btn.secondary {
+      color: var(--ink);
+      background: #e8eef6;
+    }
+
+    .btn.success {
+      background: var(--green);
+    }
+
+    .btn.danger {
+      background: var(--red);
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.8rem;
+      background: var(--surface-soft);
+    }
+
+    .metric span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 800;
+    }
+
+    .metric strong {
+      display: block;
+      margin-top: 0.2rem;
+      font-size: 1.35rem;
+      font-family: 'Outfit', sans-serif;
+    }
+
+    .permission {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      padding: 0.8rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+    }
+
+    .permission strong {
+      display: block;
+      margin-bottom: 0.15rem;
+    }
+
+    .permission small {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .room-list {
+      display: grid;
+      gap: 0.55rem;
+      min-height: 7rem;
+    }
+
+    .room-item {
+      text-align: left;
+      width: 100%;
+      display: grid;
+      gap: 0.3rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.8rem;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    .room-item:hover {
+      border-color: var(--blue);
+    }
+
+    .room-title-line {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      align-items: center;
+      font-weight: 900;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      min-height: 1.5rem;
+      padding: 0 0.5rem;
+      border-radius: 999px;
+      background: #e0ecff;
+      color: #1d4ed8;
+      font-size: 0.75rem;
+      font-weight: 900;
+    }
+
+    .room-meta {
+      color: var(--muted);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1.45;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-weight: 800;
+      padding: 1rem;
+      border: 1px dashed var(--line);
+      border-radius: 8px;
+      background: var(--surface-soft);
+      text-align: center;
+    }
+
+    .game {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: minmax(300px, 1fr) minmax(240px, 320px);
+      align-items: start;
+    }
+
+    .board-wrap {
+      overflow: auto;
+      padding: 0.75rem;
+      border-radius: 8px;
+      background: #c99348;
+      border: 1px solid #b67b2f;
+    }
+
+    .board {
+      width: min(100%, 650px);
+      min-width: 300px;
+      aspect-ratio: 1 / 1;
+      display: grid;
+      grid-template-columns: repeat(15, 1fr);
+      grid-template-rows: repeat(15, 1fr);
+      background: var(--board);
+      border: 2px solid var(--board-line);
+      position: relative;
+    }
+
+    .cell {
+      display: grid;
+      place-items: center;
+      background:
+        linear-gradient(var(--board-line), var(--board-line)) center / 100% 1px no-repeat,
+        linear-gradient(90deg, var(--board-line), var(--board-line)) center / 1px 100% no-repeat;
+    }
+
+    .cell:disabled {
+      opacity: 1;
+    }
+
+    .stone {
+      width: 72%;
+      height: 72%;
+      border-radius: 50%;
+      box-shadow: inset 0 -3px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.18);
+    }
+
+    .stone.black {
+      background: radial-gradient(circle at 35% 30%, #4b5563, var(--black-stone) 58%);
+    }
+
+    .stone.white {
+      background: radial-gradient(circle at 35% 30%, #fff, var(--white-stone) 68%);
+      border: 1px solid #cbd5e1;
+    }
+
+    .room-side {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .seat {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 0.75rem;
+      background: var(--surface-soft);
+      font-weight: 900;
+    }
+
+    .seat small {
+      color: var(--muted);
+      font-weight: 800;
+    }
+
+    .dot {
+      width: 1rem;
+      height: 1rem;
+      border-radius: 50%;
+      border: 1px solid #cbd5e1;
+      flex: 0 0 auto;
+    }
+
+    .dot.black { background: var(--black-stone); }
+    .dot.white { background: #fff; }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 920px) {
+      main, .game {
+        grid-template-columns: 1fr;
+      }
+
+      .board {
+        width: min(100%, 650px);
+      }
+    }
+
+    @media (max-width: 560px) {
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .input-row {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-icon"><i class="fa-solid fa-border-all"></i></div>
+        <div>
+          <h1>교실 오목</h1>
+          <div id="connection-label" class="room-meta">Supabase 연결 확인 중</div>
+        </div>
+      </div>
+      <a class="nav-link" href="index.html"><i class="fa-solid fa-house"></i> 메인으로</a>
+    </header>
+
+    <main>
+      <section class="stack">
+        <div id="app-status" class="status">준비 중입니다.</div>
+
+        <section class="panel" id="teacher-panel">
+          <h2><i class="fa-solid fa-chalkboard-user"></i> 교사 허가</h2>
+          <div id="teacher-signed-out">
+            <button id="teacher-login-btn" class="btn" type="button"><i class="fa-brands fa-google"></i> 교사 로그인</button>
+          </div>
+          <div id="teacher-signed-in" class="stack hidden">
+            <div class="permission">
+              <div>
+                <strong id="teacher-email">교사 계정</strong>
+                <small id="teacher-permission-label">오목 방 만들기 닫힘</small>
+              </div>
+              <button id="permission-toggle-btn" class="btn success" type="button">허용 켜기</button>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>로비 학생</span><strong id="teacher-student-count">0</strong></div>
+              <div class="metric"><span>열린 방</span><strong id="teacher-room-count">0</strong></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" id="student-panel">
+          <h2><i class="fa-solid fa-users"></i> 학생 로비</h2>
+          <form id="student-join-form" class="input-row">
+            <input id="nickname-input" class="field" maxlength="16" placeholder="닉네임" autocomplete="nickname">
+            <button class="btn" type="submit">입장</button>
+          </form>
+          <div id="student-lobby" class="stack hidden">
+            <div class="permission">
+              <div>
+                <strong id="student-name-label">학생</strong>
+                <small id="student-permission-label">교사 허가 대기 중</small>
+              </div>
+              <button id="create-room-btn" class="btn" type="button" disabled>방 만들기</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel">
+          <h2><i class="fa-solid fa-list"></i> 방 목록</h2>
+          <div id="room-list" class="room-list">
+            <div class="empty">아직 열린 방이 없습니다.</div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel" id="room-panel">
+        <div class="game">
+          <div>
+            <h2 id="room-title">방에 입장하면 오목판이 표시됩니다.</h2>
+            <div class="board-wrap">
+              <div id="gomoku-board" class="board" aria-label="15x15 오목판"></div>
+            </div>
+          </div>
+          <aside class="room-side">
+            <div class="status" id="room-status">로비에서 방을 만들거나 입장하세요.</div>
+            <div class="seat">
+              <span><span class="dot black"></span> 흑</span>
+              <small id="black-player">비어 있음</small>
+            </div>
+            <div class="seat">
+              <span><span class="dot white"></span> 백</span>
+              <small id="white-player">비어 있음</small>
+            </div>
+            <div class="metrics">
+              <div class="metric"><span>내 역할</span><strong id="my-seat">로비</strong></div>
+              <div class="metric"><span>관전자</span><strong id="spectator-count">0</strong></div>
+            </div>
+            <button id="reset-game-btn" class="btn secondary" type="button" disabled><i class="fa-solid fa-rotate-right"></i> 새 판 시작</button>
+            <button id="leave-room-btn" class="btn danger" type="button" disabled><i class="fa-solid fa-door-open"></i> 방 나가기</button>
+          </aside>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./js/gomoku-app.js"></script>
+</body>
+</html>
