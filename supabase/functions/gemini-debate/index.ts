@@ -262,7 +262,7 @@ async function callGemini(prompt: string) {
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 420,
+        maxOutputTokens: 900,
       },
     }),
   });
@@ -274,12 +274,16 @@ async function callGemini(prompt: string) {
   }
 
   const payload = await response.json();
+  const finishReason = payload?.candidates?.[0]?.finishReason || '';
   const text = payload?.candidates?.[0]?.content?.parts
     ?.map((part: { text?: string }) => part.text || '')
     .join('')
     .trim();
 
   if (!text) throw new Error('Gemini 응답이 비어 있습니다.');
+  if (finishReason === 'MAX_TOKENS') {
+    return `${text}\n\n(응답이 길어 일부가 잘렸습니다. 더 짧게 다시 질문해 보세요.)`.slice(0, 2000);
+  }
   return text.slice(0, 2000);
 }
 
