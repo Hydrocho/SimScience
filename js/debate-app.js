@@ -12,6 +12,7 @@ void buildDebatePrompt;
 
 const SUPABASE_URL = 'https://vdyvpsteofvhbvvrilxe.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZkeXZwc3Rlb2Z2aGJ2dnJpbHhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk1MzQ4ODMsImV4cCI6MjA5NTExMDg4M30.9kYsTmJGigMpanoj0CWFdHOZkDTUXqZo8neNuBxXIYU';
+const SHOW_STUDENT_DEBUG = false;
 
 const state = {
   mode: 'start',
@@ -23,6 +24,7 @@ const state = {
   students: [],
   messages: [],
   debugMessages: [],
+  selectedMonitorStudentId: '',
   sending: false,
   roomStateSyncIntervalId: null,
 };
@@ -326,14 +328,20 @@ async function sendStudentMessage() {
 }
 
 function addTeacherMonitorMessage(payload) {
+  const studentId = payload.studentId || payload.nickname || '';
+  if (!state.selectedMonitorStudentId) {
+    state.selectedMonitorStudentId = studentId;
+  }
   state.messages.push({
     role: 'student',
+    studentId,
     nickname: payload.nickname,
     content: payload.studentMessage || '',
     createdAt: payload.createdAt || Date.now(),
   });
   state.messages.push({
     role: 'ai',
+    studentId,
     nickname: 'AI',
     studentNickname: payload.nickname,
     content: payload.aiMessage || '',
@@ -387,34 +395,69 @@ function renderStudentList() {
   if (!list) return;
   if (!state.students.length) {
     list.textContent = '학생 접속 대기 중...';
+    state.selectedMonitorStudentId = '';
     return;
   }
+  if (!state.students.some((student) => student.id === state.selectedMonitorStudentId)) {
+    state.selectedMonitorStudentId = state.students[0]?.id || '';
+  }
   list.innerHTML = state.students
-    .map((student) => `<div class="student-chip">${escapeHtml(student.nickname)}</div>`)
+    .map((student) => {
+      const selected = student.id === state.selectedMonitorStudentId;
+      const messageCount = state.messages.filter((message) => message.studentId === student.id && message.role === 'student').length;
+      return `
+        <button class="student-chip monitor-student-chip" type="button" data-student-id="${escapeHtml(student.id)}" aria-pressed="${selected}">
+          <span>${escapeHtml(student.nickname)}</span>
+          <small>${messageCount}회</small>
+        </button>
+      `;
+    })
     .join('');
+
+  list.querySelectorAll('[data-student-id]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedMonitorStudentId = button.dataset.studentId || '';
+      renderStudentList();
+      renderMonitorList();
+    });
+  });
 }
 
 function renderMonitorList() {
   const list = $('monitor-list');
   if (!list) return;
   if (!state.messages.length) {
-    list.textContent = '아직 대화가 없습니다.';
+    list.innerHTML = '<p class="monitor-empty">아직 대화가 없습니다.</p>';
     return;
   }
-  list.innerHTML = state.messages
-    .slice(-40)
+
+  const selectedStudent = state.students.find((student) => student.id === state.selectedMonitorStudentId);
+  if (!selectedStudent) {
+    list.innerHTML = '<p class="monitor-empty">학생을 선택하면 대화가 표시됩니다.</p>';
+    return;
+  }
+
+  const selectedMessages = state.messages.filter((message) => message.studentId === selectedStudent.id);
+  if (!selectedMessages.length) {
+    list.innerHTML = `<p class="monitor-empty">${escapeHtml(selectedStudent.nickname)} 학생의 대화가 아직 없습니다.</p>`;
+    return;
+  }
+
+  list.innerHTML = selectedMessages
+    .slice(-80)
     .map((message) => {
-      const name = message.role === 'ai'
-        ? `AI${message.studentNickname ? ` -> ${message.studentNickname}` : ''}`
-        : message.nickname;
+      const isAi = message.role === 'ai';
       return `
-        <div class="monitor-item">
-          <strong>${escapeHtml(name)}</strong>
-          <p>${escapeHtml(message.content)}</p>
+        <div class="monitor-bubble-row ${isAi ? 'ai' : 'student'}">
+          <div class="monitor-bubble ${isAi ? 'ai' : 'student'}">
+            <strong>${isAi ? 'AI 토론자' : escapeHtml(selectedStudent.nickname)}</strong>
+            <p>${escapeHtml(message.content)}</p>
+          </div>
         </div>
       `;
     })
     .join('');
+  list.scrollTop = list.scrollHeight;
 }
 
 function renderQrCode(studentUrl) {
@@ -489,6 +532,7 @@ function renderChatLog() {
   const log = $('chat-log');
   if (!log) return;
   const debugHtml = state.debugMessages
+    .filter(() => SHOW_STUDENT_DEBUG)
     .slice(-8)
     .map((message) => `
       <div class="message debug" style="border-color: rgba(245, 158, 11, 0.32); background: #fffbeb;">

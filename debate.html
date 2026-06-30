@@ -212,6 +212,24 @@
       background: #ffffff;
     }
     .student-chip { font-weight: 900; }
+    .monitor-student-chip {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--text);
+      text-align: left;
+    }
+    .monitor-student-chip small {
+      color: var(--muted);
+      font-weight: 900;
+    }
+    .monitor-student-chip[aria-pressed="true"] {
+      border-color: rgba(15, 118, 110, 0.44);
+      background: #ccfbf1;
+      box-shadow: inset 4px 0 0 var(--primary);
+    }
     .monitor-item strong, .message strong {
       display: block;
       margin-bottom: 4px;
@@ -260,6 +278,61 @@
       border: 1px solid var(--line);
       border-radius: 14px;
       background: rgba(248, 250, 252, 0.78);
+    }
+    .monitor-list {
+      min-height: 380px;
+      max-height: 56vh;
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(248, 250, 252, 0.78);
+      align-content: start;
+    }
+    .monitor-bubble-row {
+      display: flex;
+      width: 100%;
+    }
+    .monitor-bubble-row.student {
+      justify-content: flex-end;
+    }
+    .monitor-bubble-row.ai {
+      justify-content: flex-start;
+    }
+    .monitor-bubble {
+      max-width: min(72%, 560px);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 11px 13px;
+      background: #ffffff;
+      box-shadow: 0 8px 18px rgba(15, 118, 110, 0.06);
+    }
+    .monitor-bubble.student {
+      color: #172554;
+      border-color: rgba(37, 99, 235, 0.22);
+      background: #dbeafe;
+      border-bottom-right-radius: 4px;
+    }
+    .monitor-bubble.ai {
+      color: #064e3b;
+      border-color: rgba(15, 118, 110, 0.24);
+      background: #d1fae5;
+      border-bottom-left-radius: 4px;
+    }
+    .monitor-bubble strong {
+      display: block;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+    }
+    .monitor-bubble p {
+      color: inherit;
+    }
+    .monitor-empty {
+      align-self: center;
+      justify-self: center;
+      color: var(--muted);
+      text-align: center;
+      font-weight: 800;
     }
     .message.student { border-color: rgba(37, 99, 235, 0.2); }
     .message.ai { border-color: rgba(15, 118, 110, 0.26); background: #f0fdfa; }
