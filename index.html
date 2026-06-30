@@ -203,6 +203,9 @@
     .portal-card.lotto-game::before {
       background: linear-gradient(90deg, #f97316, #facc15);
     }
+    .portal-card.debate-game::before {
+      background: linear-gradient(90deg, #0f766e, #2563eb);
+    }
 
     .portal-card:hover {
       transform: translateY(-8px);
@@ -226,6 +229,9 @@
     }
     .portal-card.lotto-game:hover {
       box-shadow: 0 15px 40px rgba(249, 115, 22, 0.14);
+    }
+    .portal-card.debate-game:hover {
+      box-shadow: 0 15px 40px rgba(15, 118, 110, 0.14);
     }
 
     /* Icon badge design */
@@ -264,6 +270,10 @@
     .lotto-game .icon-badge {
       background: linear-gradient(135deg, #f97316 0%, #facc15 100%);
       box-shadow: 0 6px 15px rgba(249, 115, 22, 0.22);
+    }
+    .debate-game .icon-badge {
+      background: linear-gradient(135deg, #0f766e 0%, #2563eb 100%);
+      box-shadow: 0 6px 15px rgba(15, 118, 110, 0.22);
     }
 
     /* Card text details */
@@ -530,6 +540,27 @@
           <span class="tag-item">실시간 참여</span>
           <span class="tag-item">로또 번호 선택</span>
           <span class="tag-item">교사용 추첨</span>
+        </div>
+      </a>
+
+      <!-- Card: AI Climate Debate -->
+      <a href="debate.html" class="portal-card debate-game">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-comments"></i>
+          </div>
+          <h2 class="card-title">
+            AI 기후 토론
+            <i class="fa-solid fa-chevron-right arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            지구 온난화 대응을 위해 개발을 제한해야 하는지 Gemini AI와 토론합니다. 교사가 대화창을 열 때만 AI 응답이 생성되고, 교사 화면에서 학생별 대화 내용을 실시간으로 확인할 수 있습니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">Gemini 토론</span>
+          <span class="tag-item">교사 모니터링</span>
+          <span class="tag-item">대화창 제어</span>
         </div>
       </a>
 

@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="지구 온난화와 개발 제한을 주제로 Gemini AI와 토론하는 교실 활동">
+  <title>AI 기후 토론</title>
+  <link rel="icon" href="data:,">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
+  <style>
+    :root {
+      --bg: #f7fbf8;
+      --panel: #ffffff;
+      --line: rgba(15, 118, 110, 0.18);
+      --text: #10201d;
+      --muted: #536963;
+      --primary: #0f766e;
+      --primary-dark: #115e59;
+      --accent: #f59e0b;
+      --blue: #2563eb;
+      --red: #dc2626;
+      --green: #15803d;
+      --shadow: 0 18px 40px rgba(15, 118, 110, 0.12);
+      --radius: 14px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans KR", system-ui, sans-serif;
+      color: var(--text);
+      background:
+        linear-gradient(135deg, rgba(15, 118, 110, 0.14), transparent 34%),
+        linear-gradient(180deg, #f8fafc, var(--bg));
+    }
+    button, input, textarea { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled, textarea:disabled { cursor: not-allowed; opacity: 0.62; }
+    [hidden] { display: none !important; }
+
+    .app-shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 28px 0;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: "Outfit", "Noto Sans KR", sans-serif;
+      font-weight: 800;
+    }
+    .brand-mark {
+      display: grid;
+      width: 44px;
+      height: 44px;
+      place-items: center;
+      border-radius: 12px;
+      color: #ffffff;
+      background: linear-gradient(135deg, var(--primary), var(--blue));
+      box-shadow: 0 10px 22px rgba(15, 118, 110, 0.22);
+    }
+    .status {
+      margin: 0;
+      min-height: 28px;
+      padding: 9px 13px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      color: var(--muted);
+      background: rgba(255, 255, 255, 0.86);
+      font-size: 0.92rem;
+    }
+    .status[data-tone="success"] { color: var(--green); border-color: rgba(21, 128, 61, 0.24); }
+    .status[data-tone="error"] { color: var(--red); border-color: rgba(220, 38, 38, 0.24); }
+
+    .hero, .teacher-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+      gap: 22px;
+      align-items: start;
+    }
+    .panel, .hero-copy {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, 0.9);
+      box-shadow: var(--shadow);
+    }
+    .hero-copy { padding: clamp(28px, 5vw, 54px); }
+    .panel { padding: 22px; }
+    .stack { display: grid; gap: 16px; }
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .panel-icon {
+      display: grid;
+      width: 38px;
+      height: 38px;
+      place-items: center;
+      border-radius: 11px;
+      color: var(--primary-dark);
+      background: rgba(20, 184, 166, 0.14);
+    }
+    h1, h2, h3 { margin: 0; line-height: 1.15; letter-spacing: 0; }
+    h1 { max-width: 9em; font-size: clamp(2.5rem, 7vw, 5.2rem); font-weight: 900; }
+    h2 { font-size: clamp(1.7rem, 4vw, 2.5rem); font-weight: 900; }
+    h3 { font-size: 1.25rem; font-weight: 900; }
+    p { margin: 0; color: var(--muted); line-height: 1.65; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 16px;
+      padding: 7px 11px;
+      border-radius: 999px;
+      color: var(--primary-dark);
+      background: rgba(20, 184, 166, 0.12);
+      font-size: 0.9rem;
+      font-weight: 800;
+    }
+    .subtitle {
+      max-width: 640px;
+      margin-top: 18px;
+      font-size: clamp(1rem, 2vw, 1.18rem);
+    }
+    .topic-card {
+      margin-top: 30px;
+      padding: 18px;
+      border: 1px solid rgba(245, 158, 11, 0.26);
+      border-radius: 12px;
+      background: rgba(255, 251, 235, 0.9);
+      color: #713f12;
+      font-weight: 900;
+      font-size: 1.08rem;
+    }
+    label { color: #24443e; font-weight: 800; }
+    input, textarea {
+      width: 100%;
+      border: 1px solid rgba(15, 118, 110, 0.22);
+      border-radius: 11px;
+      padding: 12px 14px;
+      color: var(--text);
+      background: #ffffff;
+      outline: none;
+    }
+    textarea { min-height: 104px; resize: vertical; }
+    input:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.13);
+    }
+    .primary-btn, .secondary-btn, .danger-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 48px;
+      border: 1px solid transparent;
+      border-radius: 11px;
+      padding: 0 16px;
+      font-weight: 900;
+    }
+    .primary-btn { color: #ffffff; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); }
+    .secondary-btn { color: var(--primary-dark); border-color: var(--line); background: rgba(240, 253, 250, 0.9); }
+    .danger-btn { color: #ffffff; background: var(--red); }
+    .room-code {
+      display: inline-flex;
+      align-items: center;
+      min-height: 58px;
+      padding: 0 16px;
+      border: 2px dashed rgba(15, 118, 110, 0.36);
+      border-radius: 12px;
+      color: var(--primary-dark);
+      background: rgba(240, 253, 250, 0.82);
+      font-family: "Outfit", sans-serif;
+      font-size: clamp(2.5rem, 8vw, 5rem);
+      font-weight: 800;
+      letter-spacing: 0.12em;
+    }
+    .qr-box {
+      display: grid;
+      min-height: 220px;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: #ffffff;
+    }
+    .student-list, .monitor-list, .chat-log {
+      display: grid;
+      gap: 10px;
+      min-height: 90px;
+      align-content: start;
+    }
+    .student-chip, .monitor-item, .message {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 11px 12px;
+      background: #ffffff;
+    }
+    .student-chip { font-weight: 900; }
+    .monitor-item strong, .message strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+    .teacher-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .teacher-stats div {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px;
+      background: #ffffff;
+    }
+    .teacher-stats strong {
+      display: block;
+      font-family: "Outfit", sans-serif;
+      font-size: 1.9rem;
+      line-height: 1;
+    }
+    .teacher-stats span {
+      display: block;
+      margin-top: 6px;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .room-state {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      width: fit-content;
+      padding: 8px 12px;
+      border-radius: 999px;
+      color: #7f1d1d;
+      background: #fee2e2;
+      font-weight: 900;
+    }
+    .room-state.open { color: #064e3b; background: #d1fae5; }
+    .chat-log {
+      min-height: 320px;
+      max-height: 52vh;
+      overflow: auto;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(248, 250, 252, 0.78);
+    }
+    .message.student { border-color: rgba(37, 99, 235, 0.2); }
+    .message.ai { border-color: rgba(15, 118, 110, 0.26); background: #f0fdfa; }
+    .chat-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; }
+
+    @media (max-width: 900px) {
+      .topbar, .hero, .teacher-grid { grid-template-columns: 1fr; align-items: stretch; }
+      .teacher-stats { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 560px) {
+      .app-shell { width: min(100% - 20px, 1180px); padding: 18px 0; }
+      .hero-copy, .panel { padding: 18px; }
+      .chat-actions { grid-template-columns: 1fr; }
+      h1 { font-size: 2.45rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-mark"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
+        <span>AI 기후 토론</span>
+      </div>
+      <p id="app-status" class="status" data-tone="neutral" aria-live="polite"></p>
+    </header>
+
+    <main>
+      <section id="start-screen" data-screen>
+        <div class="hero">
+          <div class="hero-copy">
+            <p class="eyebrow"><i class="fa-solid fa-leaf" aria-hidden="true"></i> 교사 제어형 AI 토론</p>
+            <h1>개발을 제한해야 할까?</h1>
+            <p class="subtitle">학생은 지구 온난화 대응과 개발 제한을 주제로 AI와 토론합니다. 교사가 대화창을 열 때만 Gemini API를 사용합니다.</p>
+            <div class="topic-card">토론 주제: 지구 온난화 대응을 위해 개발을 제한해야 하는가?</div>
+          </div>
+
+          <div class="stack">
+            <section class="panel">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i></span>
+                <h3>교사 시작</h3>
+              </div>
+              <div class="stack">
+                <p>Google 교사 계정으로 로그인한 뒤 토론방을 만들고 학생 대화를 모니터링합니다.</p>
+                <button id="teacher-start-btn" class="primary-btn" type="button">
+                  <i class="fa-brands fa-google" aria-hidden="true"></i>
+                  교사 로그인 및 방 만들기
+                </button>
+                <p id="teacher-email">로그인이 필요합니다.</p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i></span>
+                <h3>학생 입장</h3>
+              </div>
+              <form id="student-join-form" class="stack">
+                <label for="student-room-code">방 코드</label>
+                <input id="student-room-code" name="room" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="예: 123456">
+                <label for="student-name">이름</label>
+                <input id="student-name" name="name" autocomplete="name" maxlength="20" placeholder="이름을 입력하세요">
+                <button class="secondary-btn" type="submit">
+                  <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+                  참여하기
+                </button>
+              </form>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section id="teacher-screen" data-screen hidden>
+        <div class="teacher-grid">
+          <div class="stack">
+            <section class="teacher-stats">
+              <div><strong id="student-count">0</strong><span>접속 학생</span></div>
+              <div><strong id="message-count">0</strong><span>학생 메시지</span></div>
+              <div><strong id="ai-count">0</strong><span>AI 응답</span></div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i></span>
+                <h3>대화창 제어</h3>
+              </div>
+              <div class="stack">
+                <span id="room-state" class="room-state">닫힘</span>
+                <div class="chat-actions">
+                  <button id="open-chat-btn" class="primary-btn" type="button">
+                    <i class="fa-solid fa-unlock" aria-hidden="true"></i>
+                    대화창 열기
+                  </button>
+                  <button id="close-chat-btn" class="danger-btn" type="button" disabled>
+                    <i class="fa-solid fa-lock" aria-hidden="true"></i>
+                    닫기
+                  </button>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-users" aria-hidden="true"></i></span>
+                <h3>참여 학생</h3>
+              </div>
+              <div id="student-list" class="student-list">학생 접속 대기 중...</div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <span class="panel-icon"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i></span>
+                <h3>대화 모니터링</h3>
+              </div>
+              <div id="monitor-list" class="monitor-list">아직 대화가 없습니다.</div>
+            </section>
+          </div>
+
+          <div class="stack">
+            <section class="panel stack" style="align-items:center; text-align:center;">
+              <div class="panel-header" style="align-self:stretch; text-align:left;">
+                <span class="panel-icon"><i class="fa-solid fa-qrcode" aria-hidden="true"></i></span>
+                <h2>학생 접속</h2>
+              </div>
+              <div id="teacher-room-code" class="room-code">------</div>
+              <div id="qr-code" class="qr-box" aria-label="학생 접속 QR 코드"></div>
+              <p id="student-room-url" style="overflow-wrap:anywhere;"></p>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section id="student-screen" data-screen hidden>
+        <section id="student-join-panel" class="panel" style="max-width:560px; margin:0 auto;">
+          <div class="panel-header">
+            <span class="panel-icon"><i class="fa-solid fa-user-pen" aria-hidden="true"></i></span>
+            <h3>이름 입력</h3>
+          </div>
+          <form id="student-join-form-active" class="stack">
+            <label>방 코드</label>
+            <div id="student-room-code-label" class="room-state">------</div>
+            <input id="student-room-code-active" name="room" type="hidden">
+            <label for="student-name-active">이름</label>
+            <input id="student-name-active" name="name" autocomplete="name" maxlength="20" placeholder="이름을 입력하세요">
+            <button class="secondary-btn" type="submit">
+              <i class="fa-solid fa-arrow-right" aria-hidden="true"></i>
+              참여하기
+            </button>
+          </form>
+        </section>
+
+        <section id="student-chat-panel" class="panel stack" style="max-width:760px; margin:0 auto;" hidden>
+          <div class="panel-header">
+            <span class="panel-icon"><i class="fa-solid fa-comment-dots" aria-hidden="true"></i></span>
+            <h3>AI 토론</h3>
+          </div>
+          <span id="student-room-state" class="room-state">교사가 대화창을 열 때까지 기다리세요.</span>
+          <div id="chat-log" class="chat-log" aria-live="polite"></div>
+          <div class="chat-actions">
+            <textarea id="student-message" maxlength="700" placeholder="내 주장이나 반론을 입력하세요." disabled></textarea>
+            <button id="send-message-btn" class="primary-btn" type="button" disabled>
+              <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+              보내기
+            </button>
+          </div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="./js/debate-app.js"></script>
+</body>
+</html>
