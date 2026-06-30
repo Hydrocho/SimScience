@@ -224,10 +224,10 @@ async function initLobbyChannel(trackPayload = null) {
   state.lobbyChannel
     .on('presence', { event: 'sync' }, handleLobbyPresence)
     .on('broadcast', { event: 'permission-change' }, ({ payload }) => {
-      updateTeacherPermission(Boolean(payload?.allowed), payload?.sentAt || Date.now());
+      updateTeacherPermission(Boolean(payload?.allowed), Date.now());
     })
     .on('broadcast', { event: 'teacher-heartbeat' }, ({ payload }) => {
-      updateTeacherPermission(Boolean(payload?.allowed), payload?.sentAt || Date.now());
+      updateTeacherPermission(Boolean(payload?.allowed), Date.now());
     })
     .on('broadcast', { event: 'room-upsert' }, ({ payload }) => {
       upsertRoom(payload);
@@ -261,7 +261,9 @@ function handleLobbyPresence() {
   const teacher = users.find((user) => user.role === 'teacher' && user.game === 'gomoku');
   state.lobbyStudents = users.filter((user) => user.role === 'student' && user.game === 'gomoku');
   if (teacher) {
-    updateTeacherPermission(Boolean(teacher.allowed), Date.parse(teacher.updatedAt || '') || Date.now());
+    updateTeacherPermission(Boolean(teacher.allowed), Date.now());
+  } else {
+    updateTeacherPermission(false, Date.now());
   }
   renderTeacherMetrics();
 }
