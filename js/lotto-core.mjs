@@ -39,7 +39,7 @@ export function drawRandomNumbers(random = Math.random) {
   }
 
   return {
-    winning: normalizeNumbers(pool.slice(0, LOTTO_PICK_COUNT)),
+    winning: pool.slice(0, LOTTO_PICK_COUNT).map(Number),
     bonus: pool[LOTTO_PICK_COUNT],
   };
 }

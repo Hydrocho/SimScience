@@ -512,6 +512,9 @@ async function useRandomDraw() {
   // 1.5초 폭죽 감상 대기 후 자동으로 결과 화면 전환 및 공개
   await wait(1500);
 
+  // 결과 화면으로 전환하기 전에 당첨 번호를 오름차순으로 정렬합니다.
+  state.draw.winning = normalizeNumbers(state.draw.winning);
+
   state.roundState = 'results';
   const entries = Array.from(state.submissions.values()).map((submission) => ({
     ...submission,
@@ -578,10 +581,20 @@ function renderNumberGrid() {
 
 function renderStudentSelection() {
   renderSelectedBalls();
-  renderNumberGrid();
+
+  const grid = $('number-grid');
+  if (grid) {
+    grid.hidden = state.submitted;
+  }
+
   const submitButton = $('submit-ticket-btn');
   if (submitButton) {
+    submitButton.hidden = state.submitted;
     submitButton.disabled = state.submitted || !canSubmitSelection(state.selectedNumbers);
+  }
+
+  if (!state.submitted) {
+    renderNumberGrid();
   }
 }
 
