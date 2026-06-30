@@ -772,8 +772,27 @@ function renderRoomInfo() {
   const black = state.participants.find((user) => user.seat === 'black');
   const white = state.participants.find((user) => user.seat === 'white');
   const spectators = state.participants.filter((user) => user.seat === 'spectator');
-  $('black-player').textContent = black ? `${black.nickname}${black.owner ? ' · 방장' : ''}` : '비어 있음';
-  $('white-player').textContent = white ? `${white.nickname}${white.owner ? ' · 방장' : ''}` : '비어 있음';
+
+  const formatPlayerLabel = (player) => {
+    if (!player) return '비어 있음';
+    let label = player.nickname;
+    if (player.id === state.id) {
+      label += ' (나)';
+    }
+    if (player.owner) {
+      label += ' · 방장';
+    }
+    return label;
+  };
+
+  $('black-player').textContent = formatPlayerLabel(black);
+  $('white-player').textContent = formatPlayerLabel(white);
+
+  const blackSeat = $('black-seat');
+  const whiteSeat = $('white-seat');
+  if (blackSeat) blackSeat.classList.toggle('my-seat', state.mySeat === 'black');
+  if (whiteSeat) whiteSeat.classList.toggle('my-seat', state.mySeat === 'white');
+
   $('spectator-count').textContent = String(spectators.length);
   $('my-seat').textContent = formatRole(state.mySeat);
   $('leave-room-btn').disabled = !state.roomId;
