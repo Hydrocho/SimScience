@@ -157,18 +157,11 @@ async function createTeacherRoom() {
     if (!teacherEmail) return;
 
     const pin = generatePin();
-    const network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
-    const joined = await network.joinSession(pin, 'Teacher', 'teacher', { game: 'lotto' });
-    if (!joined) {
-      throw new Error('로또 방을 만들지 못했습니다. 잠시 후 다시 시도하세요.');
-    }
-
     state.mode = 'teacher';
     state.pin = pin;
-    state.network = network;
+    state.network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
     state.students = [];
     state.submissions = new Map();
-    roomCreated = true;
 
     state.network.on('onStudentSync', (students) => {
       state.students = students.filter((student) => student.game === 'lotto' || !student.game);
@@ -186,6 +179,12 @@ async function createTeacherRoom() {
       });
       renderTeacherRoom();
     });
+
+    const joined = await state.network.joinSession(pin, 'Teacher', 'teacher', { game: 'lotto' });
+    if (!joined) {
+      throw new Error('로또 방을 만들지 못했습니다. 잠시 후 다시 시도하세요.');
+    }
+    roomCreated = true;
 
     showScreen('teacher-screen');
     renderTeacherRoom();
@@ -246,34 +245,6 @@ async function joinStudentRoom(event) {
   state.mode = 'student';
   state.pin = room;
   state.network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
-  setStudentRoomFields(room);
-  showScreen('student-screen');
-  setStatus('방에 접속하는 중입니다.');
-
-  const joined = await state.network.joinSession(room, nickname, 'student', {
-    game: 'lotto',
-    submitted: false,
-  });
-  if (!joined) {
-    setStatus('방 접속에 실패했습니다. 방 코드를 확인하세요.', 'error');
-    // 실패 시 상태 복원
-    if (submitBtn) {
-      submitBtn.classList.remove('loading');
-      submitBtn.innerHTML = originalBtnHtml;
-    }
-    formElements.forEach((el) => {
-      el.disabled = false;
-    });
-    return;
-  }
-
-  // --- 버튼 및 입력 필드 피드백 (접속 완료 상태) ---
-  if (submitBtn) {
-    submitBtn.classList.remove('loading');
-    submitBtn.classList.add('success');
-    submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> 접속 완료!';
-  }
-  // 입력 필드는 대기 중인 상태에서 임의로 수정할 수 없도록 disabled 상태를 유지합니다.
 
   state.network.on('onGameStart', (payload) => {
     if (payload?.game !== 'lotto') return;
@@ -301,6 +272,34 @@ async function joinStudentRoom(event) {
     state.myResult = myEntry;
     renderMyResult();
   });
+
+  setStudentRoomFields(room);
+  showScreen('student-screen');
+  setStatus('방에 접속하는 중입니다.');
+
+  const joined = await state.network.joinSession(room, nickname, 'student', {
+    game: 'lotto',
+    submitted: false,
+  });
+  if (!joined) {
+    setStatus('방 접속에 실패했습니다. 방 코드를 확인하세요.', 'error');
+    // 실패 시 상태 복원
+    if (submitBtn) {
+      submitBtn.classList.remove('loading');
+      submitBtn.innerHTML = originalBtnHtml;
+    }
+    formElements.forEach((el) => {
+      el.disabled = false;
+    });
+    return;
+  }
+
+  // --- 버튼 및 입력 필드 피드백 (접속 완료 상태) ---
+  if (submitBtn) {
+    submitBtn.classList.remove('loading');
+    submitBtn.classList.add('success');
+    submitBtn.innerHTML = '<i class="fa-solid fa-circle-check"></i> 접속 완료!';
+  }
 
   setStatus('접속 완료. 교사의 시작을 기다리세요.', 'success');
 }

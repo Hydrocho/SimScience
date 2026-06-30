@@ -126,15 +126,8 @@ async function createTeacherRoom() {
     state.pin = created.pin || pin;
     state.roomId = created.roomId || '';
     state.chatOpen = false;
-    state.students = [];
     state.messages = [];
     state.network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    const joined = await state.network.joinSession(state.pin, 'Teacher', 'teacher', {
-      game: 'debate',
-      chatOpen: false,
-    });
-    if (!joined) throw new Error('토론방 실시간 채널에 연결하지 못했습니다.');
 
     state.network.on('onStudentSync', (students) => {
       state.students = students.filter((student) => student.game === 'debate' || !student.game);
@@ -144,6 +137,12 @@ async function createTeacherRoom() {
       if (payload?.game !== 'debate') return;
       addTeacherMonitorMessage(payload);
     });
+
+    const joined = await state.network.joinSession(state.pin, 'Teacher', 'teacher', {
+      game: 'debate',
+      chatOpen: false,
+    });
+    if (!joined) throw new Error('토론방 실시간 채널에 연결하지 못했습니다.');
 
     showScreen('teacher-screen');
     renderTeacherRoom();
@@ -214,16 +213,7 @@ async function joinStudentRoom(event) {
     state.mode = 'student';
     state.pin = room;
     state.messages = [];
-    state.chatOpen = false;
     state.network = new ClassroomNetwork(SUPABASE_URL, SUPABASE_ANON_KEY);
-    setStudentRoomFields(room);
-    showScreen('student-screen');
-    setStatus('토론방에 접속하는 중입니다.');
-
-    const joined = await state.network.joinSession(room, nickname, 'student', {
-      game: 'debate',
-    });
-    if (!joined) throw new Error('방 접속에 실패했습니다. 방 코드를 확인하세요.');
 
     state.network.on('onReceiveSettings', (payload) => {
       if (payload?.game !== 'debate') return;
@@ -236,13 +226,27 @@ async function joinStudentRoom(event) {
       renderStudentChatState();
     });
 
+    setStudentRoomFields(room);
+    showScreen('student-screen');
+    setStatus('토론방에 접속하는 중입니다.');
+
+    const joined = await state.network.joinSession(room, nickname, 'student', {
+      game: 'debate',
+    });
+    if (!joined) throw new Error('방 접속에 실패했습니다. 방 코드를 확인하세요.');
+
     const joinPanel = $('student-join-panel');
     if (joinPanel) joinPanel.hidden = true;
     const chatPanel = $('student-chat-panel');
     if (chatPanel) chatPanel.hidden = false;
     renderChatLog();
     renderStudentChatState();
-    setStatus('접속 완료. 교사가 대화창을 열 때까지 기다리세요.', 'success');
+    setStatus(
+      state.chatOpen
+        ? '접속 완료. 토론을 시작하세요!'
+        : '접속 완료. 교사가 대화창을 열 때까지 기다리세요.',
+      'success'
+    );
   } catch (error) {
     console.error('[Debate] Failed to join room:', error);
     setStatus(error.message || '방 접속에 실패했습니다.', 'error');
