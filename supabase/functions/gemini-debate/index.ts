@@ -238,7 +238,7 @@ function buildPrompt(studentName: string, message: string, history: ChatEntry[])
     '- 학생의 입장을 먼저 파악하고, 반대 관점의 근거 또는 검증 질문을 제시하세요.',
     '- 한쪽 결론을 대신 내려주지 마세요.',
     '- 지구 온난화, 탄소 배출, 생태계, 경제, 일자리, 형평성을 균형 있게 다루세요.',
-    '- 답변은 한국어로 3~5문장, 마지막은 학생이 이어서 답할 수 있는 질문으로 끝내세요.',
+    '- 답변은 한국어로 1~2문장만 쓰고, 마지막은 학생이 이어서 답할 수 있는 짧은 질문으로 끝내세요.',
     '- 비난하거나 조롱하지 말고 수업 토론에 맞는 표현을 쓰세요.',
     '',
     context ? `이전 대화:\n${context}\n` : '',
@@ -284,7 +284,7 @@ async function callGemini(prompt: string) {
       ],
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 900,
+        maxOutputTokens: 360,
         thinkingConfig: {
           thinkingBudget: 0,
         },

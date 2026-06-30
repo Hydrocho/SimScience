@@ -57,6 +57,7 @@ test('buildDebatePrompt instructs AI to debate without deciding for the student'
   assert.match(prompt, /개발을 제한/);
   assert.match(prompt, /민준/);
   assert.match(prompt, /결론을 대신 내려주지 마세요/);
+  assert.match(prompt, /1~2문장/);
   assert.match(prompt, /경제 발전/);
 });
 
