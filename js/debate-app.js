@@ -121,7 +121,13 @@ function bindTeacherEvents() {
 
 function bindStudentEvents() {
   $('send-message-btn')?.addEventListener('click', sendStudentMessage);
-  $('student-message')?.addEventListener('input', renderStudentChatState);
+  const messageInput = $('student-message');
+  messageInput?.addEventListener('input', renderStudentChatState);
+  messageInput?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
+    event.preventDefault();
+    sendStudentMessage();
+  });
 }
 
 async function createTeacherRoom() {
