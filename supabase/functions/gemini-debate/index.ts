@@ -18,7 +18,7 @@ type ChatEntry = {
 };
 
 type RequestBody = {
-  action?: 'create_room' | 'set_room_open' | 'ask';
+  action?: 'create_room' | 'set_room_open' | 'get_room_state' | 'ask';
   pin?: string;
   isOpen?: boolean;
   studentId?: string;
@@ -52,6 +52,9 @@ Deno.serve(async (request) => {
     }
     if (body.action === 'set_room_open') {
       return await setRoomOpen(request, body);
+    }
+    if (body.action === 'get_room_state') {
+      return await getRoomState(body);
     }
     if (body.action === 'ask') {
       return await askGemini(body);
@@ -120,6 +123,25 @@ async function setRoomOpen(request: Request, body: RequestBody) {
 
   if (error) throw error;
   return json({ pin, isOpen });
+}
+
+async function getRoomState(body: RequestBody) {
+  const pin = validatePin(body.pin);
+
+  const { data: room, error } = await admin
+    .from('debate_rooms')
+    .select('pin, is_open, updated_at')
+    .eq('pin', pin)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!room) return json({ error: '토론방을 찾을 수 없습니다.' }, 404);
+
+  return json({
+    pin: room.pin,
+    isOpen: Boolean(room.is_open),
+    updatedAt: room.updated_at,
+  });
 }
 
 async function askGemini(body: RequestBody) {

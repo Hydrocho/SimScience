@@ -22,6 +22,7 @@ const state = {
   network: null,
   students: [],
   messages: [],
+  debugMessages: [],
   sending: false,
   roomStateSyncIntervalId: null,
 };
@@ -219,11 +220,13 @@ async function joinStudentRoom(event) {
     state.network.on('onReceiveSettings', (payload) => {
       if (payload?.game !== 'debate') return;
       state.chatOpen = Boolean(payload.chatOpen);
+      addStudentDebug(`broadcast 수신: 대화창 ${state.chatOpen ? '열림' : '닫힘'}`);
       renderStudentChatState();
     });
     state.network.on('onTeacherStateSync', (teacher) => {
       if (!teacher || teacher.game !== 'debate') return;
       state.chatOpen = Boolean(teacher.chatOpen);
+      addStudentDebug(`presence 동기화: 대화창 ${state.chatOpen ? '열림' : '닫힘'}`);
       renderStudentChatState();
     });
 
@@ -240,7 +243,7 @@ async function joinStudentRoom(event) {
     if (joinPanel) joinPanel.hidden = true;
     const chatPanel = $('student-chat-panel');
     if (chatPanel) chatPanel.hidden = false;
-    await syncRoomOpenFromDatabase();
+    await syncRoomOpenFromServer('입장 직후 확인');
     startRoomStateSync();
     renderChatLog();
     renderStudentChatState();
@@ -263,7 +266,7 @@ async function sendStudentMessage() {
   const input = $('student-message');
   const rawMessage = input?.value || '';
 
-  await syncRoomOpenFromDatabase();
+  await syncRoomOpenFromServer('전송 직전 확인');
 
   if (!state.chatOpen) {
     setStatus('교사가 대화창을 열어야 메시지를 보낼 수 있습니다.', 'error');
@@ -434,27 +437,31 @@ function renderQrCode(studentUrl) {
   }
 }
 
-async function syncRoomOpenFromDatabase() {
+async function syncRoomOpenFromServer(reason = '상태 확인') {
   if (!supabaseClient || state.mode !== 'student' || !state.pin) return;
 
-  const { data, error } = await supabaseClient
-    .from('debate_rooms')
-    .select('is_open')
-    .eq('pin', state.pin)
-    .maybeSingle();
-
-  if (error || !data) return;
-
-  const nextChatOpen = Boolean(data.is_open);
-  if (state.chatOpen === nextChatOpen) return;
-
-  state.chatOpen = nextChatOpen;
-  renderStudentChatState();
+  try {
+    const data = await invokeDebateFunction({
+      action: 'get_room_state',
+      pin: state.pin,
+    });
+    const nextChatOpen = Boolean(data.isOpen);
+    const changed = state.chatOpen !== nextChatOpen;
+    state.chatOpen = nextChatOpen;
+    addStudentDebug(`${reason}: 서버 상태 ${state.chatOpen ? '열림' : '닫힘'}${changed ? '으로 변경' : ''}`);
+    renderStudentChatState();
+  } catch (error) {
+    console.error('[Debate] Room state sync failed:', error);
+    addStudentDebug(`${reason}: 서버 상태 확인 실패 - ${error.message || '알 수 없는 오류'}`);
+    renderStudentChatState();
+  }
 }
 
 function startRoomStateSync() {
   stopRoomStateSync();
-  state.roomStateSyncIntervalId = window.setInterval(syncRoomOpenFromDatabase, 2000);
+  state.roomStateSyncIntervalId = window.setInterval(() => {
+    syncRoomOpenFromServer('2초 주기 확인');
+  }, 2000);
 }
 
 function stopRoomStateSync() {
@@ -481,11 +488,21 @@ function renderStudentChatState() {
 function renderChatLog() {
   const log = $('chat-log');
   if (!log) return;
+  const debugHtml = state.debugMessages
+    .slice(-8)
+    .map((message) => `
+      <div class="message debug" style="border-color: rgba(245, 158, 11, 0.32); background: #fffbeb;">
+        <strong>상태 진단</strong>
+        <p>${escapeHtml(message)}</p>
+      </div>
+    `)
+    .join('');
+
   if (!state.messages.length) {
-    log.innerHTML = '<p>내 입장을 먼저 적어 보세요. AI가 반론과 질문을 이어갑니다.</p>';
+    log.innerHTML = `${debugHtml}<p>내 입장을 먼저 적어 보세요. AI가 반론과 질문을 이어갑니다.</p>`;
     return;
   }
-  log.innerHTML = state.messages
+  log.innerHTML = debugHtml + state.messages
     .map((message) => `
       <div class="message ${message.role}">
         <strong>${message.role === 'ai' ? 'AI 토론자' : escapeHtml(message.nickname || '나')}</strong>
@@ -494,6 +511,17 @@ function renderChatLog() {
     `)
     .join('');
   log.scrollTop = log.scrollHeight;
+}
+
+function addStudentDebug(message) {
+  if (state.mode !== 'student') return;
+  const time = new Date().toLocaleTimeString('ko-KR', {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  state.debugMessages.push(`${time} ${message}`);
+  renderChatLog();
 }
 
 function escapeHtml(value) {
