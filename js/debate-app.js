@@ -23,6 +23,7 @@ const state = {
   students: [],
   messages: [],
   sending: false,
+  roomStateSyncIntervalId: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -239,6 +240,8 @@ async function joinStudentRoom(event) {
     if (joinPanel) joinPanel.hidden = true;
     const chatPanel = $('student-chat-panel');
     if (chatPanel) chatPanel.hidden = false;
+    await syncRoomOpenFromDatabase();
+    startRoomStateSync();
     renderChatLog();
     renderStudentChatState();
     setStatus(
@@ -259,6 +262,8 @@ async function sendStudentMessage() {
   if (state.sending || !state.network) return;
   const input = $('student-message');
   const rawMessage = input?.value || '';
+
+  await syncRoomOpenFromDatabase();
 
   if (!state.chatOpen) {
     setStatus('교사가 대화창을 열어야 메시지를 보낼 수 있습니다.', 'error');
@@ -427,6 +432,35 @@ function renderQrCode(studentUrl) {
   } else {
     qr.textContent = 'QR 라이브러리를 불러오지 못했습니다.';
   }
+}
+
+async function syncRoomOpenFromDatabase() {
+  if (!supabaseClient || state.mode !== 'student' || !state.pin) return;
+
+  const { data, error } = await supabaseClient
+    .from('debate_rooms')
+    .select('is_open')
+    .eq('pin', state.pin)
+    .maybeSingle();
+
+  if (error || !data) return;
+
+  const nextChatOpen = Boolean(data.is_open);
+  if (state.chatOpen === nextChatOpen) return;
+
+  state.chatOpen = nextChatOpen;
+  renderStudentChatState();
+}
+
+function startRoomStateSync() {
+  stopRoomStateSync();
+  state.roomStateSyncIntervalId = window.setInterval(syncRoomOpenFromDatabase, 2000);
+}
+
+function stopRoomStateSync() {
+  if (!state.roomStateSyncIntervalId) return;
+  window.clearInterval(state.roomStateSyncIntervalId);
+  state.roomStateSyncIntervalId = null;
 }
 
 function renderStudentChatState() {
