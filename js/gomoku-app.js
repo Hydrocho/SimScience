@@ -276,6 +276,9 @@ function updateTeacherPermission(allowed, sentAt) {
   state.teacherAllowed = allowed && Date.now() - sentAt < ROOM_TTL_MS;
   state.teacherHeartbeatAt = sentAt;
   renderPermissionState();
+  if (state.roomId) {
+    renderRoomInfo();
+  }
 }
 
 function broadcastLobby(event, payload) {
@@ -384,7 +387,7 @@ async function toggleTeacherPermission() {
     sentAt,
   });
   renderPermissionState();
-  setStatus(state.teacherAllowed ? '오목 방 만들기를 허용했습니다.' : '새 오목 방 만들기를 닫았습니다.', 'success');
+  setStatus(state.teacherAllowed ? '오목 세션을 열었습니다.' : '오목 세션을 닫았습니다.', 'success');
 }
 
 function startTeacherHeartbeat() {
@@ -682,6 +685,10 @@ function applyRemoteMove(payload) {
 }
 
 function handleCellClick(row, col) {
+  if (!state.teacherAllowed) {
+    setRoomStatus('교사가 오목 세션을 닫았습니다. 더 이상 돌을 놓을 수 없습니다.', 'warn');
+    return;
+  }
   if (state.mySeat !== 'black' && state.mySeat !== 'white') {
     setRoomStatus('관전자는 착수할 수 없습니다.', 'warn');
     return;
@@ -796,10 +803,14 @@ function renderRoomInfo() {
   $('spectator-count').textContent = String(spectators.length);
   $('my-seat').textContent = formatRole(state.mySeat);
   $('leave-room-btn').disabled = !state.roomId;
-  $('reset-game-btn').disabled = !state.roomId || state.game.status !== 'finished' || !canResetGame();
+  $('reset-game-btn').disabled = !state.roomId || state.game.status !== 'finished' || !canResetGame() || !state.teacherAllowed;
 
   if (!state.roomId) {
     setRoomStatus('로비에서 방을 만들거나 입장하세요.');
+    return;
+  }
+  if (!state.teacherAllowed) {
+    setRoomStatus('교사가 오목 세션을 닫았습니다.', 'warn');
     return;
   }
   if (state.game.status === 'finished') {
@@ -819,6 +830,10 @@ function canResetGame() {
 
 function resetGame() {
   if (!canResetGame()) return;
+  if (!state.teacherAllowed) {
+    setRoomStatus('교사가 오목 세션을 닫았습니다. 새 판을 시작할 수 없습니다.', 'warn');
+    return;
+  }
 
   const users = flattenPresence(state.roomChannel?.presenceState())
     .filter((user) => user.role === 'student' && user.game === 'gomoku')
@@ -932,10 +947,10 @@ function publishRoomSummary() {
 
 function renderPermissionState() {
   const teacherLabel = $('teacher-permission-label');
-  if (teacherLabel) teacherLabel.textContent = state.teacherAllowed ? '오목 방 만들기 허용 중' : '오목 방 만들기 닫힘';
+  if (teacherLabel) teacherLabel.textContent = state.teacherAllowed ? '오목 세션 열림' : '오목 세션 닫힘';
   const toggle = $('permission-toggle-btn');
   if (toggle) {
-    toggle.textContent = state.teacherAllowed ? '허용 끄기' : '허용 켜기';
+    toggle.textContent = state.teacherAllowed ? '세션 닫기' : '세션 열기';
     toggle.classList.toggle('danger', state.teacherAllowed);
     toggle.classList.toggle('success', !state.teacherAllowed);
   }
@@ -944,7 +959,7 @@ function renderPermissionState() {
     if (state.roomId) {
       studentLabel.textContent = '이미 방에 입장했습니다.';
     } else {
-      studentLabel.textContent = state.teacherAllowed ? '방을 만들 수 있습니다.' : '교사 허가 대기 중';
+      studentLabel.textContent = state.teacherAllowed ? '방을 만들 수 있습니다.' : '오목 세션이 닫혀 있습니다.';
     }
   }
   const createButton = $('create-room-btn');
