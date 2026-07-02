@@ -6,6 +6,13 @@ import {
   createGameState,
   createRoomId,
 } from './gomoku-core.mjs';
+import {
+  DIFFICULTIES,
+  DIFFICULTY_LABELS,
+  applySoloResult,
+  calculateLevel,
+  chooseAiMove,
+} from './gomoku-ai.mjs';
 
 const LOBBY_CHANNEL = 'gomoku_lobby';
 const ROOM_TTL_MS = 9000;
@@ -37,6 +44,24 @@ const state = {
   mySeat: 'lobby',
   game: createGameState(),
   appliedMoveIds: new Set(),
+  playMode: 'multi',
+  multiGame: null,
+  selectedDifficulty: DIFFICULTIES.NORMAL,
+  activeSoloDifficulty: DIFFICULTIES.NORMAL,
+  soloGame: createGameState(),
+  soloThinking: false,
+  soloActive: false,
+  soloResultHandled: false,
+  soloProgress: {
+    nickname: '',
+    level: 1,
+    xp: 0,
+    wins: 0,
+    losses: 0,
+    currentStreak: 0,
+    bestStreak: 0,
+    lastDifficulty: DIFFICULTIES.NORMAL,
+  },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -208,6 +233,167 @@ function bindEvents() {
   $('leave-room-btn')?.addEventListener('click', leaveRoom);
   $('teacher-logout-btn')?.addEventListener('click', handleTeacherLogout);
   $('teacher-qr-code')?.addEventListener('click', openLargeQr);
+  $('mode-multi-btn')?.addEventListener('click', () => switchStudentMode('multi'));
+  $('mode-solo-btn')?.addEventListener('click', () => switchStudentMode('solo'));
+  $('solo-start-btn')?.addEventListener('click', startSoloGame);
+  document.querySelectorAll('[data-difficulty]').forEach((button) => {
+    button.addEventListener('click', () => {
+      state.selectedDifficulty = button.dataset.difficulty || DIFFICULTIES.NORMAL;
+      renderSoloPanel();
+    });
+  });
+}
+
+function switchStudentMode(mode) {
+  if (state.playMode === mode) return;
+  if (mode === 'solo') {
+    if (state.roomId) {
+      setStatus('혼자 하기는 현재 방에서 나간 뒤 시작할 수 있습니다.', 'warn');
+      return;
+    }
+    state.multiGame = state.game;
+    state.playMode = 'solo';
+    state.game = state.soloGame;
+    state.mySeat = 'black';
+  } else {
+    state.soloGame = state.game;
+    state.playMode = 'multi';
+    state.game = state.multiGame || createGameState();
+    state.mySeat = state.roomId ? state.mySeat : 'lobby';
+  }
+  renderStudentMode();
+  renderBoard();
+  renderRoomInfo();
+  renderSoloPanel();
+}
+
+function renderStudentMode() {
+  $('mode-multi-btn')?.classList.toggle('active', state.playMode === 'multi');
+  $('mode-solo-btn')?.classList.toggle('active', state.playMode === 'solo');
+  setHidden('solo-panel', state.playMode !== 'solo');
+  const roomList = $('room-list');
+  if (roomList) roomList.classList.toggle('hidden', state.playMode === 'solo');
+  const createButton = $('create-room-btn');
+  if (createButton) createButton.classList.toggle('hidden', state.playMode === 'solo');
+}
+
+function startSoloGame() {
+  if (!state.nickname) {
+    setStatus('먼저 닉네임으로 입장하세요.', 'error');
+    return;
+  }
+  state.playMode = 'solo';
+  state.soloActive = true;
+  state.soloThinking = false;
+  state.soloResultHandled = false;
+  state.activeSoloDifficulty = state.selectedDifficulty;
+  state.soloProgress.nickname = state.nickname;
+  state.soloProgress.lastDifficulty = state.activeSoloDifficulty;
+  state.soloGame = createGameState();
+  state.game = state.soloGame;
+  state.mySeat = 'black';
+  renderStudentMode();
+  renderBoard();
+  renderRoomInfo();
+  renderSoloPanel();
+  setSoloStatus(`${DIFFICULTY_LABELS[state.activeSoloDifficulty]} AI와 대국을 시작했습니다. 학생이 흑입니다.`);
+}
+
+function handleSoloCellClick(row, col) {
+  if (!state.soloActive) {
+    setSoloStatus('AI 대국 시작 버튼을 먼저 누르세요.', 'warn');
+    return;
+  }
+  if (state.soloThinking) {
+    setSoloStatus('AI가 생각하는 중입니다.', 'warn');
+    return;
+  }
+  const next = applyMove(state.soloGame, { row, col, color: COLORS.BLACK });
+  if (!next.ok) {
+    setSoloStatus(reasonToMessage(next.reason), 'warn');
+    return;
+  }
+  state.soloGame = next;
+  state.game = state.soloGame;
+  renderBoard();
+  renderRoomInfo();
+  if (finishSoloIfNeeded()) return;
+
+  state.soloThinking = true;
+  setSoloStatus('AI가 다음 수를 고르는 중입니다.');
+  renderRoomInfo();
+  window.setTimeout(playAiMove, 350);
+}
+
+function playAiMove() {
+  if (state.playMode !== 'solo' || !state.soloActive) return;
+  const aiMove = chooseAiMove(state.soloGame, state.activeSoloDifficulty);
+  if (!aiMove) {
+    state.soloActive = false;
+    state.soloThinking = false;
+    state.soloProgress = applySoloResult(state.soloProgress, {
+      result: 'draw',
+      difficulty: state.activeSoloDifficulty,
+    });
+    setSoloStatus('둘 곳이 없어 무승부입니다.', 'warn');
+    renderSoloPanel();
+    renderRoomInfo();
+    return;
+  }
+  const next = applyMove(state.soloGame, aiMove);
+  state.soloThinking = false;
+  if (!next.ok) {
+    state.soloActive = false;
+    setSoloStatus('AI가 둘 수 있는 합법 수를 찾지 못했습니다.', 'warn');
+    renderRoomInfo();
+    return;
+  }
+  state.soloGame = next;
+  state.game = state.soloGame;
+  renderBoard();
+  renderRoomInfo();
+  finishSoloIfNeeded();
+}
+
+function finishSoloIfNeeded() {
+  if (state.soloGame.status !== 'finished' || state.soloResultHandled) return false;
+  state.soloResultHandled = true;
+  state.soloActive = false;
+  const result = state.soloGame.winner === COLORS.BLACK ? 'win' : 'loss';
+  const beforeXp = state.soloProgress.xp;
+  state.soloProgress = applySoloResult(state.soloProgress, {
+    result,
+    difficulty: state.activeSoloDifficulty,
+  });
+  const gained = state.soloProgress.xp - beforeXp;
+  if (result === 'win') {
+    setSoloStatus(`승리! ${gained} XP를 얻었습니다.`, 'success');
+  } else {
+    setSoloStatus('AI 승리. 다시 도전해 보세요.', 'warn');
+  }
+  renderSoloPanel();
+  renderRoomInfo();
+  return true;
+}
+
+function setSoloStatus(message, tone = 'neutral') {
+  const status = $('solo-status');
+  if (!status) return;
+  status.textContent = message;
+  status.dataset.tone = tone;
+}
+
+function renderSoloPanel() {
+  document.querySelectorAll('[data-difficulty]').forEach((button) => {
+    button.classList.toggle('active', button.dataset.difficulty === state.selectedDifficulty);
+  });
+  const level = calculateLevel(state.soloProgress.xp);
+  $('solo-level').textContent = String(level.level);
+  $('solo-xp').textContent = `${state.soloProgress.xp} / ${level.nextLevelXp}`;
+  $('solo-wins').textContent = String(state.soloProgress.wins);
+  $('solo-losses').textContent = String(state.soloProgress.losses);
+  $('solo-streak').textContent = String(state.soloProgress.currentStreak);
+  $('solo-best-streak').textContent = String(state.soloProgress.bestStreak);
 }
 
 async function initLobbyChannel(trackPayload = null) {
@@ -416,6 +602,7 @@ async function handleStudentJoin(event) {
     return;
   }
   state.nickname = nickname.slice(0, 16);
+  state.soloProgress.nickname = state.nickname;
   const joined = await initLobbyChannel({
     id: state.id,
     role: 'student',
@@ -685,6 +872,10 @@ function applyRemoteMove(payload) {
 }
 
 function handleCellClick(row, col) {
+  if (state.playMode === 'solo') {
+    handleSoloCellClick(row, col);
+    return;
+  }
   if (!state.teacherAllowed) {
     setRoomStatus('교사가 오목 세션을 닫았습니다. 더 이상 돌을 놓을 수 없습니다.', 'warn');
     return;
@@ -775,6 +966,28 @@ function renderBoard() {
 }
 
 function renderRoomInfo() {
+  if (state.playMode === 'solo') {
+    $('room-title').textContent = 'AI 혼자 하기';
+    $('black-player').textContent = `${state.nickname || '학생'} (나)`;
+    const visibleDifficulty = state.soloActive ? state.activeSoloDifficulty : state.selectedDifficulty;
+    $('white-player').textContent = `${DIFFICULTY_LABELS[visibleDifficulty]} AI`;
+    $('black-seat')?.classList.toggle('my-seat', true);
+    $('white-seat')?.classList.toggle('my-seat', false);
+    $('spectator-count').textContent = '0';
+    $('my-seat').textContent = '흑';
+    $('leave-room-btn').disabled = true;
+    $('reset-game-btn').disabled = false;
+    if (!state.soloActive && state.soloGame.status !== 'finished') {
+      setRoomStatus('AI 대국 시작 버튼을 누르세요.');
+    } else if (state.soloThinking) {
+      setRoomStatus('AI가 생각하는 중입니다.');
+    } else if (state.soloGame.status === 'finished') {
+      setRoomStatus(state.soloGame.winner === COLORS.BLACK ? '학생 승리!' : 'AI 승리!', state.soloGame.winner === COLORS.BLACK ? 'success' : 'warn');
+    } else {
+      setRoomStatus(state.soloGame.turn === COLORS.BLACK ? '학생 차례입니다.' : 'AI 차례입니다.');
+    }
+    return;
+  }
   $('room-title').textContent = state.roomId ? state.roomTitle : '방에 입장하면 오목판이 표시됩니다.';
   const black = state.participants.find((user) => user.seat === 'black');
   const white = state.participants.find((user) => user.seat === 'white');
@@ -829,6 +1042,10 @@ function canResetGame() {
 }
 
 function resetGame() {
+  if (state.playMode === 'solo') {
+    startSoloGame();
+    return;
+  }
   if (!canResetGame()) return;
   if (!state.teacherAllowed) {
     setRoomStatus('교사가 오목 세션을 닫았습니다. 새 판을 시작할 수 없습니다.', 'warn');
@@ -1035,6 +1252,8 @@ async function boot() {
   renderBoard();
   renderRoomInfo();
   renderRoomList();
+  renderStudentMode();
+  renderSoloPanel();
 
   const connectionLabel = $('connection-label');
   if (!isConnected()) {

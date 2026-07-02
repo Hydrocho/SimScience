@@ -291,6 +291,39 @@
       background: var(--red);
     }
 
+    .mode-tabs {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .mode-tab,
+    .difficulty-btn {
+      min-height: 2.5rem;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-weight: 900;
+    }
+
+    .mode-tab.active,
+    .difficulty-btn.active {
+      color: #ffffff;
+      background: var(--blue);
+      border-color: var(--blue);
+    }
+
+    .difficulty-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.5rem;
+    }
+
+    .difficulty-grid .difficulty-btn:last-child {
+      grid-column: 1 / -1;
+    }
+
     .metrics {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
@@ -706,6 +739,13 @@
       <section id="student-screen" class="screen student-layout hidden" data-screen>
         <!-- Left Column: Student Lobby controls -->
         <aside class="stack">
+          <section class="panel stack">
+            <h2><i class="fa-solid fa-gamepad"></i> 오목 모드</h2>
+            <div class="mode-tabs" role="tablist" aria-label="오목 모드">
+              <button id="mode-multi-btn" class="mode-tab active" type="button">친구와 하기</button>
+              <button id="mode-solo-btn" class="mode-tab" type="button">혼자 하기</button>
+            </div>
+          </section>
           <section class="panel">
             <h2><i class="fa-solid fa-users"></i> 학생 로비</h2>
             <div class="permission">
@@ -719,6 +759,26 @@
 
           <section class="panel">
             <h2><i class="fa-solid fa-list"></i> 방 목록</h2>
+            <div id="solo-panel" class="stack hidden">
+              <h2><i class="fa-solid fa-robot"></i> AI 대국</h2>
+              <div class="difficulty-grid" id="difficulty-grid">
+                <button class="difficulty-btn" type="button" data-difficulty="beginner">입문</button>
+                <button class="difficulty-btn" type="button" data-difficulty="easy">쉬움</button>
+                <button class="difficulty-btn active" type="button" data-difficulty="normal">보통</button>
+                <button class="difficulty-btn" type="button" data-difficulty="hard">어려움</button>
+                <button class="difficulty-btn" type="button" data-difficulty="challenge">도전</button>
+              </div>
+              <button id="solo-start-btn" class="btn success" type="button">AI 대국 시작</button>
+              <div id="solo-status" class="status">시작 버튼을 누르면 AI와 혼자 대국을 시작합니다.</div>
+              <div class="metrics">
+                <div class="metric"><span>Level</span><strong id="solo-level">1</strong></div>
+                <div class="metric"><span>XP</span><strong id="solo-xp">0 / 30</strong></div>
+                <div class="metric"><span>승리</span><strong id="solo-wins">0</strong></div>
+                <div class="metric"><span>패배</span><strong id="solo-losses">0</strong></div>
+                <div class="metric"><span>연승</span><strong id="solo-streak">0</strong></div>
+                <div class="metric"><span>최고 연승</span><strong id="solo-best-streak">0</strong></div>
+              </div>
+            </div>
             <div id="room-list" class="room-list">
               <div class="empty">아직 열린 방이 없습니다.</div>
             </div>
