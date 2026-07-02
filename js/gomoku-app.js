@@ -273,6 +273,8 @@ function renderStudentMode() {
   setHidden('solo-panel', state.playMode !== 'solo');
   const roomList = $('room-list');
   if (roomList) roomList.classList.toggle('hidden', state.playMode === 'solo');
+  const roomListTitle = roomList?.closest('.panel')?.querySelector('h2');
+  if (roomListTitle) roomListTitle.classList.toggle('hidden', state.playMode === 'solo');
   const createButton = $('create-room-btn');
   if (createButton) createButton.classList.toggle('hidden', state.playMode === 'solo');
 }
@@ -352,7 +354,9 @@ function playAiMove() {
   state.game = state.soloGame;
   renderBoard();
   renderRoomInfo();
-  finishSoloIfNeeded();
+  if (!finishSoloIfNeeded()) {
+    setSoloStatus('학생 차례입니다.');
+  }
 }
 
 function finishSoloIfNeeded() {
