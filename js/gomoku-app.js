@@ -815,20 +815,24 @@ function handleRoomPresence() {
     state.ownerId = unique[0]?.id || '';
   }
 
-  // Clear role assignments if room has less than 2 players
-  if (unique.length < 2) {
-    state.game.blackPlayerId = '';
-    state.game.whitePlayerId = '';
-  }
-
-  // Random draw by room owner when second player joins
+  // Maintain roles on disconnects and handle seat reassignment when 2 players are active
   if (state.ownerId === state.id && unique.length >= 2) {
-    if (!state.game.blackPlayerId || !state.game.whitePlayerId) {
-      const isOwnerBlack = Math.random() < 0.5;
-      const playerA = unique[0];
-      const playerB = unique[1];
-      state.game.blackPlayerId = isOwnerBlack ? playerA.id : playerB.id;
-      state.game.whitePlayerId = isOwnerBlack ? playerB.id : playerA.id;
+    const activeIds = new Set(unique.map((u) => u.id));
+    const isBlackActive = state.game.blackPlayerId && activeIds.has(state.game.blackPlayerId);
+    const isWhiteActive = state.game.whitePlayerId && activeIds.has(state.game.whitePlayerId);
+
+    // If roles aren't fully set, or one of the players has left and a new player joined
+    if (!isBlackActive || !isWhiteActive) {
+      if (!isBlackActive) state.game.blackPlayerId = '';
+      if (!isWhiteActive) state.game.whitePlayerId = '';
+
+      const unassigned = unique.filter((u) => u.id !== state.game.blackPlayerId && u.id !== state.game.whitePlayerId);
+      if (!state.game.blackPlayerId && unassigned.length > 0) {
+        state.game.blackPlayerId = unassigned.shift().id;
+      }
+      if (!state.game.whitePlayerId && unassigned.length > 0) {
+        state.game.whitePlayerId = unassigned.shift().id;
+      }
 
       // Broadcast roles to the room
       state.roomChannel?.send({
