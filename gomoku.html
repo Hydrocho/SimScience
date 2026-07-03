@@ -105,12 +105,18 @@
 
     main {
       width: 100%;
-      max-width: 1280px;
+      max-width: 1440px;
       margin: 0 auto;
       padding: clamp(1rem, 2.5vw, 2rem);
     }
 
-    .student-layout,
+    .student-layout {
+      display: grid;
+      gap: 1.5rem;
+      grid-template-columns: 280px 1fr;
+      align-items: start;
+    }
+
     .teacher-layout {
       display: grid;
       gap: 1.5rem;
@@ -472,8 +478,8 @@
 
     .game {
       display: grid;
-      gap: 1rem;
-      grid-template-columns: minmax(300px, 1fr) minmax(240px, 320px);
+      gap: 1.5rem;
+      grid-template-columns: 1fr 280px;
       align-items: start;
     }
 
@@ -486,7 +492,7 @@
     }
 
     .board {
-      width: min(100%, 650px);
+      width: min(100%, 800px);
       min-width: 300px;
       aspect-ratio: 1 / 1;
       display: grid;
@@ -688,7 +694,7 @@
       }
 
       .board {
-        width: min(100%, 650px);
+        width: min(100%, 800px);
       }
     }
 
