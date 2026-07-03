@@ -5,14 +5,14 @@ import {
   createBoard,
   createGameState,
   createRoomId,
-} from './gomoku-core.mjs';
+} from './gomoku-core.mjs?v=board19';
 import {
   DIFFICULTIES,
   DIFFICULTY_LABELS,
   applySoloResult,
   calculateLevel,
   chooseAiMove,
-} from './gomoku-ai.mjs';
+} from './gomoku-ai.mjs?v=board19';
 
 const LOBBY_CHANNEL = 'gomoku_lobby';
 const ROOM_TTL_MS = 9000;
@@ -951,9 +951,9 @@ function renderBoard() {
       if (colIndex === 0) button.classList.add('left');
       if (colIndex === row.length - 1) button.classList.add('right');
 
-      // Set standard 9 star points for 15x15 board
-      const isStar = (rowIndex === 3 || rowIndex === 7 || rowIndex === 11) &&
-                     (colIndex === 3 || colIndex === 7 || colIndex === 11);
+      // Set standard 9 star points for a 19x19 board.
+      const starLines = [3, 9, 15];
+      const isStar = starLines.includes(rowIndex) && starLines.includes(colIndex);
       if (isStar) {
         button.classList.add('star-point');
       }

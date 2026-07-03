@@ -8,7 +8,7 @@ import {
   getOpponent,
   isDoubleThree,
   isInBounds,
-} from './gomoku-core.mjs';
+} from './gomoku-core.mjs?v=board19';
 
 export const DIFFICULTIES = {
   BEGINNER: 'beginner',

@@ -490,8 +490,8 @@
       min-width: 300px;
       aspect-ratio: 1 / 1;
       display: grid;
-      grid-template-columns: repeat(15, 1fr);
-      grid-template-rows: repeat(15, 1fr);
+      grid-template-columns: repeat(19, 1fr);
+      grid-template-rows: repeat(19, 1fr);
       background: var(--board);
       position: relative;
     }
@@ -870,7 +870,7 @@
               <div>
                 <h2 id="room-title">방에 입장하면 오목판이 표시됩니다.</h2>
                 <div class="board-wrap">
-                  <div id="gomoku-board" class="board" aria-label="15x15 오목판"></div>
+                  <div id="gomoku-board" class="board" aria-label="19x19 오목판"></div>
                 </div>
               </div>
               <aside class="room-side">
@@ -907,6 +907,6 @@
   </div>
 
   <script type="module" src="./js/gomoku-result-popup.mjs"></script>
-  <script type="module" src="./js/gomoku-app.js"></script>
+  <script type="module" src="./js/gomoku-app.js?v=board19"></script>
 </body>
 </html>

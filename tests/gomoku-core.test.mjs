@@ -20,9 +20,9 @@ function withStones(stones) {
   return board;
 }
 
-test('createBoard returns a 15x15 empty board', () => {
+test('createBoard returns a 19x19 empty board', () => {
   const board = createBoard();
-  assert.equal(BOARD_SIZE, 15);
+  assert.equal(BOARD_SIZE, 19);
   assert.equal(board.length, BOARD_SIZE);
   assert.equal(board.every((row) => row.length === BOARD_SIZE), true);
   assert.equal(board.flat().every((cell) => cell === null), true);

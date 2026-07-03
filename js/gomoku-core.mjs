@@ -1,4 +1,4 @@
-export const BOARD_SIZE = 15;
+export const BOARD_SIZE = 19;
 export const COLORS = {
   BLACK: 'black',
   WHITE: 'white',
