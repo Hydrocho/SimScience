@@ -123,25 +123,37 @@ export function isDoubleThree(board, move) {
 }
 
 function hasOpenThree(board, row, col, deltaRow, deltaCol, color) {
-  for (let offset = -4; offset <= 0; offset += 1) {
+  for (let offset = -5; offset <= 0; offset += 1) {
     const cells = [];
-    for (let index = 0; index < 5; index += 1) {
-      const nextRow = row + (offset + index) * deltaRow;
-      const nextCol = col + (offset + index) * deltaCol;
-      cells.push(isInBounds(nextRow, nextCol) ? getCell(board, nextRow, nextCol) : undefined);
+    let containsMove = false;
+
+    for (let index = 0; index < 6; index += 1) {
+      const r = row + (offset + index) * deltaRow;
+      const c = col + (offset + index) * deltaCol;
+
+      if (r === row && c === col) {
+        containsMove = true;
+      }
+
+      if (isInBounds(r, c)) {
+        cells.push(getCell(board, r, c));
+      } else {
+        cells.push(undefined);
+      }
     }
-    if (cells[0] === null
-      && cells[4] === null
-      && cells.slice(1, 4).every((cell) => cell === color)
-      && windowContainsMove(offset)) {
+
+    if (!containsMove) continue;
+    if (cells[0] !== null || cells[5] !== null) continue;
+
+    const middle = cells.slice(1, 5);
+    const colorCount = middle.filter((cell) => cell === color).length;
+    const nullCount = middle.filter((cell) => cell === null).length;
+
+    if (colorCount === 3 && nullCount === 1) {
       return true;
     }
   }
   return false;
-}
-
-function windowContainsMove(offset) {
-  return offset <= 0 && offset + 4 >= 0;
 }
 
 export function createRoomId(now = Date.now(), random = Math.random) {

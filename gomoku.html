@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>교실 오목</title>
   <link rel="icon" href="data:,">
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;800;900&family=Outfit:wght@600;700;800&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -26,7 +29,9 @@
       --board-line: #704b1f;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -37,7 +42,8 @@
       overflow-x: hidden;
     }
 
-    button, input {
+    button,
+    input {
       font: inherit;
     }
 
@@ -105,7 +111,7 @@
 
     main {
       width: 100%;
-      max-width: 1440px;
+      max-width: 1600px;
       margin: 0 auto;
       padding: clamp(1rem, 2.5vw, 2rem);
     }
@@ -115,6 +121,14 @@
       gap: 1.5rem;
       grid-template-columns: 280px 1fr;
       align-items: start;
+    }
+
+    #student-screen.in-game {
+      grid-template-columns: 1fr;
+    }
+
+    #student-screen.in-game>aside.stack {
+      display: none;
     }
 
     .teacher-layout {
@@ -145,7 +159,7 @@
       font-weight: 800;
     }
 
-    .start-card > p {
+    .start-card>p {
       text-align: center;
       color: var(--muted);
       margin: 0 0 2.5rem;
@@ -192,6 +206,7 @@
       .start-grid {
         grid-template-columns: 1fr;
       }
+
       .start-divider {
         height: 1px;
         width: 100%;
@@ -212,7 +227,8 @@
       gap: 1rem;
     }
 
-    .panel h2, .panel h3 {
+    .panel h2,
+    .panel h3 {
       margin: 0 0 0.8rem;
       font-size: 1rem;
     }
@@ -489,12 +505,14 @@
       border-radius: 8px;
       background: var(--board);
       border: 1px solid #b67b2f;
+      width: min(100%, 600px);
+      aspect-ratio: 1 / 1;
+      margin: 0 auto;
     }
 
     .board {
-      width: min(100%, 800px);
-      min-width: 300px;
-      aspect-ratio: 1 / 1;
+      width: 100%;
+      height: 100%;
       display: grid;
       grid-template-columns: repeat(19, 1fr);
       grid-template-rows: repeat(19, 1fr);
@@ -637,9 +655,11 @@
     .seat {
       transition: all 0.25s ease;
     }
+
     .seat small {
       transition: all 0.25s ease;
     }
+
     .dot {
       transition: all 0.25s ease;
     }
@@ -651,9 +671,11 @@
       border-color: var(--black-stone) !important;
       box-shadow: 0 4px 12px rgba(17, 24, 39, 0.25);
     }
+
     .seat.turn-black-active small {
       color: #cbd5e1 !important;
     }
+
     .seat.turn-black-active .dot.black {
       border-color: #ffffff;
       box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
@@ -666,9 +688,11 @@
       border-color: var(--ink) !important;
       box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15);
     }
+
     .seat.turn-white-active small {
       color: var(--muted) !important;
     }
+
     .seat.turn-white-active .dot.white {
       border-color: var(--ink);
     }
@@ -681,20 +705,28 @@
       flex: 0 0 auto;
     }
 
-    .dot.black { background: var(--black-stone); }
-    .dot.white { background: #fff; }
+    .dot.black {
+      background: var(--black-stone);
+    }
+
+    .dot.white {
+      background: #fff;
+    }
 
     .hidden {
       display: none !important;
     }
 
-    @media (max-width: 920px) {
-      .student-layout, .teacher-layout, .game {
+    @media (max-width: 600px) {
+
+      .student-layout,
+      .teacher-layout,
+      .game {
         grid-template-columns: 1fr;
       }
 
-      .board {
-        width: min(100%, 800px);
+      .board-wrap {
+        width: min(100%, 600px);
       }
     }
 
@@ -714,6 +746,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="shell">
     <header class="topbar">
@@ -736,21 +769,22 @@
           <div class="start-card panel">
             <h2>교실 오목 시작하기</h2>
             <p>교사는 로그인을 하고 오목판 생성을 허가하며, 학생은 닉네임을 입력하고 입장합니다.</p>
-            
+
             <div class="start-grid">
               <!-- Student Entry -->
               <div class="start-col student-col">
                 <h3><i class="fa-solid fa-graduation-cap"></i> 학생으로 입장</h3>
                 <form id="student-join-form" class="stack">
                   <div class="field-group">
-                    <input id="nickname-input" class="field" maxlength="16" placeholder="사용할 닉네임 입력" required autocomplete="nickname">
+                    <input id="nickname-input" class="field" maxlength="16" placeholder="사용할 닉네임 입력" required
+                      autocomplete="nickname">
                   </div>
                   <button type="submit" class="btn success" style="width: 100%;">오목 로비 입장</button>
                 </form>
               </div>
-              
+
               <div class="start-divider"></div>
-              
+
               <!-- Teacher Entry -->
               <div class="start-col teacher-col">
                 <h3><i class="fa-solid fa-chalkboard-user"></i> 교사로 시작</h3>
@@ -779,7 +813,7 @@
               </div>
               <button id="permission-toggle-btn" class="btn success" type="button">세션 열기</button>
             </div>
-            
+
             <div class="metrics" style="margin-top: 1rem;">
               <div class="metric"><span>로비 학생</span><strong id="teacher-student-count">0</strong></div>
               <div class="metric"><span>열린 방</span><strong id="teacher-room-count">0</strong></div>
@@ -796,8 +830,12 @@
             <p style="color: var(--muted); font-size: 0.82rem; margin: 0; font-weight: 600;">
               스마트폰 카메라로 QR 코드를 스캔하거나 아래 주소로 접속해 오목 로비로 들어올 수 있습니다.
             </p>
-            <div id="teacher-qr-code" class="qr-box" title="클릭하면 크게 봅니다" style="width: 100%; display: grid; place-content: center; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; min-height: 160px;"></div>
-            <div id="student-url-box" class="url-box" style="word-break: break-all; padding: 8px 12px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; font-size: 0.82rem; font-weight: 800; color: var(--muted);"></div>
+            <div id="teacher-qr-code" class="qr-box" title="클릭하면 크게 봅니다"
+              style="width: 100%; display: grid; place-content: center; background: #fff; padding: 12px; border-radius: 8px; border: 1px solid var(--line); cursor: pointer; min-height: 160px;">
+            </div>
+            <div id="student-url-box" class="url-box"
+              style="word-break: break-all; padding: 8px 12px; background: var(--surface-soft); border: 1px solid var(--line); border-radius: 8px; font-size: 0.82rem; font-weight: 800; color: var(--muted);">
+            </div>
           </section>
         </aside>
 
@@ -893,8 +931,10 @@
                   <div class="metric"><span>내 역할</span><strong id="my-seat">로비</strong></div>
                   <div class="metric"><span>관전자</span><strong id="spectator-count">0</strong></div>
                 </div>
-                <button id="reset-game-btn" class="btn secondary" type="button" disabled><i class="fa-solid fa-rotate-right"></i> 새 판 시작</button>
-                <button id="leave-room-btn" class="btn danger" type="button" disabled><i class="fa-solid fa-door-open"></i> 방 나가기</button>
+                <button id="reset-game-btn" class="btn secondary" type="button" disabled><i
+                    class="fa-solid fa-rotate-right"></i> 새 판 시작</button>
+                <button id="leave-room-btn" class="btn danger" type="button" disabled><i
+                    class="fa-solid fa-door-open"></i> 방 나가기</button>
               </aside>
             </div>
           </section>
@@ -903,7 +943,8 @@
     </main>
   </div>
 
-  <div id="result-popup" class="result-popup hidden" role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="result-popup-title">
+  <div id="result-popup" class="result-popup hidden" role="dialog" aria-modal="false" aria-live="polite"
+    aria-labelledby="result-popup-title">
     <div class="result-popup-box">
       <h2 id="result-popup-title" class="result-popup-title">승리</h2>
       <button id="result-popup-close" class="result-popup-close" type="button" aria-label="결과 팝업 닫기">
@@ -915,4 +956,5 @@
   <script type="module" src="./js/gomoku-result-popup.mjs"></script>
   <script type="module" src="./js/gomoku-app.js?v=board19"></script>
 </body>
+
 </html>

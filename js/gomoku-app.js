@@ -970,6 +970,10 @@ function renderBoard() {
 }
 
 function renderRoomInfo() {
+  const blackSeat = $('black-seat');
+  const whiteSeat = $('white-seat');
+  let activeTurn = null;
+
   if (state.playMode === 'solo') {
     $('room-title').textContent = 'AI 혼자 하기';
     $('black-player').textContent = `${state.nickname || '학생'} (나)`;
@@ -979,8 +983,12 @@ function renderRoomInfo() {
     $('white-seat')?.classList.toggle('my-seat', false);
     $('spectator-count').textContent = '0';
     $('my-seat').textContent = '흑';
-    $('leave-room-btn').disabled = true;
+    $('leave-room-btn').disabled = !state.soloActive;
     $('reset-game-btn').disabled = false;
+
+    if (state.soloActive && state.soloGame.status === 'playing') {
+      activeTurn = state.soloGame.turn;
+    }
     if (!state.soloActive && state.soloGame.status !== 'finished') {
       setRoomStatus('AI 대국 시작 버튼을 누르세요.');
     } else if (state.soloThinking) {
@@ -990,9 +998,8 @@ function renderRoomInfo() {
     } else {
       setRoomStatus(state.soloGame.turn === COLORS.BLACK ? '학생 차례입니다.' : 'AI 차례입니다.');
     }
-    return;
-  }
-  $('room-title').textContent = state.roomId ? state.roomTitle : '방에 입장하면 오목판이 표시됩니다.';
+  } else {
+    $('room-title').textContent = state.roomId ? state.roomTitle : '방에 입장하면 오목판이 표시됩니다.';
   const black = state.participants.find((user) => user.seat === 'black');
   const white = state.participants.find((user) => user.seat === 'white');
   const spectators = state.participants.filter((user) => user.seat === 'spectator');
@@ -1022,6 +1029,10 @@ function renderRoomInfo() {
   $('leave-room-btn').disabled = !state.roomId;
   $('reset-game-btn').disabled = !state.roomId || state.game.status !== 'finished' || !canResetGame() || !state.teacherAllowed;
 
+  if (state.roomId && state.teacherAllowed && state.game.status === 'playing' && black && white) {
+    activeTurn = state.game.turn;
+  }
+
   if (!state.roomId) {
     setRoomStatus('로비에서 방을 만들거나 입장하세요.');
     return;
@@ -1039,6 +1050,19 @@ function renderRoomInfo() {
     return;
   }
   setRoomStatus(`${formatRole(state.game.turn)} 차례입니다.`);
+  }
+
+  // Update active turn visual state
+  if (blackSeat) {
+    blackSeat.classList.toggle('turn-black-active', activeTurn === 'black');
+  }
+  if (whiteSeat) {
+    whiteSeat.classList.toggle('turn-white-active', activeTurn === 'white');
+  }
+
+  // Toggle in-game class on student screen to hide/show lobby controls and maximize board area
+  const inGame = (state.playMode === 'solo' && state.soloActive) || Boolean(state.roomId);
+  $('student-screen')?.classList.toggle('in-game', inGame);
 }
 
 function canResetGame() {
@@ -1095,6 +1119,26 @@ function resetGame() {
 }
 
 async function leaveRoom(removeIfOwner = true) {
+  if (state.playMode === 'solo') {
+    if (state.soloActive) {
+      state.soloActive = false;
+      state.soloResultHandled = true;
+      state.soloProgress = applySoloResult(state.soloProgress, {
+        result: 'loss',
+        difficulty: state.activeSoloDifficulty,
+      });
+      setSoloStatus('대국 도중 기권하여 패배 처리되었습니다.', 'warn');
+      if (state.soloGame) {
+        state.soloGame.status = 'finished';
+      }
+      state.game = state.soloGame;
+    }
+    renderBoard();
+    renderRoomInfo();
+    renderSoloPanel();
+    return;
+  }
+
   stopRoomHeartbeat();
   const shouldRemoveRoom = removeIfOwner
     && state.roomId
