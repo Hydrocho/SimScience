@@ -243,6 +243,45 @@
       border-color: #fde68a;
     }
 
+    .result-popup {
+      position: fixed;
+      inset: 0;
+      z-index: 20;
+      display: grid;
+      place-items: center;
+      padding: 1rem;
+      pointer-events: none;
+    }
+
+    .result-popup-box {
+      width: min(18rem, calc(100vw - 2rem));
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.96);
+      box-shadow: 0 18px 45px rgba(23, 32, 51, 0.18);
+      padding: 1.1rem;
+      text-align: center;
+      pointer-events: auto;
+    }
+
+    .result-popup-title {
+      margin: 0 0 0.75rem;
+      font-size: 1.7rem;
+      font-weight: 900;
+      letter-spacing: 0;
+    }
+
+    .result-popup-close {
+      width: 2.25rem;
+      height: 2.25rem;
+      border-radius: 8px;
+      display: inline-grid;
+      place-items: center;
+      color: var(--muted);
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+    }
+
     .input-row {
       display: grid;
       grid-template-columns: 1fr auto;
@@ -589,6 +628,45 @@
       box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
     }
 
+    .seat {
+      transition: all 0.25s ease;
+    }
+    .seat small {
+      transition: all 0.25s ease;
+    }
+    .dot {
+      transition: all 0.25s ease;
+    }
+
+    /* Active Black Turn styling */
+    .seat.turn-black-active {
+      background: var(--black-stone) !important;
+      color: #ffffff !important;
+      border-color: var(--black-stone) !important;
+      box-shadow: 0 4px 12px rgba(17, 24, 39, 0.25);
+    }
+    .seat.turn-black-active small {
+      color: #cbd5e1 !important;
+    }
+    .seat.turn-black-active .dot.black {
+      border-color: #ffffff;
+      box-shadow: 0 0 4px rgba(255, 255, 255, 0.6);
+    }
+
+    /* Active White Turn styling */
+    .seat.turn-white-active {
+      background: #ffffff !important;
+      color: var(--ink) !important;
+      border-color: var(--ink) !important;
+      box-shadow: 0 4px 12px rgba(17, 24, 39, 0.15);
+    }
+    .seat.turn-white-active small {
+      color: var(--muted) !important;
+    }
+    .seat.turn-white-active .dot.white {
+      border-color: var(--ink);
+    }
+
     .dot {
       width: 1rem;
       height: 1rem;
@@ -819,6 +897,16 @@
     </main>
   </div>
 
+  <div id="result-popup" class="result-popup hidden" role="dialog" aria-modal="false" aria-live="polite" aria-labelledby="result-popup-title">
+    <div class="result-popup-box">
+      <h2 id="result-popup-title" class="result-popup-title">승리</h2>
+      <button id="result-popup-close" class="result-popup-close" type="button" aria-label="결과 팝업 닫기">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <script type="module" src="./js/gomoku-result-popup.mjs"></script>
   <script type="module" src="./js/gomoku-app.js"></script>
 </body>
 </html>
