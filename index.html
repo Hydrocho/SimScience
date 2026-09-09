@@ -209,6 +209,9 @@
     .portal-card.gomoku-game::before {
       background: linear-gradient(90deg, #172033, #d97706);
     }
+    .portal-card.mendel-exp::before {
+      background: linear-gradient(90deg, #16a34a, #ca8a04);
+    }
 
     .portal-card:hover {
       transform: translateY(-8px);
@@ -238,6 +241,9 @@
     }
     .portal-card.gomoku-game:hover {
       box-shadow: 0 15px 40px rgba(23, 32, 51, 0.14);
+    }
+    .portal-card.mendel-exp:hover {
+      box-shadow: 0 15px 40px rgba(22, 163, 74, 0.14);
     }
 
     /* Icon badge design */
@@ -284,6 +290,10 @@
     .gomoku-game .icon-badge {
       background: linear-gradient(135deg, #172033 0%, #d97706 100%);
       box-shadow: 0 6px 15px rgba(23, 32, 51, 0.18);
+    }
+    .mendel-exp .icon-badge {
+      background: linear-gradient(135deg, #16a34a 0%, #ca8a04 100%);
+      box-shadow: 0 6px 15px rgba(22, 163, 74, 0.22);
     }
 
     /* Card text details */
@@ -592,6 +602,27 @@
           <span class="tag-item">교사 허가</span>
           <span class="tag-item">방 목록 입장</span>
           <span class="tag-item">관전 가능</span>
+        </div>
+      </a>
+
+      <!-- Card: Mendel Pea Genetics Simulation -->
+      <a href="https://hydrocho.github.io/MendelExp/" target="_blank" rel="noopener noreferrer" class="portal-card mendel-exp">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-dna"></i>
+          </div>
+          <h2 class="card-title">
+            멘델 완두콩 유전 시뮬레이터
+            <i class="fa-solid fa-arrow-up-right-from-square arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            단성 유전과 양성 유전(독립의 법칙), 완두 수확 확률 시뮬레이션(펀네트 사각형)을 통해 멘델의 유전 법칙과 표현형·유전자형 분리비를 직접 탐구합니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">생명과학 (유전)</span>
+          <span class="tag-item">멘델의 유전 법칙</span>
+          <span class="tag-item">펀네트 사각형</span>
         </div>
       </a>
 
