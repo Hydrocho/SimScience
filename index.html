@@ -212,6 +212,9 @@
     .portal-card.mendel-exp::before {
       background: linear-gradient(90deg, #16a34a, #ca8a04);
     }
+    .portal-card.pedigree-quiz::before {
+      background: linear-gradient(90deg, #ec4899, #8b5cf6);
+    }
 
     .portal-card:hover {
       transform: translateY(-8px);
@@ -244,6 +247,9 @@
     }
     .portal-card.mendel-exp:hover {
       box-shadow: 0 15px 40px rgba(22, 163, 74, 0.14);
+    }
+    .portal-card.pedigree-quiz:hover {
+      box-shadow: 0 15px 40px rgba(236, 72, 153, 0.14);
     }
 
     /* Icon badge design */
@@ -294,6 +300,10 @@
     .mendel-exp .icon-badge {
       background: linear-gradient(135deg, #16a34a 0%, #ca8a04 100%);
       box-shadow: 0 6px 15px rgba(22, 163, 74, 0.22);
+    }
+    .pedigree-quiz .icon-badge {
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+      box-shadow: 0 6px 15px rgba(236, 72, 153, 0.22);
     }
 
     /* Card text details */
@@ -623,6 +633,27 @@
           <span class="tag-item">생명과학 (유전)</span>
           <span class="tag-item">멘델의 유전 법칙</span>
           <span class="tag-item">펀네트 사각형</span>
+        </div>
+      </a>
+
+      <!-- Card: Genetics Family Tree Pedigree Quiz -->
+      <a href="https://hydrocho.github.io/GeneticsFamilyTree/quiz.html" target="_blank" rel="noopener noreferrer" class="portal-card pedigree-quiz">
+        <div>
+          <div class="icon-badge">
+            <i class="fa-solid fa-diagram-project"></i>
+          </div>
+          <h2 class="card-title">
+            유전 가계도 퀴즈
+            <i class="fa-solid fa-arrow-up-right-from-square arrow-icon"></i>
+          </h2>
+          <p class="card-desc">
+            상염색체(쌍꺼풀), 복대립(ABO 혈액형), 반성 열성(적록 색맹) 유전 가계도를 무작위 생성하고, 가족 구성원의 유전자형을 추론해 분석하는 유전학 퀴즈입니다.
+          </p>
+        </div>
+        <div class="tag-list">
+          <span class="tag-item">생명과학 (가계도)</span>
+          <span class="tag-item">유전자형 추론</span>
+          <span class="tag-item">쌍꺼풀·혈액형·색맹</span>
         </div>
       </a>
 
